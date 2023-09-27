@@ -18,11 +18,11 @@
 
     inputs = {
         nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-	nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+	    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
         nixos-wsl = {
             url = "github:nix-community/NixOS-WSL";
             inputs.nixpkgs.follows = "nixpkgs";
-	};
+        };
         home-manager = {
             url = "github:nix-community/home-manager";
             inputs.nixpkgs.follows = "nixpkgs";
@@ -54,7 +54,7 @@
                         home-manager.users.${username} = import ./home-manager;
                     }
 
-		    ./general
+		            ./general
                 ];
             };
         };

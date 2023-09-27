@@ -3,6 +3,7 @@ require("transparent").setup {
         "NormalFloat", -- for floats
         "NvimTreeNormal", -- NvimTree
         "NvimTreeNormalNC",
+        "NvimTreeWinSeparator",
         "NvimTreeCursorLine",
         "NvimTreeCursorColumn",
         "TelescopeNormal", -- Telescope

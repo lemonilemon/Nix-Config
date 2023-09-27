@@ -14,7 +14,7 @@ call plug#begin('~/.config/nvim/plugged')
 Plug 'nvim-tree/nvim-web-devicons'
 " theme
 Plug 'xiyaowong/nvim-transparent'
-Plug 'folke/tokyonight.nvim', { 'branch': 'main' }
+Plug 'catppuccin/nvim', { 'as': 'catppuccin' }
 " airline
 Plug 'nvim-lualine/lualine.nvim'
 " telescope
@@ -69,9 +69,6 @@ autocmd VimEnter *
 "" Style 
 	syntax enable
 	set background=dark
-	if has_key(g:plugs, "tokyonight.nvim")
-		colorscheme tokyonight-storm
-	endif
 	let g:transparent_enabled = v:true
 	hi Normal guibg=None ctermbg=None
     hi NonText guibg=None ctermbg=None

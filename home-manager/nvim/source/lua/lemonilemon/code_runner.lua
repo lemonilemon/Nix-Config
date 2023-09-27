@@ -34,7 +34,7 @@ require('code_runner').setup({
             require("code_runner.hooks.preview_pdf").run {
                 command = "pdflatex",
                 args = { "-output-directory", "/tmp", "$fileName" },
-                preview_cmd = "wsl-open -a",
+                preview_cmd = "wsl-open > /dev/null",
                 overwrite_output = "/tmp",
             }
         end,

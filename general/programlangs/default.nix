@@ -4,5 +4,6 @@
         gcc # c/c++
         python3 # python
         nodejs # nodejs
+        texlive.combined.scheme-medium # tex
     ]; 
 }

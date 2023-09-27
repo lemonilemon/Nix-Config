@@ -30,5 +30,13 @@ require('code_runner').setup({
             "rustc $fileName &&",
             "$dir/$fileNameWithoutExt"
         },
+        tex = function()
+            require("code_runner.hooks.preview_pdf").run {
+                command = "pdflatex",
+                args = { "-output-directory", "/tmp", "$fileName" },
+                preview_cmd = "/bin/zathura --fork",
+                overwrite_output = "/tmp",
+            }
+        end,
     },
 })

@@ -1,10 +1,7 @@
 {
-    pkgs, 
-    username,
-    ...
-}: {
     imports = [
 	    ./shells
         ./programlangs
+        ./nix
     ];
 }

@@ -3,5 +3,6 @@
 	    ./shells
         ./programlangs
         ./nix
+        ./pdf
     ];
 }

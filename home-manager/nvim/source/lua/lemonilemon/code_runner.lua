@@ -34,7 +34,7 @@ require('code_runner').setup({
             require("code_runner.hooks.preview_pdf").run {
                 command = "pdflatex",
                 args = { "-output-directory", "/tmp", "$fileName" },
-                preview_cmd = "/bin/zathura --fork",
+                preview_cmd = "wsl-open",
                 overwrite_output = "/tmp",
             }
         end,

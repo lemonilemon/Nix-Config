@@ -1,8 +1,7 @@
 { pkgs, ... }:
 {
     environment.systemPackages = with pkgs; [
-        gcc # c/c++
-        python3 # python
-        nodejs # nodejs
+        # tex & markdown
+        texlive.combined.scheme-medium # tex
     ]; 
 }

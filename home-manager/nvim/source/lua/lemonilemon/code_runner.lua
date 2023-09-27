@@ -38,5 +38,13 @@ require('code_runner').setup({
                 overwrite_output = "/tmp",
             }
         end,
+        markdown = function()
+            require("code_runner.hooks.preview_pdf").run {
+                command = "pandoc",
+                args = { "$fileName", "-o", "$tmpFile", "-t", "pdf" },
+                preview_cmd = "wsl-open > /dev/null",
+                overwrite_output = "/tmp",
+            }
+        end,
     },
 })

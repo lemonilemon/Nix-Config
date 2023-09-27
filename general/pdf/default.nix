@@ -4,5 +4,8 @@
         # tex & markdown
         texlive.combined.scheme-medium # tex
         multimarkdown # markdown
+
+        # file conversion
+        pandoc
     ]; 
 }

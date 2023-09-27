@@ -1,5 +1,4 @@
 {
-  pkgs,
   username,
   ...
 }: {
@@ -8,7 +7,8 @@
     imports = [ 
         ./nvim
         ./zsh
-	./git
+	    ./git
+        ./programs
     ];
     home.stateVersion = "23.05";
     programs.home-manager.enable = true;

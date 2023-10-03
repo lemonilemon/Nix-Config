@@ -7,5 +7,8 @@
 
         # file conversion
         pandoc
+
+        # pdf reader
+        zathura
     ]; 
 }

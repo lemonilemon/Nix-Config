@@ -1,19 +1,36 @@
 {
-  pkgs,
-  username,
-  ...
+    pkgs,
+    username,
+    hostname,
+    ...
 }: {
-  wsl = {
-    enable = true;
-    defaultUser = "${username}";
-  };
+    wsl = {
+        enable = true;
+        defaultUser = "${username}";
+    };
+    networking.hostName = "${hostname}";
+    programs.zsh.enable = true;
+    environment.shells = [pkgs.zsh];
+    environment.systemPackages = with pkgs; [
+        wsl-open
+    ];
+    security.sudo.wheelNeedsPassword = false;
 
-  networking.hostName = "wsl";
+    users.users.${username} = {
+    isNormalUser = true;
+    # FIXME: change your shell here if you don't want zsh
+    shell = pkgs.zsh;
+        extraGroups = [
+          "wheel"
+        ];
+        # FIXME: add your own hashed password
+        # hashedPassword = "";
+        # FIXME: add your own ssh public key
+        # openssh.authorizedKeys.keys = [
+        #   "ssh-rsa ..."
+        # ];
+    };
 
-  environment.systemPackages = with pkgs; [
-      wsl-open
-  ];
-
-  time.timeZone = "Asia/Taiwan";
-  system.stateVersion = "23.05";
+    time.timeZone = "Asia/Taiwan";
+    system.stateVersion = "23.05";
 }

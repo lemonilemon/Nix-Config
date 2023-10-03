@@ -39,10 +39,11 @@
         nixosConfigurations = {
             wsl = let 
                 username = "lemonilemon";
+                hostname = "wsl";
             in 
             nixpkgs.lib.nixosSystem {
                 system = "x86_64-linux";
-                specialArgs = {inherit inputs username;};
+                specialArgs = {inherit inputs username hostname;};
                 modules = [
                     nixos-wsl.nixosModules.wsl
                     ./hosts/wsl
@@ -50,7 +51,7 @@
                     home-manager.nixosModules.home-manager {
                         home-manager.useGlobalPkgs = true;
                         home-manager.useUserPackages = true;
-                        home-manager.extraSpecialArgs = {inherit inputs username;};
+                        home-manager.extraSpecialArgs = {inherit inputs username hostname;};
                         home-manager.users.${username} = import ./home-manager;
                     }
 

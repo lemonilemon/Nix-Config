@@ -6,7 +6,7 @@
     home.homeDirectory = "/home/${username}";
     imports = [ 
         ./nvim
-        ./zsh
+        ./shells
 	    ./git
         ./programs
         ./tmux

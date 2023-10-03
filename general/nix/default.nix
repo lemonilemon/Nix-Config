@@ -10,7 +10,17 @@
               #   "github.com=${secrets.github_token}"
               #   "gitlab.com=OAuth2:${secrets.gitlab_token}"
               # ];
-
+            substituters = [
+                "https://aseipp-nix-cache.global.ssl.fastly.net"
+                "https://mirrors.ustc.edu.cn/nix-channels/store"
+                "https://cache.nixos.org/"
+            ];
+            extra-substituters = [
+                "https://nix-community.cachix.org"
+            ];
+            extra-trusted-public-keys = [
+                "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+            ];
             accept-flake-config = true;
             auto-optimise-store = true;
         };

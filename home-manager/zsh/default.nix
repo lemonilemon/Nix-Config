@@ -16,11 +16,12 @@
         zplug = {
             enable = true;
             plugins = [
-                { name = "romkatv/powerlevel10k"; tags = [ "as:theme depth:1" ]; }
+                { name = "nix-community/nix-zsh-completions"; }
+                { name = "romkatv/powerlevel10k"; tags = [ as:theme depth:1 ]; }
                 { name = "zsh-users/zsh-autosuggestions"; }
                 { name = "zsh-users/zsh-history-substring-search"; }
                 { name = "marlonrichert/zsh-autocomplete"; }
-                { name = "b4b4r07/enhancd"; tags = [ "use:init.sh" ]; }
+                { name = "b4b4r07/enhancd"; tags = [ use:init.sh ]; }
                 { name = "chisui/zsh-nix-shell"; }
             ];
         };

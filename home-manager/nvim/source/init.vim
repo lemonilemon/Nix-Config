@@ -27,6 +27,7 @@ Plug 'nvim-tree/nvim-tree.lua'
 Plug 'neovim/nvim-lspconfig'
 " code runner
 Plug 'CRAG666/code_runner.nvim'
+Plug 'lervag/vimtex'
 " treesitter
 Plug 'nvim-treesitter/nvim-treesitter'
 " template

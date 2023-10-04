@@ -17,6 +17,7 @@
                     git pull
                     sudo nixos-rebuild switch --flake .#${hostname}
                     nix flake update
+                    source /home/${username}/.zshrc
                     zplug update";
         };
         zplug = {

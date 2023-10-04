@@ -1,5 +1,7 @@
 {    
      config,
+     username,
+     hostname,
      ... 
 }: {
     home.file.".p10k.zsh".source = ./.p10k.zsh;
@@ -11,6 +13,11 @@
             l="ls -CF";
             ls="ls --color=auto";
             ".." = "cd ..";
+            update="cd /home/${username}/nixos-config 
+                    git pull
+                    sudo nixos-rebuild switch --flake .#${hostname}
+                    nix flake update
+                    zplug update";
         };
         zplug = {
             enable = true;

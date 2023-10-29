@@ -2,7 +2,7 @@
 {
     environment.systemPackages = with pkgs; [
         # tex & markdown
-        texlive.combined.scheme-medium # tex
+        texlive.combined.scheme-full# tex
         multimarkdown # markdown
 
         # file conversion

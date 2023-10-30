@@ -96,10 +96,10 @@
                 recolor-reverse-video = "true";
                 recolor-keephue = "true";
             };
-            mappings = {
-                f  = "toggle_fullscreen";
-                "[fullscreen]f"  = "toggle_fullscreen";
-            };
+            #mappings = {
+                #f  = "toggle_fullscreen";
+                #"[fullscreen]f"  = "toggle_fullscreen";
+            #};
         };
     };
 }

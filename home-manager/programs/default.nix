@@ -42,7 +42,7 @@
             options = {
                 # Open document in fit-width mode by default
                 adjust-open = "best-fit";
-                window-height = 1200;
+                window-height = 1000;
                 window-width = 1600;
 
                 # One page per row by default

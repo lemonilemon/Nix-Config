@@ -31,6 +31,8 @@ Plug 'CRAG666/code_runner.nvim'
 Plug 'nvim-treesitter/nvim-treesitter'
 " template
 Plug 'nvimdev/template.nvim'
+" latex
+Plug 'lervag/vimtex'
 call plug#end()
 
 "" Require plugin configs

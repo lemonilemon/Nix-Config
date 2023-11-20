@@ -1,4 +1,10 @@
 {
+    pkgs,
+    ...
+}: {
+    home.packages = with pkgs; [
+        neovim-remote
+    ];
     imports = [
         ./lsp
     ];

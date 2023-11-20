@@ -31,12 +31,7 @@ require('code_runner').setup({
             "$dir/$fileNameWithoutExt"
         },
         tex = function()
-            require("code_runner.hooks.preview_pdf").run {
-                command = "pdflatex",
-                args = { "-output-directory", "/tmp", "$fileName" },
-                preview_cmd = "zathura",
-                overwrite_output = "/tmp",
-            }
+            vim.api.nvim_command('VimtexCompile')
         end,
         markdown = function()
             require("code_runner.hooks.preview_pdf").run {

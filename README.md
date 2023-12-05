@@ -22,16 +22,11 @@ sudo nix-channel --add https://nixos.org/channels/nixos-23.05 nixos
 sudo nix-channel --update
 ```
 
-- Clone this repository: 
+- Clone this repository and apply the configuration by: 
 
 ```sh
-nix-shell -p git --run "git clone https://github.com/lemonilemon/nixos-config.git /tmp/configuration"
-```
-
-- Apply the configuration by
-
-```sh
-sudo nixos-rebuild switch --flake /tmp/configuration#wsl
+nix-shell -p git --run "git clone https://github.com/lemonilemon/nixos-config.git /tmp/configuration &&
+sudo nixos-rebuild switch --flake /tmp/configuration#wsl"
 ```
 
 - Restart the WSL, then your configuration should be done

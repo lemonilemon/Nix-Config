@@ -20,6 +20,7 @@
                     source /home/${username}/.zshrc
                     zplug update";
         };
+        enableCompletion = false;
         zplug = {
             enable = true;
             plugins = [

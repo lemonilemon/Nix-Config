@@ -34,7 +34,7 @@ sudo nixos-rebuild switch --flake /tmp/configuration#wsl"
 - Move the configuration to home directory:
 
 ```sh
-mv /tmp/configuration ~/configuration
+mv /tmp/configuration ~/nixos-config
 ```
 
 - Enjoy your WSL with NixOS!

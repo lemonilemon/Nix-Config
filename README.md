@@ -7,10 +7,6 @@ This repository is maintained by lemonilemon.
 ### In WSL (refers to [nixos-wsl-starter](https://github.com/LGUG2Z/nixos-wsl-starter))
 - Get the latest [NixOS-WSL](https://github.com/nix-community/NixOS-WSL/releases/latest), then:
 
-```sh
-wsl --import NixOS .\NixOS\ nixos-wsl.tar.gz --version 2
-```
-
 - Install it in powershell or cmd using:
 
 ```sh

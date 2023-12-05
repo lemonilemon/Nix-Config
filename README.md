@@ -30,7 +30,7 @@ sudo nix-channel --update
 
 ```sh
 nix-shell -p git
-git clone https://github.com/lemonilemon/nixos-config.git 
+git clone https://github.com/lemonilemon/nixos-config.git /tmp/configuration
 ```
 
 - Apply the configuration by

@@ -12,6 +12,7 @@
             la="ls -A";
             l="ls -CF";
             ls="ls --color=auto";
+            lg="lazygit";
             ".." = "cd ..";
             update="cd /home/${username}/nixos-config 
                     git pull

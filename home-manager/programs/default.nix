@@ -22,6 +22,10 @@
 
         # pdf reader
         zathura
+
+        # git
+        lazygit
+
     ];
     programs = {
         bat = {

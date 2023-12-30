@@ -5,8 +5,14 @@
         enable = true;
         userName = "lemonilemon";
         userEmail = "imlemonilemon@gmail.com";
-        init = {
-            defaultBranch = "main";
+        ignores = [ 
+            "*.swp" 
+            ".*"
+        ];
+        extraConfig = {
+            core = {
+                defaultBranch = "main";
+            };
         };
     };
 }

@@ -72,6 +72,10 @@
         \}
     ]])
 
+    local map = vim.api.nvim_set_keymap
+    local mapopt = { noremap = true, silent = true }
+
+
     local plugins = {
         {
             "folke/which-key.nvim",
@@ -82,15 +86,10 @@
                 vim.o.timeoutlen = 300
                 vim.g.mapleader = " "
                 vim.g.maplocalleader = " "
-                local map = vim.api.nvim_set_keymap
-                local opt = { noremap = true, silent = true }
-                map('i', 'jj', '<ESC>', opt)
-                map('n', '<F5>', ':NvimTreeToggle<CR>', opt)
-                map('n', 'tt', ':NvimTreeFocus<CR>', opt)
-                map('n', '<F6>', ':RunCode<CR>', opt)
-                vim.keymap.set('n', '<F7>', function()
-                    vim.fn.feedkeys(':Template ')
-                end, { remap = true})
+                map('i', 'jj', '<ESC>', mapopt)
+                map("n", " ", "<Nop>", mapopt)
+                map('n', '<F6>', ':RunCode<CR>', mapopt)
+                map('n', '<F7>', ":Template ", mapopt)
             end,
             opts = {
                 -- your configuration comes here
@@ -101,8 +100,20 @@
 
         {
             "xiyaowong/nvim-transparent",
-            lazy = true,
-            opts = {},
+            opts = {
+                extra_groups = {
+                    "NormalFloat", -- for floats
+                    "NvimTreeNormal", -- NvimTree
+                    "NvimTreeNormalNC",
+                    "NvimTreeWinSeparator",
+                    "NvimTreeCursorLine",
+                    "NvimTreeCursorColumn",
+                    "TelescopeNormal", -- Telescope
+                    "TelescopeBorder",
+                    "LspFloatWinNormal", -- Lsp
+                    "LspFloatWinBorder",
+                },
+            },
             init = function()
                 vim.g.transparent_enabled = true
             end,
@@ -172,29 +183,99 @@
 
     {
         "nvim-tree/nvim-tree.lua",
+        lazy = true,
         dependencies = { "nvim-tree/nvim-web-devicons" },
+        cmd = {
+            "NvimTreeToggle",
+            "NvimTreeFocus",
+        },
+        init = function()
+            vim.opt.termguicolors = true
+            map('n', 'tt', ':NvimTreeFocus<CR>', mapopt)
+        end,
         opts = {
             sort_by = "case_sensitive",
             view = {
                 width = 40,
             },
             renderer = {
-              group_empty = true,
+                group_empty = true,
             },
             filters = {
-                dotfiles = true,
+                dotfiles = false,
             },
         },
-        config = function(_, opts)
-            require("nvim-tree").setup(opts)
-        end,
     },
 
 
     {
         "nvim-lualine/lualine.nvim",
-        opts = {},
+        opts = {
+            options = {
+                icons_enabled = true,
+                theme  = "auto"
+            },
+        },
     },
+
+    {
+        "nvim-telescope/telescope.nvim", tag = "0.1.5",
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+            {
+                "nvim-telescope/telescope-fzf-native.nvim",
+                build = "make",
+            }
+        },
+        init = function()
+            map('n', '<leader>ff', ":Telescope find_files<CR>", mapopt)
+            map('n', '<leader>fg', ":Telescope live_grep<CR>", mapopt)
+            map('n', '<leader>fb', ":Telescope buffers<CR>", mapopt)
+            map('n', '<leader>fh', ":Telescope help_tags<CR>", mapopt)
+        end,
+        opts = {
+            defaults = {
+                layout_config = {
+                    horizontal = {
+                        preview_cutoff = 0,
+                    },
+                },
+            },
+            extensions = {
+                fzf = {
+                    fuzzy = true,                    -- false will only do exact matching
+                    override_generic_sorter = true,  -- override the generic sorter
+                    override_file_sorter = true,     -- override the file sorter
+                    case_mode = "smart_case",        -- or "ignore_case" or "respect_case"
+                },
+            },
+        },
+    },
+
+    {
+        "nvim-treesitter/nvim-treesitter",
+        main = "nvim-treesitter.configs",
+        opts = {
+            ensure_installed = {
+              "c",
+              "cpp",
+              "lua",
+              "vim",
+              "vimdoc",
+              "query",
+              "python",
+            },
+            sync_install = true,
+            auto_install = true,
+            ignore_install = {},
+            highlight = {
+                enable = true,
+                additional_vim_regex_highlighting = false,
+            },
+        },
+        build = ":TSUpdate",
+    },
+
 }
 
 local opts = {

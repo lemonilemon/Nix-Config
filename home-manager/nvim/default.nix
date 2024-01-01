@@ -9,6 +9,7 @@
         ./lsp
     ];
     home.file.".config/nvim" = {
+    	enable = true;
         source = ./source;
         recursive = true;
     };

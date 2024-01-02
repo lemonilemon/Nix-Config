@@ -271,7 +271,7 @@
             highlight = {
                 enable = true,
                 disable = {
-                    "vim", -- vimtex
+                    "tex", -- vimtex
                 },
                 additional_vim_regex_highlighting = false,
             },

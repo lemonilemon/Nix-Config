@@ -5,6 +5,8 @@
         python3 # python
         nodejs # nodejs
         jre8 # Java Development Kit
-        rustc # rust
+        rustc # Rust
+        cargo # Rust projects
+        cargo-tauri # tauri
     ]; 
 }

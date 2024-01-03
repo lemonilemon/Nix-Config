@@ -89,7 +89,7 @@ local plugins = {
             map('i', 'jj', '<ESC>', mapopt)
             map("n", " ", "<Nop>", mapopt)
             map('n', '<F6>', ':RunCode<CR>', mapopt)
-            map('n', '<F7>', ":Template ", mapopt)
+            map('n', '<F7>', ":Template ", { noremap = true })
         end,
         config = true,
     },
@@ -259,6 +259,7 @@ local plugins = {
             map('n', '<leader>fg', ":Telescope live_grep<CR>", mapopt)
             map('n', '<leader>fb', ":Telescope buffers<CR>", mapopt)
             map('n', '<leader>fh', ":Telescope help_tags<CR>", mapopt)
+            map('n', '<leader>ft', ":Telescope find_template<CR>", mapopt)
         end,
         opts = {
             defaults = {

@@ -178,6 +178,16 @@ local plugins = {
             },
         },
         opts = {
+            diagnostics = {
+                underline = true,
+                update_in_insert = false,
+                virtual_text = {
+                    spacing = 4,
+                    source = "if_many",
+                    prefix = "icons",
+                },
+                severity_sort = true,
+            },
             servers = {
                 lua_ls = {
                     settings = {

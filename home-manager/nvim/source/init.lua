@@ -271,9 +271,9 @@
             highlight = {
                 enable = true,
                 disable = {
-                    "tex", -- vimtex
+                    "latex", -- vimtex
                 },
-                additional_vim_regex_highlighting = false,
+                additional_vim_regex_highlighting = { "markdown", "latex" },
             },
         },
         build = ":TSUpdate",
@@ -357,6 +357,13 @@
             vim.g.vimtex_view_general_options = [[--unique file:@pdf\#src:@line@tex]]
         end,
     },
+
+    {
+        "L3MON4D3/LuaSnip",
+        build = "make install_jsregexp",
+        init = function()
+        end,
+    }
 }
 
 local opts = {

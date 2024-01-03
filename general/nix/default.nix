@@ -11,11 +11,11 @@
               #   "gitlab.com=OAuth2:${secrets.gitlab_token}"
               # ];
             substituters = [
-                "https://aseipp-nix-cache.global.ssl.fastly.net"
-                "https://mirrors.ustc.edu.cn/nix-channels/store"
                 "https://cache.nixos.org/"
             ];
             extra-substituters = [
+                "https://aseipp-nix-cache.global.ssl.fastly.net"
+                "https://mirrors.ustc.edu.cn/nix-channels/store"
                 "https://nix-community.cachix.org"
             ];
             extra-trusted-public-keys = [

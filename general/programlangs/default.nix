@@ -5,5 +5,6 @@
         python3 # python
         nodejs # nodejs
         jre8 # Java Development Kit
+        rustc # rust
     ]; 
 }

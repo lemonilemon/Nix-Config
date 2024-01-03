@@ -11,5 +11,6 @@
         ltex-ls # latex
         nil # nix
         nodePackages.vim-language-server # vim
+        rust-analyzer # rust
     ];
 }

@@ -3,9 +3,15 @@
     ...
 }: {
     environment.systemPackages = with pkgs; [
+        curl
+        wget
         pkg-config
-        pango
+        dbus
+        openssl_3
         glib
-        gdk-pixbuf
+        gtk3
+        libsoup
+        webkitgtk
+        librsvg
     ];
 }

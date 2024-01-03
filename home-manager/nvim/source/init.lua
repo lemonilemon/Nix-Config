@@ -1,171 +1,180 @@
-    local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-    if not vim.loop.fs_stat(lazypath) then
-      vim.fn.system({
-        "git",
-        "clone",
-        "--filter=blob:none",
-        "https://github.com/folke/lazy.nvim.git",
-        "--branch=stable", -- latest stable release
-        lazypath,
-      })
-    end
-    vim.opt.rtp:prepend(lazypath)
+local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+if not vim.loop.fs_stat(lazypath) then
+  vim.fn.system({
+    "git",
+    "clone",
+    "--filter=blob:none",
+    "https://github.com/folke/lazy.nvim.git",
+    "--branch=stable", -- latest stable release
+    lazypath,
+  })
+end
+vim.opt.rtp:prepend(lazypath)
 
-    vim.cmd([[
-        set ai 
-        " ignore case
-        set ic
-        set enc=utf8 
-        set mouse=a 
-        set autochdir 
-        set autowrite 
-        set nobackup
-        "" delays
-        set timeout ttimeout " separte mapping and keycode time
-        set timeoutlen=500 " 500ms
-        set ttimeoutlen=20 " 20ms
-        "" files
-        set noswapfile
-        set undofile
-        set undodir=~/.config/nvim/undodir
-        "" search
-        set incsearch
-        set nohlsearch
-        "" Sound
-        set visualbell
-        "" Style 
-        syntax enable
-        set background=dark
-        hi Normal guibg=None ctermbg=None
-        hi NonText guibg=None ctermbg=None
-        set termguicolors
-        hi CursorLine cterm=underline
-        "" Indentation 
-        set expandtab
-        set tabstop=4
-        set softtabstop=-1
-        set shiftwidth=4
-        set smartindent
-        "" Line number 
-        " add line number
-        set number 
-        " columns used for the line number
-        set numberwidth=4
-        augroup numbertoggle
-            autocmd! 
-            autocmd BufEnter,FocusGained,InsertLeave,WinEnter * if &nu && mode() != "i" | set rnu | endif 
-            autocmd BufLeave,FocusLost,InsertEnter,WinLeave * if &nu | set nornu | endif
-        augroup END
-        "" Clipboard
-        set clipboard+=unnamedplus
-        let g:clipboard = {
-        \	'name': 'wsl-clip',
-        \	'copy': {
-        \		'+': 'clip.exe',
-        \		'*': 'clip.exe',
-        \	},
-        \	'paste': {
-        \      '+': 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
-        \      '*': 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
-        \   },
-        \	'cache_enabled': 0,
-        \}
-    ]])
+vim.cmd([[
+    set ai 
+    " ignore case
+    set ic
+    set enc=utf8 
+    set mouse=a 
+    set autochdir 
+    set autowrite 
+    set nobackup
+    "" delays
+    set timeout ttimeout " separte mapping and keycode time
+    set timeoutlen=500 " 500ms
+    set ttimeoutlen=20 " 20ms
+    "" files
+    set noswapfile
+    set undofile
+    set undodir=~/.config/nvim/undodir
+    "" search
+    set incsearch
+    set nohlsearch
+    "" Sound
+    set visualbell
+    "" Style 
+    syntax enable
+    set background=dark
+    hi Normal guibg=None ctermbg=None
+    hi NonText guibg=None ctermbg=None
+    set termguicolors
+    hi CursorLine cterm=underline
+    "" Indentation 
+    set expandtab
+    set tabstop=4
+    set softtabstop=-1
+    set shiftwidth=4
+    set smartindent
+    "" Line number 
+    " add line number
+    set number 
+    " columns used for the line number
+    set numberwidth=4
+    augroup numbertoggle
+        autocmd! 
+        autocmd BufEnter,FocusGained,InsertLeave,WinEnter * if &nu && mode() != "i" | set rnu | endif 
+        autocmd BufLeave,FocusLost,InsertEnter,WinLeave * if &nu | set nornu | endif
+    augroup END
+    "" Clipboard
+    set clipboard+=unnamedplus
+    let g:clipboard = {
+    \	'name': 'wsl-clip',
+    \	'copy': {
+    \		'+': 'clip.exe',
+    \		'*': 'clip.exe',
+    \	},
+    \	'paste': {
+    \      '+': 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
+    \      '*': 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
+    \   },
+    \	'cache_enabled': 0,
+    \}
+]])
 
-    local map = vim.api.nvim_set_keymap
-    local mapopt = { noremap = true, silent = true }
+local map = vim.api.nvim_set_keymap
+local mapopt = { noremap = true, silent = true }
 
 
-    local plugins = {
-        {
-            "folke/which-key.nvim",
-            event = "VeryLazy",
-            -- lazy = true,
-            init = function()
-                vim.o.timeout = true
-                vim.o.timeoutlen = 300
-                vim.g.mapleader = " "
-                vim.g.maplocalleader = " "
-                map('i', 'jj', '<ESC>', mapopt)
-                map("n", " ", "<Nop>", mapopt)
-                map('n', '<F6>', ':RunCode<CR>', mapopt)
-                map('n', '<F7>', ":Template ", mapopt)
-            end,
-            opts = {
-                -- your configuration comes here
-                -- or leave it empty to use the default settings
-                -- refer to the configuration section below
+local plugins = {
+    {
+        "folke/which-key.nvim",
+        event = "VeryLazy",
+        -- lazy = true,
+        init = function()
+            vim.o.timeout = true
+            vim.o.timeoutlen = 300
+            vim.g.mapleader = " "
+            vim.g.maplocalleader = " "
+            map('i', 'jj', '<ESC>', mapopt)
+            map("n", " ", "<Nop>", mapopt)
+            map('n', '<F6>', ':RunCode<CR>', mapopt)
+            map('n', '<F7>', ":Template ", mapopt)
+        end,
+        config = true,
+    },
+
+    {
+        "catppuccin/nvim",
+        name = "catppuccin",
+        priority = 1000,
+        opts = {
+            flavour = "mocha",
+            transparent_background = true,
+        },
+        config = function()
+            vim.cmd.colorscheme "catppuccin"
+        end,
+    },
+
+    {
+        "xiyaowong/nvim-transparent",
+        opts = {
+            extra_groups = {
+                "NormalFloat", -- for floats 
+                "NvimTreeNormal", -- NvimTree
+                "NvimTreeNormalNC",
+                "NvimTreeWinSeparator",
+                "NvimTreeCursorLine",
+                "NvimTreeCursorColumn",
+                "TelescopeNormal", -- Telescope
+                "TelescopeBorder",
+                "LspFloatWinNormal", -- Lsp
+                "LspFloatWinBorder",
             },
         },
+        init = function()
+            vim.g.transparent_enabled = true
+        end,
+    },
 
-        {
-            "xiyaowong/nvim-transparent",
-            opts = {
-                extra_groups = {
-                    "NormalFloat", -- for floats
-                    "NvimTreeNormal", -- NvimTree
-                    "NvimTreeNormalNC",
-                    "NvimTreeWinSeparator",
-                    "NvimTreeCursorLine",
-                    "NvimTreeCursorColumn",
-                    "TelescopeNormal", -- Telescope
-                    "TelescopeBorder",
-                    "LspFloatWinNormal", -- Lsp
-                    "LspFloatWinBorder",
+
+    {
+        "neovim/nvim-lspconfig",
+        event = { "BufReadPre", "BufNewFile" },
+        dependencies = {
+            {
+                "folke/neodev.nvim",
+                opts = {
+                    experimental = { pathStrict = true },
+                    override = function(root_dir, library)
+                        if root_dir:find("~/nixos-config/home-manager/nvim/source", 1, true) == 1 then
+                            library.enabled = true
+                            library.plugins = true
+                        end
+                    end,
                 },
             },
-            init = function()
-                vim.g.transparent_enabled = true
-            end,
         },
-
-        {
-            "catppuccin/nvim",
-            name = "catppuccin",
-            priority = 1000,
-            opts = {
-                flavour = "mocha",
-                transparent_background = true,
-            },
-            config = function()
-                vim.cmd.colorscheme "catppuccin"
-            end,
-        },
-
-        {
-            "neovim/nvim-lspconfig",
-            event = { "BufReadPre", "BufNewFile" },
-            dependencies = {
-                { "folke/neoconf.nvim", cmd = "Neoconf", config = true },
-                { "folke/neodev.nvim", opts = { experimental = { pathStrict = true } } },
-            },
-            opts = {
-                servers = {
-                    lua_ls = {
-                        settings = {
-                            Lua = {
-                                diagnostics = {
-                                    -- Get the language server to recognize the `vim` global
-                                    globals = {'vim'},
-                                },
+        opts = {
+            servers = {
+                lua_ls = {
+                    settings = {
+                        Lua = {
+                            completion = {
+                                callSnippet = "Replace"
+                            },
+                            diagnostics = {
+                                -- Get the language server to recognize the `vim` global
+                                globals = {'vim'},
                             },
                         },
-                    },--]]
-                    pyright = {},
-                    ccls = {
-                        init_options = {
-                            clang = {
-                                extraArgs = { "-Wno-c++17-extensions" } ;
-                            };
-                        }
                     },
-                    bashls = {},
-                    cmake = {},
-                    marksman = {},
-                    ltex = {},
-                    nil_ls = {},
-                    vimls = {},
+                },--]]
+                pyright = {},
+                ccls = {
+                    init_options = {
+                        clang = {
+                            extraArgs = { "-Wno-c++17-extensions" } ;
+                        };
+                    }
                 },
+                bashls = {},
+                cmake = {},
+                marksman = {},
+                ltex = {},
+                nil_ls = {},
+                vimls = {},
             },
             -- you can do any additional lsp server setup here
             -- return true if you don't want this server to be setup with lspconfig
@@ -173,13 +182,31 @@
             setup = {
 
             },
-            config = function(_, opts)
-                local servers = opts.servers
-                for server, server_opts in pairs(servers) do
-                    require("lspconfig")[server].setup(server_opts)
-                end
-            end,
         },
+        config = function(_, opts)
+            local capabilities = require('cmp_nvim_lsp').default_capabilities()
+            local servers = opts.servers
+            local function setup(server)
+                local server_opts = vim.tbl_deep_extend("force", {
+                    capabilities = vim.deepcopy(capabilities),
+                }, servers[server] or {})
+                if opts.setup[server] then
+                    if opts.setup[server](server, server_opts) then
+                        return
+                    end
+                elseif opts.setup["*"] then
+                    if opts.setup["*"](server, server_opts) then
+                        return
+                    end
+                end
+                require("lspconfig")[server].setup(server_opts)
+            end
+
+            for server, _ in pairs(servers) do
+                setup(server)
+            end
+        end,
+    },
 
     {
         "nvim-tree/nvim-tree.lua",
@@ -213,7 +240,7 @@
         opts = {
             options = {
                 icons_enabled = true,
-                theme  = "auto"
+                theme = "auto"
             },
         },
     },
@@ -358,18 +385,71 @@
         end,
     },
 
+
     {
         "L3MON4D3/LuaSnip",
         build = "make install_jsregexp",
         init = function()
+            local ls = require "luasnip"
+            vim.keymap.set({"i"}, "<C-K>", function() ls.expand() end, {silent = true})
+            vim.keymap.set({"i", "s"}, "<C-L>", function() ls.jump( 1) end, {silent = true})
+            vim.keymap.set({"i", "s"}, "<C-J>", function() ls.jump(-1) end, {silent = true})
+            vim.keymap.set({"i", "s"}, "<C-E>", function()
+                if ls.choice_active() then
+                ls.change_choice(1)
+                    end
+            end, {silent = true})
         end,
-    }
+    },
+
+    {
+        "hrsh7th/nvim-cmp",
+        event = { "BufReadPre", "BufNewFile" },
+        dependencies = {
+            "neovim/nvim-lspconfig",
+            "hrsh7th/cmp-nvim-lsp",
+            "hrsh7th/cmp-buffer",
+            "hrsh7th/cmp-path",
+            "hrsh7th/cmp-cmdline",
+            "L3MON4D3/LuaSnip",
+            "saadparwaiz1/cmp_luasnip",
+        },
+        opts = function()
+            local cmp = require("cmp")
+            return {
+                snippet = {
+                    expand = function(args)
+                        require('luasnip').lsp_expand(args.body)
+                    end,
+                },
+                sources = cmp.config.sources(
+                    {
+                        { name = 'nvim_lsp' },
+                        { name = 'luasnip' }, -- For luasnip users.
+                    },
+
+                    {
+                        { name = "buffer" },
+                        { name = "path" },
+                    }
+                ),
+            }
+        end,
+    },
+
 }
 
 local opts = {
+    checker = {
+        enabled = true,
+    },
     install = {
         missing = true,
         colorscheme = { "catppuccin" }
+    },
+    defaults = {
+        lazy = false,
+        version = false,
     },
 }
 

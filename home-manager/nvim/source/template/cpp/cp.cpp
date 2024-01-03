@@ -1,4 +1,3 @@
-;; cpp
 /* 
  * Created : {{_date_}} {{_author_}}
  * Time complexity : O()

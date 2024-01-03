@@ -4,5 +4,6 @@
         ./programlangs
         ./nix
         ./pdf
+        ./utils
     ];
 }

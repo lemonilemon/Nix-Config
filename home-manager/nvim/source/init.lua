@@ -224,6 +224,10 @@ local plugins = {
                 nil_ls = {},
                 vimls = {},
                 rust_analyzer = {
+                    settings = {
+                        ["rust-analyzer"] = {},
+                    },
+                },
             },
             -- you can do any additional lsp server setup here
             -- return true if you don't want this server to be setup with lspconfig
@@ -538,7 +542,27 @@ local plugins = {
         opts = {
             disable_when_zoomed = true,
         },
-    }
+    },
+
+    {
+        "nvim-neorg/neorg",
+        ft = "norg",
+        build = ":Neorg sync-parsers",
+        dependencies = { "nvim-lua/plenary.nvim" },
+        opts = {
+            load = {
+                ["core.defaults"] = {}, -- Loads default behaviour
+                ["core.concealer"] = {}, -- Adds pretty icons to your documents
+                ["core.dirman"] = { -- Manages Neorg workspaces
+                    config = {
+                        workspaces = {
+                            notes = "~/notes",
+                        },
+                    },
+                },
+            },
+        },
+    },
 }
 
 local opts = {

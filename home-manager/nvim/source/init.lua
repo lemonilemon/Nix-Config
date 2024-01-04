@@ -86,10 +86,10 @@ map("n", "<C-h>", ":NvimTmuxNavigateLeft<CR>", mapopt)
 map("n", "<C-j>", ":NvimTmuxNavigateDown<CR>", mapopt)
 map("n", "<C-k>", ":NvimTmuxNavigateUp<CR>", mapopt)
 map("n", "<C-l>", ":NvimTmuxNavigateRight<CR>", mapopt)
-map('i', 'jj', '<ESC>', mapopt)
-map('n', '<F6>', ':RunCode<CR>', mapopt)
-map('n', '<F7>', ":Template ", { noremap = true })
-
+map('i', "jj", "<ESC>", mapopt)
+map('n', "<F6>", ":RunCode<CR>", mapopt)
+map('n', "<F7>", ":Template ", { noremap = true })
+map('n', "<F8>", ":LazyGit<CR>", mapopt)
 
 local plugins = {
     {
@@ -288,6 +288,17 @@ local plugins = {
                 icons_enabled = true,
                 theme = "auto"
             },
+        },
+    },
+
+    {
+        "kdheepak/lazygit.nvim",
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+        },
+        cmd = {
+            "LazyGit",
+            "LazyGitConfig",
         },
     },
 

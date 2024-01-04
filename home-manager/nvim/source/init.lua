@@ -216,6 +216,7 @@ local plugins = {
                         };
                     }
                 },
+                tsserver = {},
                 bashls = {},
                 cmake = {},
                 marksman = {},

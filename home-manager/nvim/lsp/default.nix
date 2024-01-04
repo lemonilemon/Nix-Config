@@ -12,5 +12,6 @@
         nil # nix
         nodePackages.vim-language-server # vim
         rust-analyzer # rust
+        nodePackages.typescript-language-server # typescript
     ];
 }

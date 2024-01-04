@@ -11,6 +11,7 @@
         neofetch
         ripgrep
         direnv
+        nix-direnv
 
         # package manager
         yarn
@@ -46,6 +47,13 @@
                 theme = "Catppuccin-mocha";
             };
         };
+
+        direnv = {
+            enable = true;
+            enableZshIntegration = true;
+            nix-direnv.enable = true;
+        };
+
         zathura = {
             enable = true;
             options = {

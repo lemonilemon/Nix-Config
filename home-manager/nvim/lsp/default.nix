@@ -13,5 +13,7 @@
         nodePackages.vim-language-server # vim
         rust-analyzer # rust
         nodePackages.typescript-language-server # typescript
+        taplo # toml toolkit
+        vscode-langservers-extracted # css, html, json
     ];
 }

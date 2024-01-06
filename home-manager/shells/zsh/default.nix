@@ -48,6 +48,12 @@
             fi
         '';
         initExtra = ''
+            # To auto start tmux
+            if [ -z "$TMUX" ]
+            then
+                tmux attach -t ${username} || tmux new -s ${username} 
+            fi
+ 
             # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
             [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
             # For direnv to work properly.

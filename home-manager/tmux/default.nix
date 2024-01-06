@@ -8,6 +8,8 @@
         keyMode = "vi";
         mouse = true;
         baseIndex = 1;
+        terminal = "screen-256color";
+        prefix = "C-Space";
         plugins = with pkgs; [
             tmuxPlugins.yank 
             {
@@ -17,13 +19,6 @@
             tmuxPlugins.sensible
         ];
         extraConfig = ''
-            set -g default-terminal screen-256color
-
-            # use C-Space
-            unbind C-b
-            set -g prefix C-Space
-            bind C-Space send-prefix
-
             # Vim style pane selection
             bind h select-pane -L
             bind j select-pane -D 

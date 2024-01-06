@@ -54,6 +54,12 @@
             nix-direnv.enable = true;
         };
 
+        fzf = {
+            enable = true;
+            enableZshIntegration = true;
+            tmux.enableShellIntegration = true;
+        };
+
         zathura = {
             enable = true;
             options = {

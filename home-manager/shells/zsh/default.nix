@@ -48,11 +48,8 @@
             fi
         '';
         initExtra = ''
-            # To auto start tmux
-            if [ -z "$TMUX" ]
-            then
-                tmux attach -t ${username} || tmux new -s ${username} 
-            fi
+            export LC_ALL=en_US.UTF-8
+            export LANG="UTF-8"
  
             # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
             [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

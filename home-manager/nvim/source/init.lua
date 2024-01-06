@@ -506,17 +506,12 @@ local plugins = {
                         require('luasnip').lsp_expand(args.body)
                     end,
                 },
-                sources = cmp.config.sources(
-                    {
-                        { name = 'nvim_lsp' },
-                        { name = 'luasnip' }, -- For luasnip users.
-                    },
-
-                    {
-                        { name = "buffer" },
-                        { name = "path" },
-                    }
-                ),
+                sources = cmp.config.sources({
+                    { name = "nvim_lsp" },
+                    { name = "luasnip" }, -- For luasnip users.
+                    { name = "buffer" },
+                    { name = "path" },
+                }),
                 mapping = {
                     ["<Tab>"] = cmp.mapping(function(fallback)
                       if cmp.visible() then
@@ -578,6 +573,16 @@ local plugins = {
             },
         },
     },
+
+    -- {
+        --"Exafunction/codeium.nvim",
+        --event = "VeryLazy",
+        --dependencies = {
+            --"nvim-lua/plenary.nvim",
+            --"hrsh7th/nvim-cmp",
+        --},
+        --opts = {},
+    --},
 }
 
 local opts = {

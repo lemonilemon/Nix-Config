@@ -82,10 +82,6 @@ vim.o.timeoutlen = 200
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
-map("n", "<C-h>", ":NvimTmuxNavigateLeft<CR>", mapopt)
-map("n", "<C-j>", ":NvimTmuxNavigateDown<CR>", mapopt)
-map("n", "<C-k>", ":NvimTmuxNavigateUp<CR>", mapopt)
-map("n", "<C-l>", ":NvimTmuxNavigateRight<CR>", mapopt)
 map('i', "jj", "<ESC>", mapopt)
 map('n', "<F6>", ":RunCode<CR>", mapopt)
 map('n', "<F7>", ":Template ", { noremap = true })
@@ -542,19 +538,6 @@ local plugins = {
     },
 
     {
-        "alexghergh/nvim-tmux-navigation",
-        cmd = {
-            "NvimTmuxNavigateLeft",
-            "NvimTmuxNavigateDown",
-            "NvimTmuxNavigateRight",
-            "NvimTmuxNavigateUp",
-        },
-        opts = {
-            disable_when_zoomed = true,
-        },
-    },
-
-    {
         "nvim-neorg/neorg",
         ft = "norg",
         build = ":Neorg sync-parsers",
@@ -574,6 +557,7 @@ local plugins = {
         },
     },
 
+    -- codeium with some issues
     -- {
         --"Exafunction/codeium.nvim",
         --event = "VeryLazy",

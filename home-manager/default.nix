@@ -9,7 +9,6 @@
         ./shells
 	    ./git
         ./programs
-        ./tmux
         ./zellij
     ];
     home.stateVersion = "23.05";

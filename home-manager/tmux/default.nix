@@ -2,8 +2,9 @@
     pkgs,
     ...
 }: {
+    # deprecated now
     programs.tmux = {
-        enable = true;
+        enable = false;
         clock24 = true;
         keyMode = "vi";
         mouse = true;

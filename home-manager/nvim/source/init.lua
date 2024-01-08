@@ -11,9 +11,8 @@ if not vim.loop.fs_stat(lazypath) then
 end
 
 vim.opt.rtp:prepend(lazypath)
-
 vim.cmd([[
-    set ai 
+    set ai
     " ignore case
     set ic
     set enc=utf8 
@@ -297,11 +296,42 @@ local plugins = {
 
     {
         "nvim-lualine/lualine.nvim",
+        dependencies = {
+            { "AndreM222/copilot-lualine" },
+        },
         opts = {
             options = {
                 icons_enabled = true,
-                theme = "auto"
+                theme = "auto",
+                component_separators = { left = '', right = '' },
+                section_separators = { left = '', right = '' },
+                disabled_filetypes = {},
+                always_divide_middle = true
             },
+            sections = {
+                lualine_a = { 'mode' },
+                lualine_b = { 'branch', 'diff',
+                    {
+                        'diagnostics',
+                        sources = { "nvim_diagnostic" },
+                        symbols = { error = ' ', warn = ' ', info = ' ', hint = ' ' }
+                    }
+                },
+                lualine_c = { 'filename' },
+                lualine_x = { 'copilot' ,'encoding', 'fileformat', 'filetype' }, -- I added copilot here
+                lualine_y = { 'progress' },
+                lualine_z = { 'location' }
+            },
+            inactive_sections = {
+                lualine_a = {},
+                lualine_b = {},
+                lualine_c = { 'filename' },
+                lualine_x = { 'location' },
+                lualine_y = {},
+                lualine_z = {}
+            },
+            tabline = {},
+            extensions = {}
         },
     },
 
@@ -503,11 +533,15 @@ local plugins = {
                     end,
                 },
                 sources = cmp.config.sources({
+                    { name = "copilot" },
                     { name = "nvim_lsp" },
                     { name = "luasnip" }, -- For luasnip users.
                     { name = "buffer" },
                     { name = "path" },
                 }),
+                experimental = {
+                    ghost_text = true,
+                },
                 mapping = {
                     ["<Tab>"] = cmp.mapping(function(fallback)
                       if cmp.visible() then
@@ -567,6 +601,28 @@ local plugins = {
         --},
         --opts = {},
     --},
+
+    {
+        "zbirenbaum/copilot.lua",
+        dependencies = {
+            {
+                "zbirenbaum/copilot-cmp",
+                event = { "InsertEnter", "LspAttach" },
+                opts = {},
+            },
+            { "AndreM222/copilot-lualine" },
+        },
+        build = ":Copilot auth",
+        event = "InsertEnter",
+        opts = {
+            suggestion = { enabled = false },
+            panel = { enabled = false },
+            filetypes = {
+                markdown = true,
+                help = true,
+            },
+        },
+    },
 }
 
 local opts = {

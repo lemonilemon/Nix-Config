@@ -31,6 +31,7 @@
         # ];
     };
 
-    time.timeZone = "Asia/Taiwan";
+    services.automatic-timezoned.enable = true;
+    time.timeZone = "Asia/Taipei";
     system.stateVersion = "23.05";
 }

@@ -131,6 +131,10 @@ local plugins = {
                 "TelescopeBorder",
                 "LspFloatWinNormal", -- Lsp
                 "LspFloatWinBorder",
+                "DiagnosticVirtualTextError", -- Diagnostic
+                "DiagnosticVirtualTextWarn",
+                "DiagnosticVirtualTextInfo",
+                "DignosticVirtualTextHint",
             },
         },
         init = function()
@@ -174,6 +178,24 @@ local plugins = {
         event = { "BufReadPre", "BufNewFile" },
         dependencies = {
             {
+                "folke/trouble.nvim",
+                event = "VeryLazy",
+                dependencies = { "nvim-tree/nvim-web-devicons" },
+                opts = {
+                    auto_close = true, -- automatically close the list when you have no diagnostics
+                    auto_fold = false,
+                    signs = {
+                        error = "",
+                        warning = "",
+                        hint = "",
+                        information = "",
+                        other = "",
+                    },
+                },
+                use_diagnostic_signs = false,
+            },
+
+            {
                 "folke/neodev.nvim",
                 opts = {
                     experimental = { pathStrict = true },
@@ -189,7 +211,7 @@ local plugins = {
         opts = {
             diagnostics = {
                 underline = true,
-                update_in_insert = false,
+                update_in_insert = true,
                 virtual_text = {
                     spacing = 4,
                     source = "if_many",
@@ -596,6 +618,15 @@ local plugins = {
                 help = true,
             },
         },
+    },
+
+    {
+        'numToStr/Comment.nvim',
+        dependencies = {
+            { "JoosepAlviste/nvim-ts-context-commentstring" },
+        },
+        event = "VeryLazy",
+        opts = {},
     },
 }
 

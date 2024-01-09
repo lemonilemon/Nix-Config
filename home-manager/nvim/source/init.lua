@@ -493,17 +493,10 @@ local plugins = {
         "L3MON4D3/LuaSnip",
         lazy = true,
         build = "make install_jsregexp",
-        init = function()
-            local ls = require "luasnip"
-            vim.keymap.set({"i"}, "<C-K>", function() ls.expand() end, {silent = true})
-            vim.keymap.set({"i", "s"}, "<C-L>", function() ls.jump( 1) end, {silent = true})
-            vim.keymap.set({"i", "s"}, "<C-J>", function() ls.jump(-1) end, {silent = true})
-            vim.keymap.set({"i", "s"}, "<C-E>", function()
-                if ls.choice_active() then
-                    ls.change_choice(1)
-                end
-            end, {silent = true})
-        end,
+        opts = {
+            history = true,
+            delete_check_events = "TextChanged",
+        },
     },
 
     {
@@ -519,17 +512,12 @@ local plugins = {
             "saadparwaiz1/cmp_luasnip",
         },
         opts = function()
-            local has_words_before = function()
-                unpack = unpack or table.unpack
-                local line, col = unpack(vim.api.nvim_win_get_cursor(0))
-                return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match("%s") == nil
-            end
             local luasnip = require("luasnip")
             local cmp = require("cmp")
             return {
                 snippet = {
                     expand = function(args)
-                        require('luasnip').lsp_expand(args.body)
+                        luasnip.lsp_expand(args.body)
                     end,
                 },
                 sources = cmp.config.sources({
@@ -540,14 +528,18 @@ local plugins = {
                     { name = "path" },
                 }),
                 experimental = {
-                    ghost_text = true,
+                    ghost_text = {
+                        hl_group = "CmpGhostText",
+                    },
                 },
                 mapping = cmp.mapping.preset.insert({
-                  ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-                  ['<C-f>'] = cmp.mapping.scroll_docs(4),
-                  ['<C-Space>'] = cmp.mapping.complete(),
-                  ['<C-e>'] = cmp.mapping.abort(),
-                  ['<CR>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+                    ["<C-j>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+                    ["<C-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+                    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+                    ['<C-f>'] = cmp.mapping.scroll_docs(4),
+                    ['<C-Space>'] = cmp.mapping.complete(),
+                    ['<C-CR>'] = cmp.mapping.abort(),
+                    ['<CR>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
                 }),
             }
         end,
@@ -595,7 +587,7 @@ local plugins = {
             { "AndreM222/copilot-lualine" },
         },
         build = ":Copilot auth",
-        event = "InsertEnter",
+        event = "VeryLazy",
         opts = {
             suggestion = { enabled = false },
             panel = { enabled = false },

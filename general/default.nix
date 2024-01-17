@@ -5,5 +5,6 @@
         ./nix
         ./pdf
         ./utils
+        ./secrets
     ];
 }

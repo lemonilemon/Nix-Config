@@ -46,6 +46,10 @@ vim.cmd([[
     set softtabstop=-1
     set shiftwidth=4
     set smartindent
+    "" Encoding 
+    set fileencodings=utf-8,ucs-bom,gb18030,gbk,gb2312,cp936
+    set termencoding=utf-8
+    set encoding=utf-8
     "" Line number 
     " add line number
     set number 
@@ -57,7 +61,7 @@ vim.cmd([[
         autocmd BufLeave,FocusLost,InsertEnter,WinLeave * if &nu | set nornu | endif
     augroup END
     "" Clipboard
-    set clipboard+=unnamedplus
+    set clipboard=unnamedplus
     let g:clipboard = {
     \	'name': 'wsl-clip',
     \	'copy': {

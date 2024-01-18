@@ -12,6 +12,7 @@
         ripgrep
         direnv
         nix-direnv
+        gnumake
 
         # package manager
         yarn

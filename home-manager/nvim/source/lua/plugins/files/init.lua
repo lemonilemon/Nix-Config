@@ -1,7 +1,7 @@
 local files = {
     -- put your files here
-    "catppuccin",
-    "transparent",
+    "vimtex",
+    "neorg",
 };
 
 local ret = {
@@ -10,7 +10,7 @@ local ret = {
 
 -- load plugins
 for _, file in ipairs(files) do
-    table.insert(ret, require("plugins.colorscheme." .. file));
+    table.insert(ret, require("plugins.files." .. file));
 end;
 
 return ret;

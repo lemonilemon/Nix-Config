@@ -1,5 +1,5 @@
 local files = {
-    -- put your plugins here
+    -- put your files here
     "copilot",
     "lsp",
     "treesitter",
@@ -9,7 +9,9 @@ local files = {
     "template",
 };
 
-local ret = {};
+local ret = {
+    -- put your plugins here
+};
 
 -- load plugins
 for _, file in ipairs(files) do

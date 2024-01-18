@@ -22,9 +22,10 @@
         home-manager,
         ... 
     }: {
-        nixosConfigurations = {
+        nixosConfigurations = let 
+            username = "lemonilemon";
+        in {
             wsl = let 
-                username = "lemonilemon";
                 hostname = "wsl";
             in 
             nixpkgs.lib.nixosSystem {
@@ -38,7 +39,10 @@
                     home-manager.nixosModules.home-manager {
                         home-manager.useGlobalPkgs = true;
                         home-manager.useUserPackages = true;
-                        home-manager.extraSpecialArgs = {inherit inputs username hostname;};
+                        home-manager.extraSpecialArgs = {
+                            inherit inputs username hostname;
+                            WSL = true;
+                        };
                         home-manager.users.${username} = import ./home-manager;
                     }
 

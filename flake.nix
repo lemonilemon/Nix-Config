@@ -1,5 +1,5 @@
 {
-    description = "Lemonilemon's NixOS Flake";
+    description = "Lemonilemon's Nix Flake";
 
 
     inputs = {
@@ -25,8 +25,8 @@
         nixosConfigurations = let 
             username = "lemonilemon";
         in {
-            wsl = let 
-                hostname = "wsl";
+            NixOS-wsl = let 
+                hostname = "NixOS-wsl";
             in 
             nixpkgs.lib.nixosSystem {
                 system = "x86_64-linux";
@@ -42,10 +42,10 @@
                         home-manager.extraSpecialArgs = {
                             inherit inputs username hostname;
                             WSL = true;
+                            GUI = false;
                         };
                         home-manager.users.${username} = import ./home-manager;
                     }
-
                     # customized settings
                     ./hosts/wsl
 		            ./general

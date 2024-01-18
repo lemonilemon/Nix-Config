@@ -19,8 +19,6 @@
             };
         };
         lazygit.enable = true;
-        gh = {
-            enable = true;
-        };
+        gh.enable = true;
     };
 }

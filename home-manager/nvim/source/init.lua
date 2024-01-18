@@ -11,85 +11,11 @@ if not vim.loop.fs_stat(lazypath) then
 end
 
 vim.opt.rtp:prepend(lazypath)
-vim.cmd([[
-    set ai
-    " ignore case
-    set ic
-    set enc=utf8 
-    set mouse=a 
-    set autochdir 
-    set autowrite 
-    set nobackup
-    "" delays
-    set timeout ttimeout " separte mapping and keycode time
-    set timeoutlen=500 " 500ms
-    set ttimeoutlen=20 " 20ms
-    "" files
-    set noswapfile
-    set undofile
-    set undodir=~/.config/nvim/undodir
-    "" search
-    set incsearch
-    set nohlsearch
-    "" Sound
-    set visualbell
-    "" Style 
-    syntax enable
-    set background=dark
-    hi Normal guibg=None ctermbg=None
-    hi NonText guibg=None ctermbg=None
-    set termguicolors
-    hi CursorLine cterm=underline
-    "" Indentation 
-    set expandtab
-    set tabstop=4
-    set softtabstop=-1
-    set shiftwidth=4
-    set smartindent
-    "" Encoding 
-    set fileencodings=utf-8,ucs-bom,gb18030,gbk,gb2312,cp936
-    set termencoding=utf-8
-    set encoding=utf-8
-    "" Line number 
-    " add line number
-    set number 
-    " columns used for the line number
-    set numberwidth=4
-    augroup numbertoggle
-        autocmd! 
-        autocmd BufEnter,FocusGained,InsertLeave,WinEnter * if &nu && mode() != "i" | set rnu | endif 
-        autocmd BufLeave,FocusLost,InsertEnter,WinLeave * if &nu | set nornu | endif
-    augroup END
-    "" Clipboard
-    set clipboard=unnamedplus
-    let g:clipboard = {
-    \	'name': 'wsl-clip',
-    \	'copy': {
-    \		'+': 'clip.exe',
-    \		'*': 'clip.exe',
-    \	},
-    \	'paste': {
-    \      '+': 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
-    \      '*': 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
-    \   },
-    \	'cache_enabled': 0,
-    \}
-]])
+
+require("options.base");
+require("options.keymaps");
 
 -- mappings
-local map = vim.api.nvim_set_keymap
-local mapopt = { noremap = true, silent = true }
-map("n", " ", "<Nop>", mapopt)
-vim.o.timeout = true
-vim.o.timeoutlen = 200
-vim.g.mapleader = " "
-vim.g.maplocalleader = " "
-
-map('i', "jj", "<ESC>", mapopt)
-map('n', "<F6>", ":RunCode<CR>", mapopt)
-map('n', "<F7>", ":Template ", { noremap = true })
-map('n', "<F8>", ":LazyGit<CR>", mapopt)
-
 local plugins = {
     {
         "dstein64/vim-startuptime",
@@ -103,9 +29,7 @@ local plugins = {
         "folke/which-key.nvim",
         event = "VeryLazy",
         -- lazy = true,
-        init = function()
-        end,
-        config = true,
+        config = {},
     },
 
     {
@@ -301,10 +225,6 @@ local plugins = {
             "NvimTreeToggle",
             "NvimTreeFocus",
         },
-        init = function()
-            vim.opt.termguicolors = true
-            map('n', 'tt', ':NvimTreeFocus<CR>', mapopt)
-        end,
         opts = {
             sort_by = "case_sensitive",
             view = {
@@ -381,13 +301,6 @@ local plugins = {
                 build = "make",
             }
         },
-        init = function()
-            map('n', '<leader>ff', ":Telescope find_files<CR>", mapopt)
-            map('n', '<leader>fg', ":Telescope live_grep<CR>", mapopt)
-            map('n', '<leader>fb', ":Telescope buffers<CR>", mapopt)
-            map('n', '<leader>fh', ":Telescope help_tags<CR>", mapopt)
-            map('n', '<leader>ft', ":Telescope find_template<CR>", mapopt)
-        end,
         opts = {
             defaults = {
                 layout_config = {

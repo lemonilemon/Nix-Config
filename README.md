@@ -44,5 +44,3 @@ mv /tmp/configuration ~/nixos-config
 ## In development:
 
 - Previewing Latex and markdown with neovim
-
-- Get rid of vim-plug while using home-manager instead

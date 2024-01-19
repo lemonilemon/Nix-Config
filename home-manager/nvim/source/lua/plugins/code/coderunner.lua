@@ -17,15 +17,15 @@ return {
             python = "python3 -u",
             c = {
                 "cd $dir &&",
-                "gcc $fileName -o $fileNameWithoutExt &&",
-                "$dir/$fileNameWithoutExt &&",
-                "rm $dir/$fileNameWithoutExt",
+                "gcc $fileName -o $fileNameWithoutExt.out &&",
+                "$dir/$fileNameWithoutExt.out &&",
+                "rm $dir/$fileNameWithoutExt.out",
             },
             cpp = {
                 "cd $dir &&",
-                "g++ $fileName -o $fileNameWithoutExt &&",
-                "$dir/$fileNameWithoutExt &&",
-                "rm $dir/$fileNameWithoutExt",
+                "g++ $fileName -o $fileNameWithoutExt.out &&",
+                "$dir/$fileNameWithoutExt.out &&",
+                "rm $dir/$fileNameWithoutExt.out",
             },
             typescript = "deno run",
             rust = {

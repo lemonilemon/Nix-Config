@@ -48,6 +48,20 @@ mv /tmp/configuration ~/nixos-config
 
 - Enjoy your WSL with NixOS!
 
+### In Other Linux Distro
+
+- Install Nix [Single-user installation](https://nixos.org/manual/nix/stable/installation/single-user) 
+
+- For Debian-based distro you might need to install some necessary packages first:
+
+```sh
+sudo apt install curl xz-utils
+```
+
+```sh
+sh <(curl -L https://nixos.org/nix/install) --no-daemon
+```
+
 ---
 
 ## In development:

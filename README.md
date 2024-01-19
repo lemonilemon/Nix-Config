@@ -50,16 +50,16 @@ mv /tmp/configuration ~/nixos-config
 
 ### In Other Linux Distro
 
-- Install Nix [Single-user installation](https://nixos.org/manual/nix/stable/installation/single-user) 
-
 - For Debian-based distro you might need to install some necessary packages first:
 
 ```sh
 sudo apt install curl xz-utils
 ```
+- Install Nix [Single-user installation](https://nixos.org/manual/nix/stable/installation/single-user) 
 
 ```sh
 sh <(curl -L https://nixos.org/nix/install) --no-daemon
+. /home/lemonilemon/.nix-profile/etc/profile.d/nix.sh
 ```
 
 ---

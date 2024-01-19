@@ -15,10 +15,14 @@ wsl --import NixOS .\NixOS\ .\nixos-wsl.tar.gz --version 2
 
 - Enter your distro using the terminal you like
 
+```sh
+wsl -d NixOS
+```
+
 - Set up a channel using:
 
 ```sh
-sudo nix-channel --add https://nixos.org/channels/nixos-23.05 nixos
+sudo nix-channel --add https://nixos.org/channels/nixos-23.11 nixos
 sudo nix-channel --update
 ```
 
@@ -30,6 +34,11 @@ sudo nixos-rebuild switch --flake /tmp/configuration#NixOS-wsl"
 ```
 
 - Restart the WSL, then your configuration should be done
+
+```sh
+wsl -t NixOS
+wsl -d NixOS
+```
 
 - Move the configuration to home directory:
 

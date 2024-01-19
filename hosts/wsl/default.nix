@@ -6,9 +6,9 @@
 }: {
     wsl = {
         enable = true;
-        defaultUser = "${username}";
+        defaultUser = username;
     };
-    networking.hostName = "${hostname}";
+    networking.hostName = hostname;
     programs.zsh.enable = true;
     environment.shells = [pkgs.zsh];
     environment.systemPackages = with pkgs; [
@@ -17,9 +17,9 @@
     security.sudo.wheelNeedsPassword = false;
 
     users.users.${username} = {
-    isNormalUser = true;
-    # FIXME: change your shell here if you don't want zsh
-    shell = pkgs.zsh;
+        isNormalUser = true;
+        # FIXME: change your shell here if you don't want zsh
+        shell = pkgs.zsh;
         extraGroups = [
           "wheel"
         ];

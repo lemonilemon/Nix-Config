@@ -1,10 +1,12 @@
 {    
-     config,
-     username,
-     sys,
-     ... 
+    pkgs, 
+    config,
+    username,
+    sys,
+    ... 
 }: {
     home.file.".p10k.zsh".source = ./.p10k.zsh;
+    users.users.yourname.shell = pkgs.zsh;
     programs.zsh = {
         enable = true;
         shellAliases = {
@@ -48,7 +50,7 @@
             fi
         '';
         initExtra = ''
-            export LC_ALL=en_US.UTF-8
+            export LC_ALL="en_US.UTF-8"
             export LANG="UTF-8"
  
             # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.

@@ -70,6 +70,12 @@ nix-shell -p git --run "git clone https://github.com/lemonilemon/nixos-config.gi
 nix run home-manager/master switch
 ```
 
+- Change your default shell by:
+
+```sh
+chsh -s $(which zsh) $USER
+```
+
 - Restart the WSL, then your configuration should be done
 
 ```sh

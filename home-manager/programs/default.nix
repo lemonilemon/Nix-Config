@@ -13,6 +13,8 @@
         direnv
         nix-direnv
         gnumake
+        curl
+        wget
 
         # package manager
         yarn

@@ -5,6 +5,7 @@
     home.username = "${username}";
     home.homeDirectory = "/home/${username}";
     imports = [ 
+        ./general
         ./nvim
         ./shells
 	    ./git

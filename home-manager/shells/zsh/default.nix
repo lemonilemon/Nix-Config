@@ -1,7 +1,7 @@
 {    
      config,
      username,
-     hostname,
+     sys,
      ... 
 }: {
     home.file.".p10k.zsh".source = ./.p10k.zsh;
@@ -16,7 +16,7 @@
             ".." = "cd ..";
             update="cd /home/${username}/nixos-config 
                     git pull
-                    sudo nixos-rebuild switch --flake .#${hostname}
+                    sudo nixos-rebuild switch --flake .#${sys}
                     nix flake update
                     source /home/${username}/.zshrc
                     zplug update";

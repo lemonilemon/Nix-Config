@@ -73,6 +73,7 @@ nix run home-manager/master switch
 - Change your default shell by:
 
 ```sh
+echo $(which zsh) | sudo tee -a /etc/shells
 chsh -s $(which zsh) $USER
 ```
 

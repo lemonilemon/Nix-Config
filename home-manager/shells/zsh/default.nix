@@ -6,7 +6,6 @@
     ... 
 }: {
     home.file.".p10k.zsh".source = ./.p10k.zsh;
-    users.users.yourname.shell = pkgs.zsh;
     programs.zsh = {
         enable = true;
         shellAliases = {

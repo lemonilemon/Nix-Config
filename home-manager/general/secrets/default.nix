@@ -1,6 +1,9 @@
 { 
+    pkgs,
     ... 
 }: {
     nixpkgs.config.allowUnfree = true;
-    programs._1password.enable = true;
+    home.packages = with pkgs; [
+        _1password
+    ];
 }

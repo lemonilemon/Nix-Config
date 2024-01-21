@@ -22,7 +22,7 @@ wsl -d NixOS
 - Set up a channel using:
 
 ```sh
-sudo nix-channel --add https://nixos.org/channels/nixos-23.11 nixos
+sudo nix-channel --add https://nixos.org/channels/nixos-unstable nixos
 sudo nix-channel --update
 ```
 
@@ -60,6 +60,21 @@ sudo apt install curl xz-utils
 ```sh
 sh <(curl -L https://nixos.org/nix/install) --no-daemon
 . /home/lemonilemon/.nix-profile/etc/profile.d/nix.sh
+```
+- Clone this repository and apply the configuration by: 
+
+```sh
+mkdir -p ~/.config/nix
+echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+nix-shell -p git --run "git clone https://github.com/lemonilemon/nixos-config.git ~/.config/home-manager"
+nix run home-manager/master switch
+```
+
+- Restart the WSL, then your configuration should be done
+
+```sh
+wsl -t <DistroName>
+wsl -d <DistroName>
 ```
 
 ---

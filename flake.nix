@@ -37,6 +37,7 @@
             ];
             extraSpecialArgs = { inherit inputs username; };
         };
+
         nixosConfigurations = let 
             hostname = "SpaceNix";
         in {
@@ -53,7 +54,11 @@
                     home-manager.nixosModules.home-manager {
                         home-manager.useGlobalPkgs = true;
                         home-manager.useUserPackages = true;
-                        home-manager.extraSpecialArgs = {inherit inputs username hostname sys;};
+                        home-manager.extraSpecialArgs = {
+                            inherit inputs username hostname sys;
+                            WSL = true;
+                            GUI = false;
+                        };
                         home-manager.users.${username} = import ./home-manager;
                     }
                     # customized settings

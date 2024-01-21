@@ -26,18 +26,25 @@
     }: let 
         eachSystem = nixpkgs.lib.genAttrs (import systems);
         username = "lemonilemon";
-        pkgs = eachSystem (system: nixpkgs.legacyPackages.${system});
+        system = "x86_64-linux";
+        pkgs = nixpkgs.legacyPackages.${system};
     in {
         formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
 
         # For non-NixOS
-        homeManagerConfiguration.${username} = home-manager.lib.homeManagerConfiguration {
+        homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
             inherit pkgs;
+
             modules = [ 
                 ./home-manager 
-                ./general
             ];
-            extraSpecialArgs = { inherit inputs username; };
+
+            extraSpecialArgs = { 
+                inherit inputs username; 
+                sys = "wsl";
+                WSL = true;
+                GUI = false;
+            };
         };
 
         # For NixOS

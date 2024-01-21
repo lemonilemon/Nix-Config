@@ -40,8 +40,8 @@
         nixosConfigurations = let 
             hostname = "SpaceNix";
         in {
-            wsl = let  
-                sys = "wsl";
+            NixOS-wsl = let  
+                sys = "NixOS-wsl";
             in nixpkgs.lib.nixosSystem {
                 system = "x86_64-linux";
                 specialArgs = { inherit inputs username hostname; };

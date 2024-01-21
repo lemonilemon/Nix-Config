@@ -29,6 +29,8 @@
         pkgs = eachSystem (system: nixpkgs.legacyPackages.${system});
     in {
         formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
+
+        # For non-NixOS
         homeManagerConfiguration.${username} = home-manager.lib.homeManagerConfiguration {
             inherit pkgs;
             modules = [ 
@@ -38,6 +40,7 @@
             extraSpecialArgs = { inherit inputs username; };
         };
 
+        # For NixOS
         nixosConfigurations = let 
             hostname = "SpaceNix";
         in {

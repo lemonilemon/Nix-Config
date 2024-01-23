@@ -77,7 +77,7 @@ zsh
 ```sh
 echo $(which zsh) | sudo tee -a /etc/shells
 chsh -s $(which zsh) $USER
-sudo locale-gen
+sudo locale-gen # if you don't set up your locale first.
 ```
 
 - Restart the WSL, then your configuration should be done

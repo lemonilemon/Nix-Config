@@ -69,6 +69,7 @@ mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 nix-shell -p git --run "git clone https://github.com/lemonilemon/nixos-config.git ~/.config/home-manager"
 nix run home-manager/master switch
+zsh
 ```
 
 - Change your default shell and set up locale by:

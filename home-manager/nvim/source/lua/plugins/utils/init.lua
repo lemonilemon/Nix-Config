@@ -3,6 +3,7 @@ local files = {
     -- put your files here
     "telescope",
     "flash",
+    "outline",
 };
 
 local ret = {

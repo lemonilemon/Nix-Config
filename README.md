@@ -53,6 +53,7 @@ mv /tmp/configuration ~/nixos-config
 - For Debian-based distro you might need to install some necessary packages first:
 
 ```sh
+sudo apt update
 sudo apt install curl xz-utils
 ```
 - Install Nix [Single-user installation](https://nixos.org/manual/nix/stable/installation/single-user) 

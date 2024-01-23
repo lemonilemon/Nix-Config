@@ -47,15 +47,15 @@
             if [[ -r "''${XDG_CACHE_HOME:-''$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
               source "''${XDG_CACHE_HOME:-''$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
             fi
+            # For non-NixOS distros.
+            if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+ 
         '';
         initExtra = ''
             export LANGUAGE=en_US.UTF-8
             export LC_ALL=en_US.UTF-8
             export LANG=en_US.UTF-8
             export LC_CTYPE=en_US.UTF-8
-            # For non-NixOS distros.
-            if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
- 
             # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
             [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
             # For direnv to work properly.

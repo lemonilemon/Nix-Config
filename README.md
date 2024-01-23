@@ -59,7 +59,7 @@ sudo apt install curl xz-utils
 
 ```sh
 sh <(curl -L https://nixos.org/nix/install) --no-daemon
-. /home/lemonilemon/.nix-profile/etc/profile.d/nix.sh
+. ~/.nix-profile/etc/profile.d/nix.sh
 ```
 - Clone this repository and apply the configuration by: 
 

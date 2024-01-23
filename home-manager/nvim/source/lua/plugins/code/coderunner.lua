@@ -34,15 +34,10 @@ return {
                 "$dir/$fileNameWithoutExt"
             },
             tex = function()
-                vim.api.nvim_command("VimtexCompile")
+                vim.api.nvim_command("VimtexCompile");
             end,
             markdown = function()
-                require("code_runner.hooks.preview_pdf").run {
-                    command = "pandoc",
-                    args = { "$fileName", "-o", "$tmpFile", "-t", "pdf" },
-                    preview_cmd = "wsl-open > /dev/null",
-                    overwrite_output = "/tmp",
-                }
+                vim.api.nvim_command("MarkdownPreview");
             end,
         },
     },

@@ -70,11 +70,12 @@ nix-shell -p git --run "git clone https://github.com/lemonilemon/nixos-config.gi
 nix run home-manager/master switch
 ```
 
-- Change your default shell by:
+- Change your default shell and set up locale by:
 
 ```sh
 echo $(which zsh) | sudo tee -a /etc/shells
 chsh -s $(which zsh) $USER
+sudo locale-gen en_US.UTF-8
 ```
 
 - Restart the WSL, then your configuration should be done

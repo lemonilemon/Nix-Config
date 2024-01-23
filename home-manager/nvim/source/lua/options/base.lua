@@ -8,6 +8,7 @@ local autocmd = api.nvim_create_autocmd;
 opt.ai = true; -- auto indent
 opt.ic = true; -- ignore case
 opt.mouse = "a"; -- enable mouse
+opt.conceallevel = 1;
 -- use utf-8 encoding
 opt.encoding = "utf-8";
 opt.fileencoding = "utf-8";

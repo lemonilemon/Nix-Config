@@ -3,5 +3,6 @@
         ./programlangs
         ./pdf
         ./secrets
+        ./fonts
     ];
 }

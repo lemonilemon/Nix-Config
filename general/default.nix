@@ -6,5 +6,6 @@
         ./pdf
         ./utils
         ./secrets
+        ./fonts
     ];
 }

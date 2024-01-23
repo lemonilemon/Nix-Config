@@ -15,6 +15,7 @@
                 core = {
                     defaultBranch = "main";
                     sshCommand = if WSL then "ssh.exe" else "ssh";
+                    pull.rebase = true;
                 };
             };
         };

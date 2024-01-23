@@ -54,7 +54,7 @@ mv /tmp/configuration ~/nixos-config
 
 ```sh
 sudo apt update
-sudo apt install curl xz-utils
+sudo apt install curl xz-utils git
 ```
 - Install Nix [Single-user installation](https://nixos.org/manual/nix/stable/installation/single-user) 
 
@@ -67,8 +67,9 @@ sh <(curl -L https://nixos.org/nix/install) --no-daemon
 ```sh
 mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
-nix-shell -p git --run "git clone https://github.com/lemonilemon/nixos-config.git ~/.config/home-manager"
+git clone https://github.com/lemonilemon/nixos-config.git ~/.config/home-manager
 nix run home-manager/master switch
+zsh
 ```
 
 - Change your default shell and set up locale by:
@@ -76,7 +77,7 @@ nix run home-manager/master switch
 ```sh
 echo $(which zsh) | sudo tee -a /etc/shells
 chsh -s $(which zsh) $USER
-sudo locale-gen en_US.UTF-8
+sudo locale-gen # if you don't set up your locale first.
 ```
 
 - Restart the WSL, then your configuration should be done

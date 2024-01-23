@@ -1,10 +1,12 @@
-# nixos-config
+# Nix-Config
 
 This repository is maintained by lemonilemon. 
 
 ## Quick start
 
-### In WSL (refers to [nixos-wsl-starter](https://github.com/LGUG2Z/nixos-wsl-starter))
+### For NixOS
+
+#### In WSL (refers to [nixos-wsl-starter](https://github.com/LGUG2Z/nixos-wsl-starter))
 - Get the latest [NixOS-WSL](https://github.com/nix-community/NixOS-WSL/releases/latest), then:
 
 - Install it in powershell or cmd using:

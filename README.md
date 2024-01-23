@@ -76,7 +76,7 @@ nix run home-manager/master switch
 ```sh
 echo $(which zsh) | sudo tee -a /etc/shells
 chsh -s $(which zsh) $USER
-sudo locale-gen en_US.UTF-8
+sudo locale-gen
 ```
 
 - Restart the WSL, then your configuration should be done

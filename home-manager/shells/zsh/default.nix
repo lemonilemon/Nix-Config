@@ -14,6 +14,12 @@
             ls="ls --color=auto";
             lg="lazygit";
             ".." = "cd ..";
+            update="cd /home/${username}/nixos-config 
+                    git pull
+                    sudo nixos-rebuild switch --flake .#${sys}
+                    nix flake update
+                    source /home/${username}/.zshrc
+                    zplug update";
         };
         enableCompletion = false;
         zplug = {
@@ -45,17 +51,6 @@
  
         '';
         initExtra = ''
-            # Functions for zsh
-            update() {
-                cd /home/${username}/nixos-config 
-                git pull
-                sudo nixos-rebuild switch --flake .#${sys}
-                nix flake update
-                source /home/${username}/.zshrc
-                zplug update
-                nvim --headless "+Lazy! sync" +qa
-            }
-
             export LANGUAGE=en_US.UTF-8
             export LC_ALL=en_US.UTF-8
             export LANG=en_US.UTF-8

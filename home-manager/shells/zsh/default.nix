@@ -14,12 +14,13 @@
             ls="ls --color=auto";
             lg="lazygit";
             ".." = "cd ..";
-            update="cd /home/${username}/nixos-config 
+            update=''cd /home/${username}/nixos-config 
                     git pull
                     sudo nixos-rebuild switch --flake .#${sys}
                     nix flake update
                     source /home/${username}/.zshrc
-                    zplug update";
+                    zplug update
+                    nvim --headless "+Lazy! sync" +qa'';
         };
         enableCompletion = false;
         zplug = {

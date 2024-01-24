@@ -21,8 +21,10 @@ return {
             "hrsh7th/cmp-cmdline",
             "L3MON4D3/LuaSnip",
             "saadparwaiz1/cmp_luasnip",
+            "onsails/lspkind.nvim",
         },
         opts = function()
+            local lspkind = require("lspkind")
             local luasnip = require("luasnip")
             local cmp = require("cmp")
             return {
@@ -52,6 +54,14 @@ return {
                     ['<C-CR>'] = cmp.mapping.abort(),
                     ['<CR>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
                 }),
+                formatting = {
+                    format = lspkind.cmp_format({
+                        mode = "symbol",
+                        maxwidth = 50,
+                        ellipsis_char = "...",
+                        show_labelDetails = true,
+                    }),
+                },
             }
         end,
     },

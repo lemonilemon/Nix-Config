@@ -19,3 +19,5 @@ map('n', '<leader>fh', ":Telescope help_tags<CR>", mapopt)
 map('n', '<leader>ft', ":Telescope find_template<CR>", mapopt)
 
 map("n", "<F5>", ":Outline<CR>", mapopt);
+
+map("n", "<leader>nd", ":Noice dismiss<CR>", mapopt);

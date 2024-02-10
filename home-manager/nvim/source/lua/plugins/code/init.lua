@@ -7,6 +7,7 @@ local files = {
     "comment",
     "coderunner",
     "template",
+    "conform",
 };
 
 local ret = {

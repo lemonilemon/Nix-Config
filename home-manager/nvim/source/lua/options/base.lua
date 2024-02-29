@@ -5,8 +5,8 @@ local api = vim.api;
 local augroup = api.nvim_create_augroup;
 local autocmd = api.nvim_create_autocmd;
 
-opt.ai = true; -- auto indent
-opt.ic = true; -- ignore case
+opt.ai = true;   -- auto indent
+opt.ic = true;   -- ignore case
 opt.mouse = "a"; -- enable mouse
 opt.conceallevel = 1;
 -- use utf-8 encoding
@@ -24,6 +24,8 @@ opt.backup = false;
 opt.swapfile = false;
 opt.undofile = true;
 opt.undodir = { fn.expand("~/.config") .. "/nvim/undo" };
+-- filetype
+vim.g.tex_flavor = "latex";
 -- search
 opt.incsearch = true;
 opt.hlsearch = false;
@@ -43,28 +45,28 @@ opt.number = true;
 opt.numberwidth = 4;
 local numbertogglegroup = augroup("numbertoggle", { clear = true });
 autocmd({
-        "BufEnter",
-        "FocusGained",
-        "InsertLeave",
-        "WinEnter",
-    }, {
-        pattern = '*',
-        callback = function()
-            vim.opt.relativenumber = true;
-        end,
-        group = numbertogglegroup,
+    "BufEnter",
+    "FocusGained",
+    "InsertLeave",
+    "WinEnter",
+}, {
+    pattern = '*',
+    callback = function()
+        vim.opt.relativenumber = true;
+    end,
+    group = numbertogglegroup,
 });
 autocmd({
-        "BufLeave",
-        "FocusLost",
-        "InsertEnter",
-        "WinLeave",
-    }, {
-        pattern = '*',
-        callback = function()
-            vim.opt.relativenumber = false;
-        end,
-        group = numbertogglegroup,
+    "BufLeave",
+    "FocusLost",
+    "InsertEnter",
+    "WinLeave",
+}, {
+    pattern = '*',
+    callback = function()
+        vim.opt.relativenumber = false;
+    end,
+    group = numbertogglegroup,
 });
 
 opt.clipboard = "unnamedplus";

@@ -1,7 +1,6 @@
 local files = {
     -- put your files here
     "vimtex",
-    "obsidian",
     "markdown",
 };
 

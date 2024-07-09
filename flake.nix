@@ -14,6 +14,8 @@
             inputs.nixpkgs.follows = "nixpkgs";
         };
         systems.url = "github:nix-systems/default";
+        
+        hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1"; 
     };
     outputs = inputs@ { 
         self,
@@ -22,6 +24,7 @@
         nixos-hardware,
         home-manager,
         systems,
+        hyprland,
         ... 
     }: let 
         eachSystem = nixpkgs.lib.genAttrs (import systems);
@@ -73,6 +76,28 @@
                     }
                     # customized settings
                     ./hosts/wsl
+		            ./general
+                ];
+            };
+            laptop = let  
+                sys = "NixOS";
+            in nixpkgs.lib.nixosSystem {
+                system = "x86_64-linux";
+                specialArgs = { inherit inputs username hostname; };
+                modules = [
+                    # home-manager
+                    home-manager.nixosModules.home-manager {
+                        home-manager.useGlobalPkgs = true;
+                        home-manager.useUserPackages = true;
+                        home-manager.extraSpecialArgs = {
+                            inherit inputs username hostname sys;
+                            WSL = false;
+                            GUI = true;
+                        };
+                        home-manager.users.${username} = import ./home-manager;
+                    }
+                    # customized settings
+                    ./hosts/machine
 		            ./general
                 ];
             };

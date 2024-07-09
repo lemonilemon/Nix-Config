@@ -1,6 +1,6 @@
 {
-  username,
-  ...
+    username,
+    ...
 }: {
     home.username = "${username}";
     home.homeDirectory = "/home/${username}";
@@ -11,6 +11,7 @@
 	    ./git
         ./programs
         ./zellij
+        ./kitty
     ];
     home.stateVersion = "23.05";
     programs.home-manager.enable = true;

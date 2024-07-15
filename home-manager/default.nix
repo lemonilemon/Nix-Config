@@ -12,8 +12,8 @@
         ./programs
         ./zellij
         ./kitty
+        ./ssh
     ];
     home.stateVersion = "23.05";
     programs.home-manager.enable = true;
-    nixpkgs.config.allowUnfreePredicate = _: true;
 }

@@ -1,7 +1,8 @@
 { 
+    lib,
     ... 
 }: {
-    nixpkgs.config.allowUnfree = true;
+    nixpkgs.config.allowUnfree = lib.mkForce true;
 
     programs._1password.enable = true;
 }

@@ -9,10 +9,11 @@
     ... 
 }: {
     imports =
-        [ # Include the results of the hardware scan.
+        [   
+            # Include the results of the hardware scan.
             ./hardware-configuration.nix
-            ./gnome.nix
-            ./hyprland.nix
+            # Include GUI Applications
+            ../../GUI
         ];
 
     # Use the systemd-boot EFI boot loader.
@@ -89,6 +90,7 @@
         nvidia.modesetting.enable = true;
     };
 
+    security.polkit.enable = true; 
 
 
 

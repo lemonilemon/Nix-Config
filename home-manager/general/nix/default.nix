@@ -1,10 +1,11 @@
 {
+    lib,
     pkgs,
     username,
     ...
 }: {
     nix = {
-        package = pkgs.nix;
+        package = lib.mkForce pkgs.nix;
         settings = {
             trusted-users = [username];
               # FIXME: use your access tokens from secrets.json here to be able to clone private repos on GitHub and GitLab

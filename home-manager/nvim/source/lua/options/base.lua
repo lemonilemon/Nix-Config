@@ -11,7 +11,6 @@ opt.mouse = "a"; -- enable mouse
 -- use utf-8 encoding
 opt.encoding = "utf-8";
 opt.fileencoding = "utf-8";
-opt.termencoding = "utf-8";
 opt.autochdir = true;
 opt.autowrite = true;
 -- keymapping time

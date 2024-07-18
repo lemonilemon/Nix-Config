@@ -71,6 +71,8 @@
         };
     };
 
+    # Hardware
+
     boot.kernelPackages = pkgs.linuxPackages_latest;
     hardware = {
         graphics.enable = true;
@@ -79,6 +81,18 @@
             package = config.boot.kernelPackages.nvidiaPackages.stable;
             prime.sync.enable = true;
         };
+    };
+
+    # Sound
+    sound.enable = true;
+    hardware.pulseaudio.enable = false;
+    security.rtkit.enable = true;
+    services.pipewire = {
+        enable = true;
+        alsa.enable = true;
+        alsa.support32Bit = true;
+        pulse.enable = true;
+        jack.enable = true;
     };
 
     security.polkit.enable = true; 

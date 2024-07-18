@@ -18,6 +18,8 @@
         gnumake
         curl
         wget
+        jq
+        psmisc
 
         # package manager
         yarn

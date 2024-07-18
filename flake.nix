@@ -76,7 +76,7 @@
                     }
                     # customized settings
                     ./hosts/wsl
-		            ./general
+		            ./nixos/general
                 ];
             };
             laptop = let  
@@ -98,7 +98,7 @@
                     }
                     # customized settings
                     ./hosts/machine
-		            ./general
+		            ./nixos
                 ];
             };
         };

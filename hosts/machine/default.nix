@@ -4,6 +4,7 @@
 
 { 
     pkgs, 
+    config,
     hostname,
     username,
     ... 
@@ -12,8 +13,6 @@
         [   
             # Include the results of the hardware scan.
             ./hardware-configuration.nix
-            # Include GUI Applications
-            ../../GUI
         ];
 
     # Use the systemd-boot EFI boot loader.
@@ -24,45 +23,11 @@
     networking.hostName = hostname; # Define your hostname.
     # Pick only one of the below networking options.
     # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+
     networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
 
     # Set your time zone.
     time.timeZone = "Asia/Taipei";
-
-    # Configure network proxy if necessary
-    # networking.proxy.default = "http://user:password@proxy:port/";
-    # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
-    # Select internationalisation properties.
-    # i18n.defaultLocale = "en_US.UTF-8";
-    # console = {
-    #  font = "Lat2-Terminus16";
-    #  useXkbConfig = true; # use xkb.options in tty.
-    #};
-
-    # Enable the X11 windowing system.
-    # services.xserver.enable = true;
-
-
-
-
-    # Configure keymap in X11
-    # services.xserver.xkb.layout = "us";
-    # services.xserver.xkb.options = "eurosign:e,caps:escape";
-
-    # Enable CUPS to print documents.
-    # services.printing.enable = true;
-
-    # Enable sound.
-    # hardware.pulseaudio.enable = true;
-    # OR
-    # services.pipewire = {
-    #   enable = true;
-    #   pulse.enable = true;
-    # };
-
-    # Enable touchpad support (enabled default in most desktopManager).
-    # services.libinput.enable = true;
 
     # Define a user account. Don't forget to set a password with ‘passwd’.
     users.users.${username} = {
@@ -75,19 +40,45 @@
         ];
     };
 
-    # List packages installed in system profile. To search, run:
-    # $ nix search wget
     environment.systemPackages = with pkgs; [
-        vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-        wget
-        eww 
-        kitty
-        git
+        ntfs3g # NTFS driver
+        pciutils # Inspecting PCI devices
+        mesa # 3D graphics library
+        glxinfo # Test utilities for OpenGL
     ];
 
+    # Power
+    powerManagement = {
+        enable = true;
+        powertop.enable = true;
+        cpuFreqGovernor = "powersave";
+    };
+    services = {
+        thermald.enable = true;
+        power-profiles-daemon.enable = false;
+        auto-cpufreq = {
+            enable = true;
+            settings = {
+                battery = {
+                    governor = "powersave";
+                    turbo = "never";
+                };
+                charger = {
+                    governor = "powersave";
+                    turbo = "auto";
+                };
+            };
+        };
+    };
+
+    boot.kernelPackages = pkgs.linuxPackages_latest;
     hardware = {
         graphics.enable = true;
-        nvidia.modesetting.enable = true;
+        nvidia = {
+            modesetting.enable = true;
+            package = config.boot.kernelPackages.nvidiaPackages.stable;
+            prime.sync.enable = true;
+        };
     };
 
     security.polkit.enable = true; 

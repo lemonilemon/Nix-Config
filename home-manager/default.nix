@@ -1,5 +1,6 @@
 {
   username,
+  nixvim    
   ...
 }: {
     home.username = "${username}";

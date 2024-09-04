@@ -9,6 +9,10 @@
             url = "github:nix-community/NixOS-WSL";
             inputs.nixpkgs.follows = "nixpkgs";
         };
+        nixvim = {
+            url = "github:nix-community/nixvim";
+            inputs.nixpkgs.follows = "nixpkgs";
+        };
         home-manager = {
             url = "github:nix-community/home-manager";
             inputs.nixpkgs.follows = "nixpkgs";
@@ -20,6 +24,7 @@
         nixpkgs, 
         nixos-wsl,
         nixos-hardware,
+        nixvim,
         home-manager,
         systems,
         ... 
@@ -37,6 +42,7 @@
 
             modules = [ 
                 ./home-manager 
+                nixvim.homeManagerModules.nixvim 
             ];
 
             extraSpecialArgs = { 
@@ -70,6 +76,9 @@
                             GUI = false;
                         };
                         home-manager.users.${username} = import ./home-manager;
+                        home-manager.sharedModules = [ 
+                            nixvim.homeManagerModules.nixvim
+                        ];
                     }
                     # customized settings
                     ./hosts/wsl

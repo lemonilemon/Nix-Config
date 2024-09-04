@@ -1,23 +1,16 @@
 {
-    pkgs,
     ...
 }: {
-    home.packages = with pkgs; [
-        neovim-remote
-    ];
     imports = [
-        ./lsp
+        ./options/opts.nix
+        ./options/keymaps.nix
+        ./options/colorschemes.nix
     ];
-    home.file.".config/nvim" = {
-    	enable = true;
-        source = ./source;
-        recursive = true;
-    };
-    programs.neovim = {
+    programs.nixvim = {
         enable = true;
+        defaultEditor = true;
         viAlias = true;
         vimAlias = true;
         vimdiffAlias = true;
-        defaultEditor = true;
     };
 }

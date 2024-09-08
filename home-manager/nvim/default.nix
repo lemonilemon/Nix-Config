@@ -24,6 +24,8 @@
     ./plugins/code/vimtex.nix
     ./plugins/code/competitest.nix
     ./plugins/code/coderunner.nix
+    ./plugins/code/template.nix
+
 
     # treesitter
     ./plugins/treesitter/treesitter.nix

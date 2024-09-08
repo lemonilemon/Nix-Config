@@ -3,6 +3,10 @@
 }: {
   programs.zathura = {
     enable = true;
+    # Doesn't work with WSL2
+  };
+  programs.sioyek = {
+    enable = true;
   };
   programs.nixvim = {
     globals = {
@@ -15,7 +19,7 @@
         enable = true;
         texlivePackage = pkgs.texlive.combined.scheme-full;
         settings = {
-          view_method = "zathura";
+          view_method = "sioyek";
           compiler_latexmk_engines = {
             _ = "-pdflatex";
           };

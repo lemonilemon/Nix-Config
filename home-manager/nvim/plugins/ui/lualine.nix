@@ -1,68 +1,67 @@
-{
-    # https://nix-community.github.io/nixvim/plugins/lualine/index.html
-    /*  TODO: 
-        - Add copilot icons to lualine
-    extraPlugins = with pkgs.vimPlugins; [
-        (buildVimPlugin {
-            pname = "copilot-lualine";
-        })
-    ]; */
-    plugins.lualine = {
+{ pkgs
+, ...
+}: {
+  programs.nixvim = {
+    extraPlugins = with pkgs.vimUtils; [
+      (buildVimPlugin {
+        pname = "copilot-lualine";
+        version = "2024-09-08";
+        src = pkgs.fetchFromGitHub {
+          owner = "AndreM222";
+          repo = "copilot-lualine";
+          rev = "main";
+          sha256 = "sha256-PXiJ7rdlE8J93TFtu+D+8398Wg7DhK7EZ0Aw4JDoqWM=";
+        };
+
+      })
+    ];
+    plugins = {
+      # https://nix-community.github.io/nixvim/plugins/lualine/index.html
+      lualine = {
         enable = true;
-        icons_enabled = true;
+        iconsEnabled = true;
         theme = "auto";
-        componentSeparators = { 
-            left = "";
-            right = "";
+        globalstatus = true;
+        componentSeparators = {
+          left = "";
+          right = "";
         };
         sectionSeparators = {
-            left = "";
-            right = "";
+          left = "";
+          right = "";
         };
         alwaysDivideMiddle = true;
         sections = {
-            lualine_a = [ "mode" ];
-            lualine_b = [ 
-                "branch" 
-                "diff"
-                {
-                    name = "diagnostics";
-                    extraConfig = {
-                        sources = "nvim_diagnostic";
-                        symbols = { 
-                            error = " "; 
-                            warn = " "; 
-                            info = " "; 
-                            hint = ""; 
-                        };
-                    };
-                }
-            ];
-            lualine_c = [ "filename" ];
-            lualine_x = [ 
-                # TODO: Add copilot icon
-                /* 
-                {
-                    name = "copilot" ;
-                    extraConfig = {
-                        show_colors = true;
-                    }; 
-                }
-                */
-                "encoding" 
-                "fileformat" 
-                "filetype" 
-            ];
-            lualine_y = [ "progress" ];
-            lualine_z = [ "location" ];
+          lualine_a = [ "mode" ];
+          lualine_b = [
+            "branch"
+            "diff"
+            "diagnostics"
+          ];
+          lualine_c = [ "filename" ];
+          lualine_x = [
+            {
+              name = "copilot";
+              extraConfig = {
+                show_colors = true;
+              };
+            }
+            "encoding"
+            "fileformat"
+            "filetype"
+          ];
+          lualine_y = [ "progress" ];
+          lualine_z = [ "location" ];
         };
         inactiveSections = {
-            lualine_a = [];
-            lualine_b = [];
-            lualine_c = [ "filename" ];
-            lualine_x = [ "location" ];
-            lualine_y = [];
-            lualine_z = [];
+          lualine_a = [ ];
+          lualine_b = [ ];
+          lualine_c = [ "filename" ];
+          lualine_x = [ "location" ];
+          lualine_y = [ ];
+          lualine_z = [ ];
         };
+      };
     };
+  };
 }

@@ -1,5 +1,5 @@
 {
-    plugins = {
+    programs.nixvim.plugins = {
         # https://nix-community.github.io/nixvim/plugins/lsp-format/index.html
         lsp-format = {
             enable = true;
@@ -35,9 +35,18 @@
                 };
                 nil-ls = {
                     enable = true;
+                    settings = {
+                        nix.flake.autoArchive = true;
+                        formatting.command = [
+                            "nixpkgs-fmt"
+                        ];
+                    };
                 };
                 nixd = {
                     enable = true;
+                    settings = {
+                        formatting.command = [ "nixpkgs-fmt" ];
+                    };
                 };
                 marksman = {
                     enable = true;

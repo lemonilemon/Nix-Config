@@ -1,5 +1,5 @@
 {
-    description = "Lemonilemon's Nix Flake";
+  description = "Lemonilemon's Nix Flake";
 
 
     inputs = {
@@ -34,72 +34,59 @@
     in {
         formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
 
-        # For non-NixOS
-        homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
-            inherit pkgs;
+      # For non-NixOS
+      homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
 
-            modules = [ 
-                ./home-manager 
-            ];
+        modules = [
+          ./home-manager
+          nixvim.homeManagerModules.nixvim
+        ];
 
-            extraSpecialArgs = { 
-                inherit inputs username; 
-                sys = "wsl";
-                WSL = true;
-                GUI = false;
-            };
+        extraSpecialArgs = {
+          inherit inputs username;
+          sys = "wsl";
+          WSL = true;
+          GUI = false;
         };
+      };
 
-        # For NixOS
-        nixosConfigurations = let 
-            hostname = "SpaceNix";
-        in {
-            NixOS-wsl = let  
-                sys = "NixOS-wsl";
-            in nixpkgs.lib.nixosSystem {
-                system = "x86_64-linux";
-                specialArgs = { inherit inputs username hostname; };
-                modules = [
-                    # nixos-wsl
-                    nixos-wsl.nixosModules.wsl
-                    
-                    # home-manager
-                    home-manager.nixosModules.home-manager {
-                        home-manager.useGlobalPkgs = true;
-                        home-manager.useUserPackages = true;
-                        home-manager.extraSpecialArgs = {
-                            inherit inputs username hostname sys;
-                            WSL = true;
-                            GUI = false;
-                        };
-                        home-manager.users.${username} = import ./home-manager;
-                    }
-                    # customized settings
-                    ./hosts/wsl
-		            ./nixos/general
-                ];
-            };
-            laptop = let  
-                sys = "NixOS";
-            in nixpkgs.lib.nixosSystem {
-                system = "x86_64-linux";
-                specialArgs = { inherit inputs username hostname; };
-                modules = [
-                    # home-manager
-                    home-manager.nixosModules.home-manager {
-                        home-manager.useGlobalPkgs = true;
-                        home-manager.useUserPackages = true;
-                        home-manager.extraSpecialArgs = {
-                            inherit inputs username hostname sys;
-                            WSL = false;
-                            GUI = true;
-                        };
-                        home-manager.users.${username} = import ./home-manager;
-                    }
-                    # customized settings
-                    ./hosts/machine
-		            ./nixos
-                ];
+      # For NixOS
+      nixosConfigurations =
+        let
+          hostname = "SpaceNix";
+        in
+        {
+          NixOS-wsl =
+            let
+              sys = "NixOS-wsl";
+            in
+            nixpkgs.lib.nixosSystem {
+              system = "x86_64-linux";
+              specialArgs = { inherit inputs username hostname; };
+              modules = [
+                # nixos-wsl
+                nixos-wsl.nixosModules.wsl
+
+                # home-manager
+                home-manager.nixosModules.home-manager
+                {
+                  home-manager.useGlobalPkgs = true;
+                  home-manager.useUserPackages = true;
+                  home-manager.extraSpecialArgs = {
+                    inherit inputs username hostname sys;
+                    WSL = true;
+                    GUI = false;
+                  };
+                  home-manager.users.${username} = import ./home-manager;
+                  home-manager.sharedModules = [
+                    nixvim.homeManagerModules.nixvim
+                  ];
+                }
+                # customized settings
+                ./hosts/wsl
+                ./general
+              ];
             };
         };
     };

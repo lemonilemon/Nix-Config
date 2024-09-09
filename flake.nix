@@ -2,37 +2,44 @@
   description = "Lemonilemon's Nix Flake";
 
 
-    inputs = {
-        nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-	    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-        nixos-wsl = {
-            url = "github:nix-community/NixOS-WSL";
-            inputs.nixpkgs.follows = "nixpkgs";
-        };
-        home-manager = {
-            url = "github:nix-community/home-manager";
-            inputs.nixpkgs.follows = "nixpkgs";
-        };
-        systems.url = "github:nix-systems/default";
-        
-        hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1"; 
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
-    outputs = inputs@ { 
-        self,
-        nixpkgs, 
-        nixos-wsl,
-        nixos-hardware,
-        home-manager,
-        systems,
-        hyprland,
-        ... 
-    }: let 
-        eachSystem = nixpkgs.lib.genAttrs (import systems);
-        username = "lemonilemon";
-        system = "x86_64-linux";
-        pkgs = nixpkgs.legacyPackages.${system};
-    in {
-        formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    systems.url = "github:nix-systems/default";
+
+    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
+  };
+  outputs =
+    inputs@ { self
+    , nixpkgs
+    , nixos-wsl
+    , nixvim
+    , nixos-hardware
+    , home-manager
+    , systems
+    , hyprland
+    , ...
+    }:
+    let
+      eachSystem = nixpkgs.lib.genAttrs (import systems);
+      username = "lemonilemon";
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+    in
+    {
+      formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
 
       # For non-NixOS
       homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {

@@ -1,6 +1,8 @@
-{ pkgs
-, ...
-}: {
+{
+  pkgs,
+  ...
+}:
+{
   programs.zathura = {
     enable = true;
     # Doesn't work with WSL2

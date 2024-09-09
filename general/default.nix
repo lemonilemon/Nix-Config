@@ -1,11 +1,11 @@
 {
-    imports = [
-	    ./shells
-        ./programlangs
-        ./nix
-        ./pdf
-        ./utils
-        ./secrets
-        ./fonts
-    ];
+  imports = [
+    ./shells
+    ./programlangs
+    ./nix
+    ./pdf
+    ./utils
+    ./secrets
+    ./fonts
+  ];
 }

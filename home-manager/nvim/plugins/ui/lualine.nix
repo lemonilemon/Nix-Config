@@ -1,6 +1,8 @@
-{ pkgs
-, ...
-}: {
+{
+  pkgs,
+  ...
+}:
+{
   programs.nixvim = {
     extraPlugins = with pkgs.vimUtils; [
       (buildVimPlugin {

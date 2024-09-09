@@ -1,11 +1,12 @@
 {
-    ...
-}: {
-    programs.zellij = {
-        enable = true;
-        settings = {
-            theme = "catppuccin-mocha";
-            default_shell = "zsh";
-        };
+  ...
+}:
+{
+  programs.zellij = {
+    enable = true;
+    settings = {
+      theme = "catppuccin-mocha";
+      default_shell = "zsh";
     };
+  };
 }

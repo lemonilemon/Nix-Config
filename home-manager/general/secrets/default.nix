@@ -1,9 +1,10 @@
-{ 
-    pkgs,
-    ... 
-}: {
-    nixpkgs.config.allowUnfree = true;
-    home.packages = with pkgs; [
-        _1password
-    ];
+{
+  pkgs,
+  ...
+}:
+{
+  nixpkgs.config.allowUnfree = true;
+  home.packages = with pkgs; [
+    _1password
+  ];
 }

@@ -12,10 +12,12 @@ set shell := ["zsh", "-c"]
 default:
     @just --list
 
+
 # Run eval tests
 [group('nix')]
 test:
     nix eval .#evalTests --show-trace --print-build-logs --verbose
+
 
 # Update all the flake inputs
 [group('nix')]
@@ -26,7 +28,7 @@ update:
 
 # Usage: just upp nixpkgs
 [group('nix')]
-upp input:
+updatep input:
     nix flake update {{ input }}
 
 # List all generations of the system profile
@@ -39,7 +41,26 @@ history:
 repl:
     nix repl -f flake:nixpkgs
 
+# format the nix files in this repo
 [group('nix')]
 fmt:
-    # format the nix files in this repo
     nix fmt
+
+
+############################################################################
+#
+#  NixOS commands
+#
+############################################################################
+
+nixhost := x"${NIXHOST}"
+# build system with new config
+[group('NixOS')]
+build: 
+    sudo nixos-rebuild switch --flake .#{{ nixhost }}
+
+[group('NixOS')]
+change-build input: 
+    export NIXHOST={{ input }}
+    sudo nixos-rebuild switch --flake .#{{ input }}
+

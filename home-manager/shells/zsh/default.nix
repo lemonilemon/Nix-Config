@@ -1,8 +1,7 @@
-{
-  config,
-  username,
-  sys,
-  ...
+{ config
+, username
+, sys
+, ...
 }:
 {
   home.file.".p10k.zsh".source = ./.p10k.zsh;
@@ -66,6 +65,11 @@
 
     '';
     initExtra = ''
+      # For DBus to work properly in wsl.
+      if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+        dbus-daemon --session --address=unix:path=/run/user/1000/bus --fork
+        export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
+      fi
       export LANGUAGE=en_US.UTF-8
       export LC_ALL=en_US.UTF-8
       export LANG=en_US.UTF-8

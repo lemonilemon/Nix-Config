@@ -1,6 +1,5 @@
-{
-  pkgs,
-  ...
+{ pkgs
+, ...
 }:
 {
   programs.zathura = {
@@ -21,7 +20,7 @@
         enable = true;
         texlivePackage = pkgs.texlive.combined.scheme-full;
         settings = {
-          view_method = "sioyek";
+          view_method = "zathura";
           compiler_latexmk_engines = {
             _ = "-pdflatex";
           };

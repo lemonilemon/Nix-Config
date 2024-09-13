@@ -10,6 +10,9 @@
     defaultUser = username;
     nativeSystemd = true;
   };
+  services.dbus = {
+    enable = true;
+  };
   networking.hostName = hostname;
   programs.zsh.enable = true;
   environment.shells = [ pkgs.zsh ];

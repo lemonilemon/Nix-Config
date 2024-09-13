@@ -1,6 +1,5 @@
-{
-  pkgs,
-  ...
+{ pkgs
+, ...
 }:
 {
   fonts.packages = with pkgs; [
@@ -9,4 +8,5 @@
     noto-fonts-emoji
     (nerdfonts.override { fonts = [ "FiraCode" ]; })
   ];
+  fonts.fontDir.enable = true;
 }

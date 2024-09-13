@@ -66,7 +66,7 @@
     '';
     initExtra = ''
       # For DBus to work properly in wsl.
-      if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+      if [ ! -e "$DBUS_SESSION_BUS_ADDRESS" ]; then
         dbus-daemon --session --address=unix:path=/run/user/1000/bus --fork
         export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
       fi

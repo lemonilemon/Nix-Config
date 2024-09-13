@@ -6,6 +6,7 @@
 \usepackage[shortlabels]{enumitem}
 \usepackage{CJKutf8}
 \usepackage[all]{xy}
+\usepackage{systeme}
 
 \usepackage{amsmath,amsthm,amssymb,color,latexsym}
 \usepackage{geometry}        

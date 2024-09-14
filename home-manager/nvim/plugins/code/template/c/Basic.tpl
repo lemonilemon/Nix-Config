@@ -1,10 +1,9 @@
-;; cpp
+;; c
 /* 
  * Created : {{_date_}} {{_author_}}
  * Description : 
  */
-#include <iostream>
-using namespace std;
+#include <stdio.h>
 int main(int argc, char *argv[]) {
     return 0;
 }

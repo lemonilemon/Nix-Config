@@ -16,6 +16,87 @@
         };
       }
 
+      # Move to window using the <ctrl> hjkl keys
+      {
+        mode = "n";
+        key = "<C-h>";
+        action = "<C-w>h";
+        options = {
+          desc = "Go to Left Window";
+          remap = true;
+        };
+      }
+
+      {
+        mode = "n";
+        key = "<C-j>";
+        action = "<C-w>j";
+        options = {
+          desc = "Go to Lower Window";
+          remap = true;
+        };
+      }
+      {
+        mode = "n";
+        key = "<C-k>";
+        action = "<C-w>k";
+        options = {
+          desc = "Go to Upper Window";
+          remap = true;
+        };
+      }
+      {
+        mode = "n";
+        key = "<C-l>";
+        action = "<C-w>l";
+        options = {
+          desc = "Go to Right Window";
+          remap = true;
+        };
+      }
+      # Use `H` and `L` to move between buffers
+      {
+        mode = "n";
+        key = "<S-h>";
+        action = "<cmd>tabprevious<CR>";
+        options = {
+          desc = "Go to Previous Buffer";
+          noremap = true;
+          silent = true;
+        };
+      }
+      {
+        mode = "n";
+        key = "<S-h>";
+        action = "<cmd>tabnext<CR>";
+        options = {
+          desc = "Go to Next Buffer";
+          noremap = true;
+          silent = true;
+        };
+      }
+      # Copilot-chat keymaps
+      {
+        mode = [ "n" "v" ];
+        key = "<leader>aa";
+        action = "<cmd>CopilotChatOpen<CR>";
+        options = {
+          desc = "Open Copilot Chat";
+          noremap = true;
+          silent = true;
+        };
+      }
+      {
+        mode = [ "n" "v" ];
+        key = "<leader>ax";
+        action = "<cmd>CopilotChatReset<CR>";
+        options = {
+          desc = "Reset Copilot Chat";
+          noremap = true;
+          silent = true;
+        };
+      }
+
       {
         mode = "i";
         key = "jj";
@@ -152,6 +233,7 @@
           silent = true;
         };
       }
+
     ];
   };
 }

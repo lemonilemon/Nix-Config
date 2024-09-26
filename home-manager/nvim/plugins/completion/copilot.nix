@@ -18,9 +18,15 @@
       # https://nix-community.github.io/nixvim/plugins/copilot-chat/index.html
       copilot-chat = {
         enable = true;
+        settings = {
+          auto_insert_mode = true;
+          show_help = true;
+          question_header = "  User ";
+          answer_header = "  Copilot ";
+        };
       };
-    };
 
+    };
     extraConfigLua = ''
       require("copilot").setup({
           suggestion = { enabled = false },
@@ -31,5 +37,6 @@
           };
       })
     '';
+
   };
 }

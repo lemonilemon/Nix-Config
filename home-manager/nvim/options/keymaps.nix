@@ -67,7 +67,7 @@
       }
       {
         mode = "n";
-        key = "<S-h>";
+        key = "<S-l>";
         action = "<cmd>tabnext<CR>";
         options = {
           desc = "Go to Next Buffer";

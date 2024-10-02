@@ -143,24 +143,13 @@
         };
       }
 
-      # NvimTree
+      # neo-tree
       {
         mode = "n";
-        key = "<leader>tf";
-        action = "<cmd>NvimTreeFocus<CR>";
+        key = "<leader>fe";
+        action = "<cmd>Neotree<CR>";
         options = {
-          desc = "Focus NvimTree with <leader>tf";
-          noremap = true;
-          silent = true;
-        };
-      }
-
-      {
-        mode = "n";
-        key = "<leader>tt";
-        action = "<cmd>NvimTreeToggle<CR>";
-        options = {
-          desc = "Toggle NvimTree with <leader>tf";
+          desc = "Open Neotree with <leader>fe";
           noremap = true;
           silent = true;
         };

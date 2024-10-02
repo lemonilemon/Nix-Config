@@ -1,6 +1,5 @@
-{
-  pkgs,
-  ...
+{ pkgs
+, ...
 }:
 {
   imports = [
@@ -37,7 +36,7 @@
     ./plugins/ui/notify.nix
 
     # file explorer
-    ./plugins/files/nvimtree.nix
+    ./plugins/files/neotree.nix
     ./plugins/files/telescope.nix
 
     # utils

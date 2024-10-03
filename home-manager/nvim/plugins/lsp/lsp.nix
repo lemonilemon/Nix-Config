@@ -60,7 +60,7 @@
         terraformls = {
           enable = true;
         };
-        tsserver = {
+        ts-ls = {
           enable = false;
         };
         yamlls = {

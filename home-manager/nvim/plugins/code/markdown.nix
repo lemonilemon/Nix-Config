@@ -1,15 +1,17 @@
-{
+{ lib
+, ...
+}: {
   programs.nixvim = {
     plugins = {
       markdown-preview = {
         enable = true;
         settings = {
-          auto_close = true;
-          auto_start = true;
+          auto_close = 1;
+          auto_start = 0;
           browser = "firefox";
           filetypes = [ "markdown" ];
 
-          echo_preview_url = true;
+          echo_preview_url = 1;
           highlight_css = {
             __raw = "vim.fn.expand('~/highlight.css')";
           };
@@ -17,8 +19,8 @@
           page_title = "「\${name}」";
           port = "8080";
           preview_options = {
-            disable_filename = true;
-            disable_sync_scroll = true;
+            disable_filename = 1;
+            disable_sync_scroll = 1;
             sync_scroll_type = "middle";
           };
           theme = "dark";
@@ -26,7 +28,7 @@
 
       };
       obsidian = {
-        enable = true;
+        enable = lib.mkDefault false;
         settings = {
           completion = {
             min_chars = 2;

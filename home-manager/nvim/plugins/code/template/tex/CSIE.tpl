@@ -7,6 +7,26 @@
 \usepackage{CJKutf8}
 \usepackage[all]{xy}
 \usepackage{systeme}
+\usepackage{listings}
+\usepackage{xcolor}
+\lstdefinestyle{codeStyle}{
+    belowcaptionskip=1\baselineskip,
+    breaklines=true,
+    frame=none,
+    numbers=none,
+    basicstyle=\footnotesize\ttfamily,
+    keywordstyle=\bfseries\color{green!40!black},
+    commentstyle=\bfseries\color{purple!40!black},
+    identifierstyle=\color{blue},
+    backgroundcolor=\color{gray!10!white},
+    frame=single,
+    keepspaces=true,
+    breakatwhitespace=false,
+    showspaces=false,
+    tabsize=2,
+    showtabs=false, 
+}
+\lstset{style=codeStyle}
 
 \usepackage{amsmath,amsthm,amssymb,color,latexsym}
 \usepackage{geometry}        

@@ -10,7 +10,6 @@
           timeoutMs = 500;
         };
         notify_on_error = true;
-
         formatters_by_ft = {
           liquidsoap = [ "liquidsoap-prettier" ];
           html = [
@@ -61,6 +60,12 @@
           yaml = [
             "yamllint"
             "yamlfmt"
+          ];
+          tex = [ "latexindent" ];
+          "_" = [
+            "squeeze_blanks"
+            "trim_whitespace"
+            "trim_newlines"
           ];
         };
       };

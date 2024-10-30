@@ -59,6 +59,12 @@
     viAlias = true;
     vimAlias = true;
     vimdiffAlias = true;
+    # performance tweaks (experimental)
+    performance = {
+      byteCompileLua.enable = true;
+      # combinePlugins.enable = true; # It causes some collisions
+    };
+
   };
   home.packages = with pkgs; [
     neovim-remote

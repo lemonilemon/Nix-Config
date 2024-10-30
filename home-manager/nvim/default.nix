@@ -12,7 +12,7 @@
     ./plugins/lsp/trouble.nix
 
     # formatting
-    ./plugins/lsp/conform.nix
+    ./plugins/formatting/conform.nix
 
     # snippets
     ./plugins/snippets/luasnip.nix

@@ -66,6 +66,9 @@
         yamlls = {
           enable = true;
         };
+        texlab = {
+          enable = true;
+        };
       };
     };
   };

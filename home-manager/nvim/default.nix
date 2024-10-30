@@ -9,8 +9,10 @@
 
     # lsp
     ./plugins/lsp/lsp.nix
-    ./plugins/lsp/conform.nix
     ./plugins/lsp/trouble.nix
+
+    # formatting
+    ./plugins/lsp/conform.nix
 
     # snippets
     ./plugins/snippets/luasnip.nix

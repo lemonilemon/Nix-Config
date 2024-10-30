@@ -1,8 +1,9 @@
-{ pkgs
-, username
-, hostname
-, lib
-, ...
+{
+  pkgs,
+  username,
+  hostname,
+  lib,
+  ...
 }:
 {
   wsl = {

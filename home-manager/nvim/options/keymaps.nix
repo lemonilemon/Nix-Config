@@ -77,7 +77,10 @@
       }
       # Copilot-chat keymaps
       {
-        mode = [ "n" "v" ];
+        mode = [
+          "n"
+          "v"
+        ];
         key = "<leader>aa";
         action = "<cmd>CopilotChatOpen<CR>";
         options = {
@@ -87,7 +90,10 @@
         };
       }
       {
-        mode = [ "n" "v" ];
+        mode = [
+          "n"
+          "v"
+        ];
         key = "<leader>ax";
         action = "<cmd>CopilotChatReset<CR>";
         options = {

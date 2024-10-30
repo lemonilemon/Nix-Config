@@ -86,7 +86,6 @@
       # Don't show mode
       showmode = false;
 
-
       # Preview substitutions live as you type
       inccommand = "split";
     };

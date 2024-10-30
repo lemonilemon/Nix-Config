@@ -1,7 +1,8 @@
-{ config
-, username
-, sys
-, ...
+{
+  config,
+  username,
+  sys,
+  ...
 }:
 {
   home.file.".p10k.zsh".source = ./.p10k.zsh;

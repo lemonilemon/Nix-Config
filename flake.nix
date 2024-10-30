@@ -19,14 +19,15 @@
     systems.url = "github:nix-systems/default";
   };
   outputs =
-    inputs@{ self
-    , nixpkgs
-    , nixos-wsl
-    , nixos-hardware
-    , nixvim
-    , home-manager
-    , systems
-    , ...
+    inputs@{
+      self,
+      nixpkgs,
+      nixos-wsl,
+      nixos-hardware,
+      nixvim,
+      home-manager,
+      systems,
+      ...
     }:
     let
       eachSystem = nixpkgs.lib.genAttrs (import systems);

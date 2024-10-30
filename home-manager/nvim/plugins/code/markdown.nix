@@ -1,6 +1,8 @@
-{ lib
-, ...
-}: {
+{
+  lib,
+  ...
+}:
+{
   programs.nixvim = {
     plugins = {
       markdown-preview = {

@@ -1,7 +1,4 @@
-{
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 {
   imports = [
     ./options/opts.nix
@@ -67,7 +64,5 @@
     };
 
   };
-  home.packages = with pkgs; [
-    neovim-remote
-  ];
+  home.packages = with pkgs; [ neovim-remote ];
 }

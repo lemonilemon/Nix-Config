@@ -17,6 +17,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     systems.url = "github:nix-systems/default";
+    pre-commit-hooks.url = "github:cachix/git-hooks.nix";
   };
   outputs =
     inputs@{
@@ -37,6 +38,15 @@
     in
     {
       formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
+
+      checks = eachSystem (system: {
+        pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = {
+            nixfmt-rfc-style.enable = true;
+          };
+        };
+      });
 
       # For non-NixOS
       homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
@@ -90,9 +100,7 @@
                     GUI = false;
                   };
                   home-manager.users.${username} = import ./home-manager;
-                  home-manager.sharedModules = [
-                    nixvim.homeManagerModules.nixvim
-                  ];
+                  home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
                 }
                 # customized settings
                 ./hosts/wsl

@@ -1,4 +1,7 @@
+{ pkgs, ... }:
 {
+
+  home.packages = with pkgs; [ nixfmt-rfc-style ];
   programs.nixvim.plugins = {
     # https://nix-community.github.io/nixvim/plugins/lsp-format/index.html
     lsp-format = {
@@ -33,19 +36,10 @@
             };
           };
         };
-        nil-ls = {
-          enable = true;
-          settings = {
-            nix.flake.autoArchive = true;
-            formatting.command = [
-              "nixpkgs-fmt"
-            ];
-          };
-        };
         nixd = {
           enable = true;
           settings = {
-            formatting.command = [ "nixpkgs-fmt" ];
+            formatting.command = [ "nixfmt-rfc-style" ];
           };
         };
         marksman = {

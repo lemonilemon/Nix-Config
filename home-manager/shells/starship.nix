@@ -40,6 +40,11 @@
         truncation_length = 4;
         style = "bold lavender";
       };
+      git_status = {
+        ahead = "⇡$\{count}";
+        diverged = "⇕⇡$\{ahead_count}⇣$\{behind_count}";
+        behind = "⇣$\{count}";
+      };
 
       # The color palette for the prompt, the default one is "mocha"
       palettes.catppuccin_mocha = {

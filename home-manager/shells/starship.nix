@@ -33,9 +33,11 @@
         style = "bold sky";
         disabled = false;
       };
-      battery.display = {
-        threshold = 100;
-      };
+      battery.display = [
+        {
+          threshold = 100;
+        }
+      ];
       directory = {
         truncation_length = 4;
         style = "bold lavender";

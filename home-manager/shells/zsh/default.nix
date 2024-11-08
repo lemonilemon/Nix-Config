@@ -43,6 +43,10 @@
       if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
     '';
     initExtra = ''
+      # Bindkeys for zsh-github-copilot
+      bindkey '^[|' zsh_gh_copilot_explain  # bind Alt+shift+\ to explain
+      bindkey '^[\' zsh_gh_copilot_suggest  # bind Alt+\ to suggest
+      bindkey "''${key[Up]}" up-line-or-search # bind Up to up-line-or-search
       # For DBus to work properly in wsl.
       if [ ! -e "$DBUS_SESSION_BUS_ADDRESS" ]; then
         dbus-daemon --session --address=unix:path=/run/user/1000/bus --fork

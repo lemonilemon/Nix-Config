@@ -17,7 +17,7 @@
         html = {
           enable = true;
         };
-        lua-ls = {
+        lua_ls = {
           enable = true;
           settings = {
             completion = {
@@ -54,7 +54,7 @@
         terraformls = {
           enable = true;
         };
-        ts-ls = {
+        ts_ls = {
           enable = false;
         };
         yamlls = {

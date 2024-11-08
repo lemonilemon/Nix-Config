@@ -24,10 +24,11 @@
           name = "marlonrichert/zsh-autocomplete";
           tags = [ "at:main" ];
         }
-        {
-          name = "b4b4r07/enhancd";
-          tags = [ "use:init.sh" ];
-        }
+        # Use zoxide instead
+        # {
+        #   name = "b4b4r07/enhancd";
+        #   tags = [ "use:init.sh" ];
+        # }
         { name = "chisui/zsh-nix-shell"; }
       ];
     };

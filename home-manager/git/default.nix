@@ -1,5 +1,6 @@
 {
   WSL,
+  pkgs,
   ...
 }:
 {
@@ -21,6 +22,14 @@
       };
     };
     lazygit.enable = true;
-    gh.enable = true;
+    gh = {
+      enable = true;
+      extensions = [
+        pkgs.gh-copilot
+      ];
+      settings = {
+        git_protocol = "ssh";
+      };
+    };
   };
 }

@@ -24,6 +24,7 @@
           name = "marlonrichert/zsh-autocomplete";
           tags = [ "at:main" ];
         }
+        { name = "loiccoyle/zsh-github-copilot"; }
         # Use zoxide instead
         # {
         #   name = "b4b4r07/enhancd";

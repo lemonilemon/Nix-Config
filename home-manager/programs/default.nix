@@ -28,6 +28,9 @@
     zathura
     # note taking
     obsidian
+
+    # google cloud sdk
+    google-cloud-sdk
   ];
   programs = {
     bat = {

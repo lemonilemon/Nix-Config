@@ -7,7 +7,7 @@
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-emoji
-    (nerdfonts.override { fonts = [ "FiraCode" ]; })
+    nerd-fonts.fira-code
   ];
   fonts.fontDir.enable = true;
 }

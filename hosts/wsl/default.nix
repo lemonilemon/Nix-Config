@@ -9,7 +9,6 @@
   wsl = {
     enable = true;
     defaultUser = username;
-    nativeSystemd = true;
   };
   services.dbus = {
     enable = true;
@@ -34,5 +33,5 @@
   };
 
   time.timeZone = "Asia/Taipei";
-  system.stateVersion = "23.05";
+  system.stateVersion = "24.11";
 }

@@ -1,6 +1,5 @@
-{ pkgs
-, ...
-}: {
+{ pkgs, ... }:
+{
   imports = [
     ./options/opts.nix
     ./options/keymaps.nix
@@ -8,8 +7,10 @@
 
     # lsp
     ./plugins/lsp/lsp.nix
-    ./plugins/lsp/conform.nix
     ./plugins/lsp/trouble.nix
+
+    # formatting
+    ./plugins/formatting/conform.nix
 
     # snippets
     ./plugins/snippets/luasnip.nix
@@ -26,7 +27,6 @@
     ./plugins/code/coderunner.nix
     ./plugins/code/template.nix
 
-
     # treesitter
     ./plugins/treesitter/treesitter.nix
 
@@ -36,7 +36,7 @@
     ./plugins/ui/notify.nix
 
     # file explorer
-    ./plugins/files/nvimtree.nix
+    ./plugins/files/neotree.nix
     ./plugins/files/telescope.nix
 
     # utils
@@ -57,8 +57,12 @@
     viAlias = true;
     vimAlias = true;
     vimdiffAlias = true;
+    # performance tweaks (experimental)
+    performance = {
+      byteCompileLua.enable = true;
+      # combinePlugins.enable = true; # It causes some collisions
+    };
+
   };
-  home.packages = with pkgs; [
-    neovim-remote
-  ];
+  home.packages = with pkgs; [ neovim-remote ];
 }

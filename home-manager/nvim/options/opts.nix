@@ -86,18 +86,15 @@
       # Don't show mode
       showmode = false;
 
-      # Clipboard
-      clipboard = {
-        provider = {
-          winyank32.enable = true;
-          # wl-copy.enable = true;
-        };
-        register = "unnamedplus";
-      };
-
       # Preview substitutions live as you type
       inccommand = "split";
     };
-
+    # Clipboard
+    clipboard = {
+      providers = {
+        wl-copy.enable = true;
+      };
+      register = "unnamedplus";
+    };
   };
 }

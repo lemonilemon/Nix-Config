@@ -1,6 +1,8 @@
-{ pkgs
-, ...
-}: {
+{
+  pkgs,
+  ...
+}:
+{
   programs.nixvim = {
     extraPlugins = with pkgs.vimUtils; [
       (buildVimPlugin {
@@ -33,9 +35,3 @@
     extraFiles."template/tex/CSIE.tpl".source = ./template/tex/CSIE.tpl;
   };
 }
-
-
-
-
-
-

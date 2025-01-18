@@ -1,7 +1,12 @@
-{ pkgs
-, ...
-}: {
+{
+  pkgs,
+  ...
+}:
+{
   config = {
+    environment.systemPackages = with pkgs; [
+      just
+    ];
     # Nix-LD linker, allows many standard Linux binaries to work (AppImage, etc.)
     programs.nix-ld = {
       enable = true;

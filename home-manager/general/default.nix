@@ -1,8 +1,8 @@
 {
-    imports = [
-        ./programlangs
-        ./pdf
-        ./secrets
-        ./fonts
-    ];
+  imports = [
+    ./programlangs
+    ./pdf
+    ./secrets
+    ./fonts
+  ];
 }

@@ -1,7 +1,6 @@
 {
   description = "Lemonilemon's Nix Flake";
 
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
@@ -18,16 +17,18 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     systems.url = "github:nix-systems/default";
+    pre-commit-hooks.url = "github:cachix/git-hooks.nix";
   };
   outputs =
-    inputs@ { self
-    , nixpkgs
-    , nixos-wsl
-    , nixos-hardware
-    , nixvim
-    , home-manager
-    , systems
-    , ...
+    inputs@{
+      self,
+      nixpkgs,
+      nixos-wsl,
+      nixos-hardware,
+      nixvim,
+      home-manager,
+      systems,
+      ...
     }:
     let
       eachSystem = nixpkgs.lib.genAttrs (import systems);
@@ -37,6 +38,15 @@
     in
     {
       formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
+
+      checks = eachSystem (system: {
+        pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = {
+            nixfmt-rfc-style.enable = true;
+          };
+        };
+      });
 
       # For non-NixOS
       homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
@@ -67,7 +77,9 @@
             in
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
-              specialArgs = { inherit inputs username hostname; };
+              specialArgs = {
+                inherit inputs username hostname;
+              };
               modules = [
                 # nixos-wsl
                 nixos-wsl.nixosModules.wsl
@@ -78,14 +90,17 @@
                   home-manager.useGlobalPkgs = true;
                   home-manager.useUserPackages = true;
                   home-manager.extraSpecialArgs = {
-                    inherit inputs username hostname sys;
+                    inherit
+                      inputs
+                      username
+                      hostname
+                      sys
+                      ;
                     WSL = true;
                     GUI = false;
                   };
                   home-manager.users.${username} = import ./home-manager;
-                  home-manager.sharedModules = [
-                    nixvim.homeManagerModules.nixvim
-                  ];
+                  home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
                 }
                 # customized settings
                 ./hosts/wsl

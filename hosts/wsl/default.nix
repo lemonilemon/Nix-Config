@@ -2,13 +2,19 @@
   pkgs,
   username,
   hostname,
-  lib,
   ...
 }:
 {
   wsl = {
     enable = true;
     defaultUser = username;
+    wslConf.automount.root = "/mnt";
+    wslConf.interop.appendWindowsPath = false;
+    wslConf.network.generateHosts = false;
+    startMenuLaunchers = true;
+
+    # Enable integration with Docker Desktop (needs to be installed)
+    docker-desktop.enable = false;
   };
   services.dbus.implementation = "broker";
   networking.hostName = hostname;

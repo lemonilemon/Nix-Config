@@ -10,9 +10,7 @@
     enable = true;
     defaultUser = username;
   };
-  services.dbus = {
-    enable = true;
-  };
+  services.dbus.implementation = "broker";
   networking.hostName = hostname;
   programs.zsh.enable = true;
   environment.shells = [ pkgs.zsh ];
@@ -33,5 +31,5 @@
   };
 
   time.timeZone = "Asia/Taipei";
-  system.stateVersion = "24.11";
+  system.stateVersion = "25.05";
 }

@@ -12,12 +12,10 @@ set shell := ["zsh", "-c"]
 default:
     @just --list
 
-
 # Run eval tests
 [group('nix')]
 test:
     nix eval .#evalTests --show-trace --print-build-logs --verbose
-
 
 # Update all the flake inputs
 [group('nix')]
@@ -46,7 +44,6 @@ repl:
 fmt:
     nix fmt
 
-
 ############################################################################
 #
 #  NixOS commands
@@ -56,11 +53,14 @@ fmt:
 nixhost := x"${NIXHOST}"
 # build system with new config
 [group('NixOS')]
-build: 
+build:
     sudo nixos-rebuild switch --flake .#{{ nixhost }}
 
 [group('NixOS')]
-change-build input: 
+dry-build:
+    sudo nixos-rebuild dry-build --flake .#{{ nixhost }}
+
+[group('NixOS')]
+changehost input:
     export NIXHOST={{ input }}
     sudo nixos-rebuild switch --flake .#{{ input }}
-

@@ -94,3 +94,10 @@ wsl -d <DistroName>
 ## In development:
 
 - Previewing Latex and markdown with neovim
+
+## References
+
+Other repositories that inspired me:
+
+- [ryan4yin/nix-config](https://github.com/ryan4yin/nix-config/tree/main)
+- [librephoenix/nixos-config (GitLab)](https://gitlab.com/librephoenix/nixos-config)

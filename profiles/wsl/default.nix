@@ -12,9 +12,6 @@
     wslConf.interop.appendWindowsPath = true;
     wslConf.network.generateHosts = false;
     startMenuLaunchers = true;
-
-    # Enable integration with Docker Desktop (needs to be installed)
-    docker-desktop.enable = false;
   };
   services.dbus.implementation = "broker";
   networking.hostName = hostname;

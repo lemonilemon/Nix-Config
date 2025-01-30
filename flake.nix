@@ -102,9 +102,9 @@
                   home-manager.users.${username} = import ./home-manager;
                   home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
                 }
-                # customized settings
-                ./hosts/wsl
-                ./general
+                # profile settings
+                ./profiles/wsl
+                ./profiles/base.nix
               ];
             };
         };

@@ -6,17 +6,17 @@
 }:
 {
   options = {
-    general-settings.secrets = {
+    general-settings.utils = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = config.general-settings.enable;
-        description = "Enable my settings of secrets";
+        description = "Enable my settings of utilities";
       };
     };
   };
-  config = lib.mkIf config.general-settings.secrets.enable {
+  config = {
     home.packages = with pkgs; [
-      _1password-cli
+      just
     ];
   };
 }

@@ -1,33 +1,41 @@
 {
   lib,
   pkgs,
+  config,
   username,
   ...
 }:
 {
-  nix = {
-    package = lib.mkForce pkgs.nix;
-    settings = {
-      trusted-users = [ username ];
-      # FIXME: use your access tokens from secrets.json here to be able to clone private repos on GitHub and GitLab
-      # access-tokens = [
-      #   "github.com=${secrets.github_token}"
-      #   "gitlab.com=OAuth2:${secrets.gitlab_token}"
-      # ];
-      substituters = [
-        "https://cache.nixos.org/"
-      ];
-      extra-substituters = [
-        "https://aseipp-nix-cache.global.ssl.fastly.net"
-        "https://mirrors.ustc.edu.cn/nix-channels/store"
-        "https://nix-community.cachix.org"
-      ];
-      extra-trusted-public-keys = [
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      ];
-      accept-flake-config = true;
-      auto-optimise-store = true;
+  options = {
+    general-settings.nix = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = config.general-settings.enable;
+        description = "Enable my Nix settings";
+      };
     };
-    extraOptions = ''experimental-features = nix-command flakes'';
+  };
+  config = lib.mkIf config.general-settings.nix.enable {
+    nix = {
+      package = lib.mkDefault pkgs.nix;
+      settings = {
+        trusted-users = lib.mkDefault [ username ];
+        substituters = lib.mkDeafult [
+          "https://cache.nixos.org/"
+        ];
+        extra-substituters = lib.mkDefault [
+          "https://aseipp-nix-cache.global.ssl.fastly.net"
+          "https://mirrors.ustc.edu.cn/nix-channels/store"
+          "https://nix-community.cachix.org"
+        ];
+        extra-trusted-public-keys = lib.mkDefault [
+          "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        ];
+        accept-flake-config = lib.mkDefault true;
+        auto-optimise-store = lib.mkDefault true;
+      };
+      nixpkgs.config.allowUnfree = lib.mkDefault false;
+      extraOptions = lib.mkDefault ''experimental-features = nix-command flakes'';
+    };
   };
 }

@@ -59,9 +59,7 @@
 
         extraSpecialArgs = {
           inherit inputs username;
-          sys = "wsl";
-          WSL = true;
-          GUI = false;
+          sys = "hm";
         };
       };
 
@@ -73,7 +71,7 @@
         {
           NixOS-wsl =
             let
-              sys = "NixOS-wsl";
+              sys = "wsl";
             in
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
@@ -96,8 +94,6 @@
                       hostname
                       sys
                       ;
-                    WSL = true;
-                    GUI = false;
                   };
                   home-manager.users.${username} = import ./home-manager;
                   home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];

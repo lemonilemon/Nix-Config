@@ -1,4 +1,9 @@
-{ pkgs, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./options/opts.nix
@@ -51,18 +56,27 @@
     ./plugins/git/lazygit.nix
     ./plugins/git/gitsigns.nix
   ];
-  programs.nixvim = {
-    enable = true;
-    defaultEditor = true;
-    viAlias = true;
-    vimAlias = true;
-    vimdiffAlias = true;
-    # performance tweaks (experimental)
-    performance = {
-      byteCompileLua.enable = true;
-      # combinePlugins.enable = true; # It causes some collisions
+  options = {
+    cli-settings.nvim.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.cli-settings.enable;
+      description = "Enable nvim settings";
     };
-
   };
-  home.packages = with pkgs; [ neovim-remote ];
+  config = lib.mkIf config.cli-settings.nvim.enable {
+    programs.nixvim = {
+      enable = true;
+      defaultEditor = true;
+      viAlias = true;
+      vimAlias = true;
+      vimdiffAlias = true;
+      # performance tweaks (experimental)
+      performance = {
+        byteCompileLua.enable = true;
+        # combinePlugins.enable = true; # It causes some collisions
+      };
+
+    };
+    home.packages = with pkgs; [ neovim-remote ];
+  };
 }

@@ -34,7 +34,6 @@
         accept-flake-config = lib.mkDefault true;
         auto-optimise-store = lib.mkDefault true;
       };
-      nixpkgs.config.allowUnfree = lib.mkDefault false;
       extraOptions = lib.mkDefault ''experimental-features = nix-command flakes'';
     };
   };

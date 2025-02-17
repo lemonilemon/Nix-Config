@@ -79,6 +79,7 @@
                 inherit inputs username hostname;
               };
               modules = [
+                ./modules/nixos
                 # nixos-wsl
                 nixos-wsl.nixosModules.wsl
 
@@ -95,7 +96,7 @@
                       sys
                       ;
                   };
-                  home-manager.users.${username} = import ./home-manager;
+                  home-manager.users.${username} = import ./modules/home-manager;
                   home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
                 }
                 # profile settings

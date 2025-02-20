@@ -26,6 +26,7 @@
     shell = pkgs.zsh;
     extraGroups = [
       "wheel"
+      "docker"
     ];
   };
 

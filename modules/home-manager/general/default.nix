@@ -15,7 +15,7 @@
   options = {
     general-settings.enable = lib.mkOption {
       type = lib.types.bool;
-      default = lib.mkDefault true;
+      default = true;
       description = "Enable my general settings";
     };
   };

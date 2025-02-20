@@ -10,9 +10,8 @@
       enable = true;
       themeFile = "Catppuccin-Mocha";
       font = {
-        name = "fira-code";
-        package = pkgs.nerd-fonts.fira-code;
-        size = 12;
+        size = 14;
+        name = "FiraCode Nerd Font";
       };
       keybindings = {
         "ctrl+c" = "copy_or_interrupt";

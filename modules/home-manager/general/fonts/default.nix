@@ -15,7 +15,12 @@
     };
   };
   config = lib.mkIf config.general-settings.fonts.enable {
-    fonts.fontconfig.enable = true;
+    fonts.fontconfig = {
+      enable = true;
+      defaultFonts = {
+        emoji = [ "Noto Emoji" ];
+      };
+    };
     home.packages = with pkgs; [
       noto-fonts
       noto-fonts-cjk-sans

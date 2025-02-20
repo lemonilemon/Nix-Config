@@ -16,6 +16,9 @@
   environment.systemPackages = with pkgs; [
     wsl-open
   ];
+  environment.sessionVariables = {
+    NIXHOST = "NixOS-wsl";
+  };
   # cli-settings.enable = true;
   # general-settings.enable = true;
   # gui-settings.enable = false;

@@ -104,6 +104,42 @@
                 ./profiles/base.nix
               ];
             };
+
+            laptop = 
+            let
+                sys = "distro";
+            in 
+            nixpkgs.lib.nixosSystem {
+              system = "x86_64-linux";
+              specialArgs = {
+                inherit inputs username hostname;
+              };
+              modules = [
+                ./modules/nixos
+                # nixos-wsl
+                nixos-wsl.nixosModules.wsl
+
+                # home-manager
+                home-manager.nixosModules.home-manager
+                {
+                  home-manager.useGlobalPkgs = true;
+                  home-manager.useUserPackages = true;
+                  home-manager.extraSpecialArgs = {
+                    inherit
+                      inputs
+                      username
+                      hostname
+                      sys
+                      ;
+                  };
+                  home-manager.users.${username} = import ./modules/home-manager;
+                  home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
+                }
+                # profile settings
+                ./profiles/laptop
+                ./profiles/base.nix
+              ];
+            };
         };
     };
 }

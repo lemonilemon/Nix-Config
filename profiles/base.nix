@@ -16,9 +16,6 @@
   networking.hostName = lib.mkDefault hostname;
   programs.zsh.enable = lib.mkDefault true;
   environment.shells = [ pkgs.zsh ];
-  environment.sessionVariables = {
-    NIXHOST = "NixOS-wsl";
-  };
   security.sudo.wheelNeedsPassword = lib.mkDefault false;
 
   users.users.${username} = {

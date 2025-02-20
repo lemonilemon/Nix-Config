@@ -12,7 +12,7 @@
           owner = "CRAG666";
           repo = "code_runner.nvim";
           rev = "main";
-          sha256 = "sha256-ibYwGZ49/NSn5PbN4gjWiiPSkdbqL9koN4GTn7/UIzY=";
+          sha256 = "sha256-fgJqJ0lak7WrjdFP8ywDcMnECi/RpT1mPKowX32yuk4=";
         };
       })
     ];

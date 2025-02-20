@@ -7,6 +7,7 @@
   imports = [
     ./desktop
     ./browsers
+    ./kitty.nix
   ];
   options = {
     gui-settings.enable = lib.mkOption {

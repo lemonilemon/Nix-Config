@@ -11,6 +11,7 @@
     ./secrets
     ./fonts
     ./utils
+    ./nix
   ];
   options = {
     general-settings.enable = lib.mkOption {

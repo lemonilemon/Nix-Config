@@ -20,7 +20,7 @@
       package = lib.mkDefault pkgs.nix;
       settings = {
         trusted-users = lib.mkDefault [ username ];
-        substituters = lib.mkDeafult [
+        substituters = lib.mkDefault [
           "https://cache.nixos.org/"
         ];
         extra-substituters = lib.mkDefault [
@@ -33,6 +33,7 @@
         ];
         accept-flake-config = lib.mkDefault true;
         auto-optimise-store = lib.mkDefault true;
+        show-trace = lib.mkDefault true;
       };
       extraOptions = lib.mkDefault ''experimental-features = nix-command flakes'';
     };

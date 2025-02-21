@@ -19,7 +19,11 @@
     nix = {
       package = lib.mkDefault pkgs.nix;
       settings = {
-        trusted-users = lib.mkDefault [ username ];
+        trusted-users = lib.mkDefault [
+          "root"
+          username
+          "@wheel"
+        ];
         substituters = lib.mkDefault [
           "https://cache.nixos.org/"
         ];

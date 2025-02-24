@@ -11,23 +11,21 @@
       type = "fcitx5";
       fcitx5 = {
         addons = with pkgs; [
-          rime-data
           fcitx5-gtk
-          # fcitx5-rime
+          fcitx5-rime
+          rime-data
           fcitx5-material-color
           fcitx5-chinese-addons
-          fcitx5-gtk
-          fcitx5-chewing
         ];
         waylandFrontend = true;
         settings = {
           inputMethod = {
             "Groups/0" = {
               Name = "Default";
-              DefaultIM = "chewing";
+              DefaultIM = "rime";
             };
             "Groups/0/Items/0".Name = "keyboard-us";
-            "Groups/0/Items/1".Name = "chewing";
+            "Groups/0/Items/1".Name = "rime";
             GroupOrder."0" = "Default";
           };
         };

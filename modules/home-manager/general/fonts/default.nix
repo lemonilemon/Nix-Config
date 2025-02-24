@@ -18,15 +18,21 @@
     fonts.fontconfig = {
       enable = true;
       defaultFonts = {
-        emoji = [ "Noto Emoji" ];
+        emoji = [
+          "Noto Color Emoji"
+          "Noto Emoji"
+          "Awesome Font"
+        ];
       };
     };
     home.packages = with pkgs; [
       noto-fonts
       noto-fonts-cjk-sans
       noto-fonts-emoji
+      noto-fonts-color-emoji
       nerd-fonts.fira-code
       nerd-fonts.jetbrains-mono
+      font-awesome
     ];
   };
 }

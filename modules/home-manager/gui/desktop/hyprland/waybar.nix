@@ -39,6 +39,7 @@
           "pulseaudio"
           "clock"
           "battery"
+          "custom/power"
         ];
 
         "hyprland/workspaces" = {
@@ -181,6 +182,7 @@
         };
 
         "disk#ssd" = {
+
           interval = 60;
           format = "{path} {free} ";
           path = "/";
@@ -193,12 +195,17 @@
           interval = 60;
           "interface-ethernet" = "enp1s*";
           "interface-wifi" = "wlan0";
-          "format-ethernet" = "eth ";
+          "format-ethernet" = "eth ";
           "format-wifi" = "{essid} ({signalStrength}%) ";
           "tooltip-format-ethernet" = "{ifname}: {ipaddr}/{cidr} ";
           "tooltip-format-wifi" = "{ifname}: {ipaddr}/{cidr} ";
           "format-linked" = "(No IP) ";
           "format-disconnected" = "Disconnected ⚠";
+        };
+
+        "custom/power" = {
+          "format" = "";
+          "on-click" = "wlogout";
         };
 
         "custom/kernel" = {
@@ -231,13 +238,13 @@
           format = "{volume}% {icon} {format_source}";
           "format-bluetooth" = "{volume}% {icon} {format_source}";
           "format-bluetooth-muted" = " {icon} {format_source}";
-          "format-muted" = " {format_source}";
+          "format-muted" = "  {format_source}";
           "format-source" = "{volume}% ";
-          "format-source-muted" = "";
+          "format-source-muted" = " ";
           "format-icons" = {
-            headphone = " ";
-            "hands-free" = "";
-            headset = "";
+            headphone = " ";
+            "hands-free" = " ";
+            headset = " ";
             phone = "";
             portable = "";
             car = "";
@@ -354,6 +361,7 @@
         #temperature,
         #disk,
         #custom-kernel,
+        #custom-power,
         #idle_inhibitor,
         #scratchpad,
         #battery,
@@ -388,6 +396,11 @@
             color: @mantle;
         }
 
+        #custom-power {
+            background-color: @peach;
+            color: @mantle;
+        }
+
         #clock {
             background-color: @green;
             color: @mantle;
@@ -397,6 +410,7 @@
             background-color: @blue;
             color: @mantle;
         }
+
 
         @keyframes blink {
             to {

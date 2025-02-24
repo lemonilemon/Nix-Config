@@ -7,6 +7,7 @@
 {
   imports = [
     ./waybar.nix
+    ./wlogout
   ];
   options = {
     gui-settings.desktop.hyprland.enable = lib.mkOption {
@@ -140,10 +141,6 @@
     };
     # Windows switcher / App launcher:
     programs.rofi = {
-      enable = true;
-    };
-    # Logout:
-    programs.wlogout = {
       enable = true;
     };
     # XDG portal:

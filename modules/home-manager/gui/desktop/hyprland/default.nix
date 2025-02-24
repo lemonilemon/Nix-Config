@@ -5,6 +5,9 @@
   ...
 }:
 {
+  imports = [
+    ./waybar.nix
+  ];
   options = {
     gui-settings.desktop.hyprland.enable = lib.mkOption {
       type = lib.types.bool;
@@ -17,6 +20,7 @@
     home.packages = with pkgs; [
       nautilus # File manager
       grim # Grab images
+      slurp
       brightnessctl # Brightness control
       playerctl # Player control
       pw-volume # Volume control
@@ -129,11 +133,6 @@
           "MOZ_ENABLE_WAYLAND, 1"
         ];
       };
-    };
-    # Status bar
-    programs.waybar = {
-      enable = true;
-      systemd.enable = true;
     };
     # Notification daemon:
     services.dunst = {

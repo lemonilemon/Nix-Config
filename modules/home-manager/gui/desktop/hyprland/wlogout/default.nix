@@ -18,7 +18,7 @@
     layout = [
       {
         "label" = "lock";
-        "action" = "hyprlock";
+        "action" = "hyprlock -q";
         "text" = "Lock";
         "keybind" = "l";
       }

@@ -8,6 +8,8 @@
   imports = [
     ./waybar.nix
     ./wlogout
+    ./hyprlock.nix
+    ./hyprpaper
   ];
   options = {
     gui-settings.desktop.hyprland.enable = lib.mkOption {

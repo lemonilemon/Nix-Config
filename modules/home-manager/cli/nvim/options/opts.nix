@@ -17,15 +17,23 @@
     autoCmd = [
       {
         event = [
-          "BufEnter"
-          "FocusGained"
           "InsertEnter"
-          "WinEnter"
         ];
-        desc = "Toggle between relative and absolute line numbers";
+        desc = "Toggle between relative and absolute line numbers when entering insert mode";
         callback.__raw = ''
           function()
               vim.opt.relativenumber = false;
+          end
+        '';
+      }
+      {
+        event = [
+          "InsertLeave"
+        ];
+        desc = "Toggle between relative and absolute line numbers when leaving insert mode";
+        callback.__raw = ''
+          function()
+              vim.opt.relativenumber = true;
           end
         '';
       }
@@ -40,6 +48,7 @@
     # [[ Options ]]
     # https://nix-community.github.io/nixvim/NeovimOptions/index.html?highlight=globals#opts
     opts = {
+      relativenumber = true;
       autoindent = true;
       ignorecase = true;
       mouse = "a";

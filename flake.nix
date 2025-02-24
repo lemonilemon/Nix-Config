@@ -18,6 +18,7 @@
     };
     systems.url = "github:nix-systems/default";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
+    hyprland.url = "github:hyprwm/Hyprland";
   };
   outputs =
     inputs@{
@@ -101,14 +102,13 @@
                 }
                 # profile settings
                 ./profiles/wsl
-                ./profiles/base.nix
               ];
             };
 
-            laptop = 
+          laptop =
             let
-                sys = "distro";
-            in 
+              sys = "distro";
+            in
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
               specialArgs = {
@@ -137,7 +137,6 @@
                 }
                 # profile settings
                 ./profiles/laptop
-                ./profiles/base.nix
               ];
             };
         };

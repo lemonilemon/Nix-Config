@@ -6,6 +6,7 @@
 {
   imports = [
     ./gnome.nix
+    ./hyprland.nix
   ];
   options = {
     gui-settings.desktop.enable = lib.mkOption {

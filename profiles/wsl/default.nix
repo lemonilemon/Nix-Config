@@ -4,6 +4,9 @@
   ...
 }:
 {
+  imports = [
+    ../base.nix
+  ];
   wsl = {
     enable = true;
     defaultUser = username;

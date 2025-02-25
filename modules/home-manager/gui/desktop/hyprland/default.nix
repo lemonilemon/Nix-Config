@@ -30,6 +30,7 @@
     ];
     wayland.windowManager.hyprland = {
       enable = true; # enable Hyprland
+      xwayland.enable = true; # enable xwayland
       settings = {
         "$MOD1" = "SUPER";
         "$MOD2" = "alt";
@@ -131,6 +132,8 @@
           "XDG_CURRENT_DESKTOP, Hyprland"
           "XDG_SESSION_TYPE, wayland"
           "XDG_SESSION_DESKTOP, Hyprland"
+          "GDK_SCALE, 2"
+          "XCURSOR_SIZE, 32"
 
           "EDITOR, nvim"
           "MOZ_ENABLE_WAYLAND, 1"

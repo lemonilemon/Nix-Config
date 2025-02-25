@@ -8,6 +8,7 @@
     ./desktop
     ./browsers
     ./kitty.nix
+    ./apps.nix
   ];
   options = {
     gui-settings.enable = lib.mkOption {

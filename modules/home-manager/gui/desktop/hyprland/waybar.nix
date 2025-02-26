@@ -5,6 +5,7 @@
 {
   home.packages = with pkgs; [
     htop
+    foot
   ];
   # Status bar
   programs.waybar = {
@@ -45,7 +46,7 @@
         "hyprland/workspaces" = {
           format = "{icon}";
           "format-icons" = {
-            "active" = "";
+            "active" = "";
             "default" = "";
             "empty" = "";
           };
@@ -61,8 +62,8 @@
         };
 
         bluetooth = {
-          "format-on" = "bt ";
-          "format-off" = "bt ({status}) ";
+          "format-on" = "BT ";
+          "format-off" = "BT ({status}) ";
           "format-connected" = "{device_alias} ";
           "format-connected-battery" = "{device_alias} [{device_battery_percentage}%] ";
           "format-device-preference" = [
@@ -193,6 +194,7 @@
 
         network = {
           interval = 60;
+          on-click = "foot --app-id nmtui nmtui";
           "interface-ethernet" = "enp1s*";
           "interface-wifi" = "wlan0";
           "format-ethernet" = "eth ";
@@ -206,6 +208,7 @@
         "custom/power" = {
           "format" = "";
           "on-click" = "wlogout";
+          justify = "center";
         };
 
         "custom/kernel" = {
@@ -237,8 +240,8 @@
           "scroll-step" = 2;
           format = "{volume}% {icon} {format_source}";
           "format-bluetooth" = "{volume}% {icon} {format_source}";
-          "format-bluetooth-muted" = " {icon} {format_source}";
-          "format-muted" = "  {format_source}";
+          "format-bluetooth-muted" = "  {icon} {format_source}";
+          "format-muted" = "  {format_source}";
           "format-source" = "{volume}% ";
           "format-source-muted" = " ";
           "format-icons" = {
@@ -284,7 +287,7 @@
         * {
             border: none;
             border-radius: 1px;
-            font-family: JetBrainsMono Nerd Font, Font Awesome;
+            font-family: JetBrainsMono Nerd Font Propo, Font Awesome;
             font-size: 13px;
             min-height: 0;
         }

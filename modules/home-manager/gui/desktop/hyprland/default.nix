@@ -23,7 +23,8 @@
     home.packages = with pkgs; [
       nautilus # File manager
       grim # Grab images
-      slurp
+      slurp # Select region
+      wl-clipboard # Clipboard manager
       brightnessctl # Brightness control
       playerctl # Player control
       pw-volume # Volume control
@@ -58,7 +59,7 @@
             "$MOD2, space, exec, $DRUN" # Launcher
             "$MOD2, e, exec, $FILE" # File manager
 
-            ", Print, exec, grim"
+            ", Print, exec, grim -g \"$(slurp)\" - | wl-copy"
           ]
           ++ (
             # workspaces

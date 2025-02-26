@@ -5,10 +5,6 @@
 {
   programs.zathura = {
     enable = true;
-    # Doesn't work with WSL2
-  };
-  programs.sioyek = {
-    enable = true;
   };
   programs.nixvim = {
     globals = {

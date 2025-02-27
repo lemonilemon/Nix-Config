@@ -4,6 +4,7 @@
 {
   imports = [
     ./gui
+    ./general
   ];
   config = {
     gui-settings.enable = true;

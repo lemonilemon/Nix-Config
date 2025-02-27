@@ -7,4 +7,13 @@
     webcord
     _1password-gui
   ];
+  programs.ssh = {
+    enable = true;
+    forwardAgent = true;
+    extraConfig = ''
+      Host *
+          IdentityAgent ~/.1password/agent.sock
+      Include ~/.ssh/1Password/config
+    '';
+  };
 }

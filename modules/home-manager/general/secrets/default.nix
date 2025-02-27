@@ -15,8 +15,5 @@
     };
   };
   config = lib.mkIf config.general-settings.secrets.enable {
-    home.packages = with pkgs; [
-      _1password-cli
-    ];
   };
 }

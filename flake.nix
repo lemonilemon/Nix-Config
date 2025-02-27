@@ -19,6 +19,7 @@
     systems.url = "github:nix-systems/default";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     hyprland.url = "github:hyprwm/Hyprland";
+    catppuccin.url = "github:catppuccin/nix";
   };
   outputs =
     inputs@{
@@ -28,6 +29,7 @@
       nixos-hardware,
       nixvim,
       home-manager,
+      catppuccin,
       systems,
       ...
     }:
@@ -56,6 +58,8 @@
         modules = [
           ./home-manager
           nixvim.homeManagerModules.nixvim
+          catppuccin.homeManagerModules.catppuccin
+
         ];
 
         extraSpecialArgs = {
@@ -97,7 +101,13 @@
                       sys
                       ;
                   };
-                  home-manager.users.${username} = import ./modules/home-manager;
+                  home-manager.users.${username} = {
+                    imports = [
+                      ./modules/home-manager
+                      catppuccin.homeManagerModules.catppuccin
+                    ];
+                  };
+
                   home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
                 }
                 # profile settings
@@ -118,6 +128,7 @@
                 ./modules/nixos
                 # nixos-wsl
                 nixos-wsl.nixosModules.wsl
+                catppuccin.nixosModules.catppuccin
 
                 # home-manager
                 home-manager.nixosModules.home-manager
@@ -132,7 +143,14 @@
                       sys
                       ;
                   };
-                  home-manager.users.${username} = import ./modules/home-manager;
+                  home-manager.users.${username} = {
+                    imports = [
+                      ./modules/home-manager
+                      catppuccin.homeManagerModules.catppuccin
+                    ];
+                    catppuccin.enable = true;
+                    catppuccin.flavor = "mocha";
+                  };
                   home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
                 }
                 # profile settings

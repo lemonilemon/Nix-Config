@@ -175,6 +175,7 @@
     # Windows switcher / App launcher:
     programs.rofi = {
       enable = true;
+      font = "JetBrains Mono Nerd Font 14";
     };
 
     # XDG portal:

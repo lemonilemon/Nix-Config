@@ -16,4 +16,9 @@
       Include ~/.ssh/1Password/config
     '';
   };
+  programs.zsh = {
+    initExtraBeforeCompInit = ''
+      eval "$(op completion zsh)"; compdef _op op
+    '';
+  };
 }

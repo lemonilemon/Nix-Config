@@ -3,7 +3,7 @@
   ...
 }:
 {
-  home.file.".config/hyprpaper/wallpaper.png" = {
+  home.file.".config/hypr/wallpaper.png" = {
     enable = true;
     source = ./wallpaper.png;
   };

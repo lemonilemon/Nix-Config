@@ -6,6 +6,7 @@
   home.packages = with pkgs; [
     htop
     foot
+    libnotify
   ];
   # Status bar
   programs.waybar = {

@@ -15,11 +15,11 @@
       splash_offset = 2.0;
 
       preload = [
-        "/home/${username}/.config/hyprpaper/wallpaper.png"
+        "/home/${username}/.config/hypr/wallpaper.png"
       ];
 
       wallpaper = [
-        ",/home/${username}/.config/hyprpaper/wallpaper.png"
+        ",/home/${username}/.config/hypr/wallpaper.png"
       ];
     };
   };

@@ -129,11 +129,14 @@
           # "waybar"
           "dunst"
         ];
+        cursor = {
+          no_hardware_cursors = true;
+        };
         env = [
           "XDG_CURRENT_DESKTOP, Hyprland"
           "XDG_SESSION_TYPE, wayland"
           "XDG_SESSION_DESKTOP, Hyprland"
-          "GDK_SCALE, 2"
+          "GDK_SCALE, 1.5"
           "XCURSOR_SIZE, 32"
 
           "EDITOR, nvim"
@@ -151,7 +154,7 @@
           highlight = "#89b4fa";
           transparency = 10;
           origin = "top-right";
-          font = "Noto Sans 10";
+          font = "JetBrains Mono Nerd Font 10";
         };
 
         urgency_low = {
@@ -176,6 +179,15 @@
     programs.rofi = {
       enable = true;
       font = "JetBrains Mono Nerd Font 14";
+      extraConfig = {
+        show-icons = true;
+        modi = "window,drun,run,ssh";
+        combi-modi = "drun,run,ssh";
+        matching = "fuzzy";
+        terminal = "kitty";
+        fake-transparency = true;
+        sidebar-mode = true;
+      };
     };
 
     # XDG portal:

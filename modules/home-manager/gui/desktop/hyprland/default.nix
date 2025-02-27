@@ -144,11 +144,39 @@
     # Notification daemon:
     services.dunst = {
       enable = true;
+      settings = {
+        global = {
+          frame_color = "#89b4fa";
+          separator_color = "frame";
+          highlight = "#89b4fa";
+          transparency = 10;
+          origin = "top-right";
+          font = "Noto Sans 10";
+        };
+
+        urgency_low = {
+          background = "#1e1e2e";
+          foreground = "#cdd6f4";
+        };
+
+        urgency_normal = {
+          background = "#1e1e2e";
+          foreground = "#cdd6f4";
+        };
+
+        urgency_critical = {
+          background = "#1e1e2e";
+          foreground = "#cdd6f4";
+          frame_color = "#fab387";
+        };
+      };
     };
+
     # Windows switcher / App launcher:
     programs.rofi = {
       enable = true;
     };
+
     # XDG portal:
     xdg.portal.enable = true;
     xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];

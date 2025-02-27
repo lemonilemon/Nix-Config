@@ -52,12 +52,12 @@
           python = [ "black" ];
           lua = [ "stylua" ];
           nix = [ "nixfmt" ];
-          markdown = [
-            [
-              "prettierd"
-              "prettier"
-            ]
-          ];
+          # markdown = [
+          #   [
+          #     "prettierd"
+          #     "prettier"
+          #   ]
+          # ];
           yaml = [
             "yamllint"
             "yamlfmt"

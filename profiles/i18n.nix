@@ -10,19 +10,22 @@
       enable = true;
       type = "fcitx5";
       fcitx5 = {
+        waylandFrontend = true;
+        plasma6Support = true;
         addons = with pkgs; [
           fcitx5-gtk
+          kdePackages.fcitx5-qt
           fcitx5-rime
           rime-data
           fcitx5-material-color
           fcitx5-chinese-addons
         ];
-        waylandFrontend = true;
         settings = {
           inputMethod = {
             "Groups/0" = {
               Name = "Default";
-              DefaultIM = "rime";
+              "Default Layout" = "us";
+              DefaultIM = "keyboard-us";
             };
             "Groups/0/Items/0".Name = "keyboard-us";
             "Groups/0/Items/1".Name = "rime";

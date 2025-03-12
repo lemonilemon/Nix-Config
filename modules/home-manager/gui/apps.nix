@@ -6,6 +6,8 @@
   home.packages = with pkgs; [
     webcord
     _1password-gui
+    spotify
+    notion-app-enhanced
   ];
   programs.ssh = {
     enable = true;

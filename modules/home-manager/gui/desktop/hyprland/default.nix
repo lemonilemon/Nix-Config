@@ -126,7 +126,6 @@
         };
         exec-once = [
           "fcitx5 -d --replace"
-          # "waybar"
           "dunst"
         ];
         cursor = {
@@ -140,14 +139,13 @@
           "GDK_SCALE, 1.15"
           "XCURSOR_SIZE, 32"
 
-          "GDK_BACKEND, \"wayland,x11\""
-          "QT_QPA_PLATFORM, \"wayland;xcb\""
-          "QT_QPA_PLATFORMTHEME, qt5ct"
-          "QT_AUTO_SCREEN_SCALE_FACTOR,1"
-          "QT_SCALE_FACTOR, 1.15"
-          "GDK_DPI_SCALE, 1.15"
+          # "GDK_BACKEND, \"wayland,x11\""
+          # "QT_QPA_PLATFORM, \"wayland;xcb\""
+          # "QT_QPA_PLATFORMTHEME, qt5ct"
+          # "QT_AUTO_SCREEN_SCALE_FACTOR,1"
+          # "QT_SCALE_FACTOR, 1.15"
+          # "GDK_DPI_SCALE, 1.15"
 
-          "GTK_IM_MODULE, fcitx"
           "QT_IM_MODULE, fcitx"
           "XMODIFIERS, @im=fcitx"
 

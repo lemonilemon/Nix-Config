@@ -12,6 +12,7 @@
       fcitx5 = {
         waylandFrontend = true;
         addons = with pkgs; [
+          fcitx5-gtk
           fcitx5-rime
           rime-data
           fcitx5-material-color

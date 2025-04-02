@@ -8,7 +8,14 @@
   config = lib.mkIf config.home.gui-settings.apps.enable {
     home.packages = with pkgs; [
       webcord
-      spotify
+      (spotify.overrideAttrs (old: {
+        postFixup = ''
+          wrapProgram $out/bin/spotify \
+            --set XMODIFIERS "@im=fcitx" \
+            --unset ELECTRON_OZONE_PLATFORM_HINT \
+            --unset NIXOS_OZONE_WL
+        '';
+      }))
       notion-app-enhanced
     ];
     programs.ssh = {

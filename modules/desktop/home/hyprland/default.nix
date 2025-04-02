@@ -126,10 +126,11 @@
           no_hardware_cursors = true;
         };
         env = [
+          "ELECTRON_OZONE_PLATFORM_HINT, auto"
+          "NIXOS_OZONE_WL, 1"
           "XDG_CURRENT_DESKTOP, Hyprland"
           "XDG_SESSION_TYPE, wayland"
           "XDG_SESSION_DESKTOP, Hyprland"
-          "ELECTRON_OZONE_PLATFORM_HINT,wayland"
           "GDK_SCALE, 1.15"
           "XCURSOR_SIZE, 32"
 
@@ -142,9 +143,8 @@
 
           # fcitx input-related
           "GLFW_IM_MODULE, fcitx"
-          # "GTK_IM_MODULE, fcitx" # recommended to disable
+          "GTK_IM_MODULE, fcitx" # recommended to disable
           "QT_IM_MODULE, fcitx"
-          "INPUT_METHOD, fcitx"
           "XMODIFIERS, @im=fcitx"
 
           "EDITOR, nvim"
@@ -202,8 +202,6 @@
     # XDG portal:
     xdg.portal.enable = true;
     xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-
-    # Hint Electron apps to use Wayland:
     home.sessionVariables = {
       WLR_NO_HARDWARE_CURSORS = "1";
     };

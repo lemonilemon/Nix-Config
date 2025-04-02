@@ -56,11 +56,6 @@
         bindkey '^[|' zsh_gh_copilot_explain  # bind Alt+shift+\ to explain
         bindkey '^[\' zsh_gh_copilot_suggest  # bind Alt+\ to suggest
         bindkey "''${key[Up]}" up-line-or-search # bind Up to up-line-or-search
-        # For DBus to work properly in wsl.
-        if [ ! -e "$DBUS_SESSION_BUS_ADDRESS" ]; then
-          dbus-daemon --session --address=unix:path=/run/user/1000/bus --fork
-          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
-        fi
         export LANGUAGE=en_US.UTF-8
         export LC_ALL=en_US.UTF-8
         export LANG=en_US.UTF-8

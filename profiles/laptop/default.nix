@@ -6,12 +6,14 @@
   pkgs,
   config,
   hostname,
+  lib,
   ...
 }:
 {
   imports = [
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
+    ./config.nix
     ../base.nix
     ../i18n.nix
   ];
@@ -46,6 +48,7 @@
     powertop.enable = true;
     cpuFreqGovernor = "powersave";
   };
+
   services = {
     thermald.enable = true;
     power-profiles-daemon.enable = false;
@@ -84,7 +87,7 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    jack.enable = true;
+    jack.enable = lib.mkDefault true;
   };
 
   security.polkit.enable = true;

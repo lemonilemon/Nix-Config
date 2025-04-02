@@ -58,7 +58,7 @@
         modules = [
           ./home-manager
           nixvim.homeManagerModules.nixvim
-          catppuccin.homeManagerModules.catppuccin
+          catppuccin.homeModules.catppuccin
 
         ];
 
@@ -104,7 +104,7 @@
                   home-manager.users.${username} = {
                     imports = [
                       ./modules/home-manager
-                      catppuccin.homeManagerModules.catppuccin
+                      catppuccin.homeModules.catppuccin
                     ];
                   };
 
@@ -125,7 +125,8 @@
                 inherit inputs username hostname;
               };
               modules = [
-                ./modules/nixos
+                # Import all the modules
+                ./modules
                 # nixos-wsl
                 nixos-wsl.nixosModules.wsl
                 catppuccin.nixosModules.catppuccin
@@ -145,14 +146,13 @@
                   };
                   home-manager.users.${username} = {
                     imports = [
-                      ./modules/home-manager
-                      catppuccin.homeManagerModules.catppuccin
+                      ./modules/home.nix
+                      catppuccin.homeModules.catppuccin
                     ];
-                    catppuccin.enable = true;
-                    catppuccin.flavor = "mocha";
                   };
                   home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
                 }
+
                 # profile settings
                 ./profiles/laptop
               ];

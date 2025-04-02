@@ -5,6 +5,7 @@
 }:
 {
   imports = [
+    ./config.nix
     ../base.nix
   ];
   wsl = {

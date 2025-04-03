@@ -16,7 +16,6 @@
             --unset NIXOS_OZONE_WL
         '';
       }))
-      notion-app-enhanced
     ];
     programs.ssh = {
       enable = true;

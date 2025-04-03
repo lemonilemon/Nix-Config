@@ -70,6 +70,11 @@
   # Hardware
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
+  # Not to suspend usb devices
+  boot.kernelParams = [
+    "usbcore.autosuspend=-1"
+    "usbcore.autosuspend_delay_ms=-1"
+  ];
   hardware = {
     graphics.enable = true;
     nvidia = {

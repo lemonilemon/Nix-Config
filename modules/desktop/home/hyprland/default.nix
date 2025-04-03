@@ -29,7 +29,7 @@
       xwayland.enable = true; # enable xwayland
       settings = {
         "$MOD1" = "SUPER";
-        "$MOD2" = "alt";
+        "$MOD2" = "alt+shift";
         "$TERM" = "kitty";
         "$DRUN" = "rofi -show drun";
         "$BROWSER" = "firefox";
@@ -49,11 +49,6 @@
             "$MOD1, c, centerwindow,"
             "$MOD1, Tab, cyclenext," # change focus to another window
 
-            "$MOD2, f, exec, $BROWSER" # Browser
-            "$MOD2, q, exec, $TERM" # Terminal
-            "$MOD2, space, exec, $DRUN" # Launcher
-            "$MOD2, e, exec, $FILE" # File manager
-
             ", Print, exec, grim -g \"$(slurp)\" - | wl-copy"
           ]
           ++ (
@@ -72,6 +67,12 @@
               ) 5
             )
           );
+        bindr = [
+          "$MOD2, f, exec, $BROWSER" # Browser
+          "$MOD2, q, exec, $TERM" # Terminal
+          "$MOD2, space, exec, $DRUN" # Launcher
+          "$MOD2, e, exec, $FILE" # File manager
+        ];
 
         bindm = [
           "$MOD1,mouse:272,movewindow"
@@ -97,6 +98,7 @@
 
         # rule
         windowrule = [
+          "stayfocused, class:(Rofi)$"
         ];
 
         input = {
@@ -131,9 +133,9 @@
           "XDG_CURRENT_DESKTOP, Hyprland"
           "XDG_SESSION_TYPE, wayland"
           "XDG_SESSION_DESKTOP, Hyprland"
-          "GDK_SCALE, 1.15"
           "XCURSOR_SIZE, 32"
 
+          "GDK_SCALE, 1.15"
           "GDK_BACKEND, wayland"
           "QT_QPA_PLATFORM, wayland"
           "QT_QPA_PLATFORMTHEME, qt5ct"
@@ -143,8 +145,7 @@
 
           # fcitx input-related
           "GLFW_IM_MODULE, fcitx"
-          "GTK_IM_MODULE, fcitx" # recommended to disable
-          "QT_IM_MODULE, fcitx"
+          "QT_IM_MODULE, \"wayland;fcitx;ibus\""
           "XMODIFIERS, @im=fcitx"
 
           "EDITOR, nvim"
@@ -187,6 +188,7 @@
     # Windows switcher / App launcher:
     programs.rofi = {
       enable = true;
+      package = pkgs.rofi;
       font = "JetBrains Mono Nerd Font 14";
       extraConfig = {
         show-icons = true;
@@ -194,6 +196,9 @@
         combi-modi = "drun,run,ssh";
         matching = "fuzzy";
         terminal = "kitty";
+        drun-match-fields = "name";
+        drun-dis-play-format = "{name}";
+        kb-cancel = "Escape";
         fake-transparency = true;
         sidebar-mode = true;
       };

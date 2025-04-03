@@ -128,7 +128,7 @@
           no_hardware_cursors = true;
         };
         env = [
-          "ELECTRON_OZONE_PLATFORM_HINT, auto"
+          "ELECTRON_OZONE_PLATFORM_HINT, wayland"
           "NIXOS_OZONE_WL, 1"
           "XDG_CURRENT_DESKTOP, Hyprland"
           "XDG_SESSION_TYPE, wayland"

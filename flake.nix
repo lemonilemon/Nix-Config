@@ -122,7 +122,7 @@
 
           laptop =
             let
-              sys = "distro";
+              sys = "nixos";
             in
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";

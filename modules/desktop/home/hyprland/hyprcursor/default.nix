@@ -16,14 +16,6 @@
       size = 36;
     };
   };
-  wayland.windowManager.hyprland = {
-    settings = {
-      exec-once = [
-        "gsettings set org.gnome.desktop.interface cursor-theme BreezeX-RosePine-Linux"
-        "gsettings set org.gnome.desktop.interface cursor-size 24"
-      ];
-    };
-  };
   gtk = {
     enable = true;
     iconTheme = {
@@ -35,9 +27,9 @@
       package = pkgs.rose-pine-gtk-theme;
     };
     cursorTheme = {
-      name = "rose-pine-cursor";
+      name = "BreezeX-RosePine-Linux";
       package = pkgs.rose-pine-cursor;
-      size = 28;
+      size = 24;
     };
   };
 }

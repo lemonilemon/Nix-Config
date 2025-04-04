@@ -10,6 +10,7 @@
     ./hyprlock.nix
     ./ranger.nix
     ./nemo.nix
+    ./hyprcursor
     ./network
     ./wlogout
     ./hyprpaper
@@ -99,6 +100,7 @@
         # rule
         windowrule = [
           "stayfocused, class:(Rofi)$"
+          "pseudo, class:(fcitx5)$"
         ];
 
         input = {
@@ -133,7 +135,6 @@
           "XDG_CURRENT_DESKTOP, Hyprland"
           "XDG_SESSION_TYPE, wayland"
           "XDG_SESSION_DESKTOP, Hyprland"
-          "XCURSOR_SIZE, 32"
 
           "GDK_SCALE, 1.15"
           "GDK_BACKEND, wayland"
@@ -188,7 +189,7 @@
     # Windows switcher / App launcher:
     programs.rofi = {
       enable = true;
-      package = pkgs.rofi;
+      package = pkgs.rofi-wayland;
       font = "JetBrains Mono Nerd Font 14";
       extraConfig = {
         show-icons = true;
@@ -199,7 +200,7 @@
         drun-match-fields = "name";
         drun-dis-play-format = "{name}";
         kb-cancel = "Escape";
-        fake-transparency = true;
+        # fake-transparency = true;
         sidebar-mode = true;
       };
     };

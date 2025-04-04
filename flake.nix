@@ -20,6 +20,11 @@
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     hyprland.url = "github:hyprwm/Hyprland";
     catppuccin.url = "github:catppuccin/nix";
+    rose-pine-hyprcursor = {
+      url = "github:ndom91/rose-pine-hyprcursor";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.hyprlang.follows = "hyprland/hyprlang";
+    };
   };
   outputs =
     inputs@{

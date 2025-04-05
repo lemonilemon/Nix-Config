@@ -110,8 +110,16 @@
             tap-and-drag = true;
             tap-to-click = true;
           };
-          sensitivity = -0.6;
+          accel_profile = "adaptive";
+          sensitivity = 0;
         };
+        device = [
+          {
+            # Logitech G Pro Wireless
+            name = "logitech-g-pro--1";
+            sensitivity = -1;
+          }
+        ];
         gestures = {
           workspace_swipe = true;
         };

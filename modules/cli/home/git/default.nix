@@ -20,7 +20,8 @@
         extraConfig = {
           core = {
             defaultBranch = "main";
-            sshCommand = if sys == "wsl" then "ssh.exe" else "ssh";
+            sshCommand = if sys == "NixOS-wsl" then "ssh.exe" else "ssh";
+            editor = "nvim";
             pull.rebase = true;
           };
         };

@@ -77,63 +77,28 @@
       nixosConfigurations =
         let
           hostname = "SpaceNix";
-        in
-        {
-          NixOS-wsl =
-            let
-              sys = "wsl";
-            in
+          make_nixosConfig =
+            {
+              sys ? "default",
+              profile,
+              specialArgs ? { },
+            }:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
               specialArgs = {
-                inherit inputs username hostname;
+                inherit
+                  inputs
+                  username
+                  hostname
+                  specialArgs
+                  ;
               };
               modules = [
-                ./modules/nixos
-                # nixos-wsl
-                nixos-wsl.nixosModules.wsl
-
-                # home-manager
-                home-manager.nixosModules.home-manager
-                {
-                  home-manager.useGlobalPkgs = true;
-                  home-manager.useUserPackages = true;
-                  home-manager.extraSpecialArgs = {
-                    inherit
-                      inputs
-                      username
-                      hostname
-                      sys
-                      ;
-                  };
-                  home-manager.users.${username} = {
-                    imports = [
-                      ./modules/home-manager
-                      catppuccin.homeModules.catppuccin
-                    ];
-                  };
-
-                  home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
-                }
-                # profile settings
-                ./profiles/wsl
-              ];
-            };
-
-          laptop =
-            let
-              sys = "nixos";
-            in
-            nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
-              specialArgs = {
-                inherit inputs username hostname;
-              };
-              modules = [
-                # Import all the modules
                 ./modules
+
                 # nixos-wsl
                 nixos-wsl.nixosModules.wsl
+
                 catppuccin.nixosModules.catppuccin
 
                 # home-manager
@@ -147,6 +112,7 @@
                       username
                       hostname
                       sys
+                      specialArgs
                       ;
                   };
                   home-manager.users.${username} = {
@@ -155,13 +121,30 @@
                       catppuccin.homeModules.catppuccin
                     ];
                   };
+
                   home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
                 }
-
                 # profile settings
-                ./profiles/laptop
+                profile
               ];
+
             };
+        in
+        {
+          NixOS-wsl = make_nixosConfig {
+            sys = "NixOS-wsl";
+            profile = ./profiles/wsl;
+          };
+
+          laptop = make_nixosConfig {
+            sys = "laptop";
+            profile = ./profiles/laptop;
+          };
+
+          desktop = make_nixosConfig {
+            sys = "desktop";
+            profile = ./profiles/desktop;
+          };
         };
     };
 }

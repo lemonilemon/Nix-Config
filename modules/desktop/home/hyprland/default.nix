@@ -25,6 +25,7 @@
       playerctl # Player control
       pw-volume # Volume control
     ];
+
     wayland.windowManager.hyprland = {
       enable = true; # enable Hyprland
       xwayland.enable = true; # enable xwayland
@@ -120,11 +121,16 @@
         cursor = {
           no_hardware_cursors = true;
         };
+        # Open when hyprland starts
         exec-once = [
           "waybar"
           "nm-applet --indicator"
           "fcitx5 -d --replace"
           "dunst"
+          # discord
+          "webcord --start-minimized"
+          # 1password
+          "1password --silent"
         ];
         env = [
           "ELECTRON_OZONE_PLATFORM_HINT, wayland"

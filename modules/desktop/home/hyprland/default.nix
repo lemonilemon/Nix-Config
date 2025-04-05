@@ -111,15 +111,14 @@
           };
           sensitivity = -0.6;
         };
-        misc = {
-          force_default_wallpaper = "-1";
-          disable_hyprland_logo = true;
-        };
         gestures = {
           workspace_swipe = true;
         };
         xwayland = {
           force_zero_scaling = true;
+        };
+        cursor = {
+          no_hardware_cursors = true;
         };
         exec-once = [
           "waybar"
@@ -127,9 +126,6 @@
           "fcitx5 -d --replace"
           "dunst"
         ];
-        cursor = {
-          no_hardware_cursors = true;
-        };
         env = [
           "ELECTRON_OZONE_PLATFORM_HINT, wayland"
           "NIXOS_OZONE_WL, 1"
@@ -154,6 +150,18 @@
           "MOZ_ENABLE_WAYLAND, 1"
           "MOZ_WEBRENDER, 1"
         ];
+        decoration = {
+          rounding = 1;
+        };
+        misc = {
+          force_default_wallpaper = "-1";
+          disable_hyprland_logo = true;
+        };
+        ecosystem = {
+          no_update_news = true;
+          no_donation_nag = true;
+        };
+
       };
     };
     # Notification daemon:

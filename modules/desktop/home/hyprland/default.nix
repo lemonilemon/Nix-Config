@@ -109,6 +109,7 @@
             tap-and-drag = true;
             tap-to-click = true;
           };
+          sensitivity = -0.6;
         };
         misc = {
           force_default_wallpaper = "-1";

@@ -8,7 +8,7 @@
     programs.zellij = {
       enable = true;
       enableZshIntegration = true;
-      attachExistingSession = true;
+      # attachExistingSession = true;
       exitShellOnExit = true;
       settings = {
         show_startup_tips = false;

@@ -165,7 +165,7 @@
           "MOZ_WEBRENDER, 1"
         ];
         decoration = {
-          rounding = 1;
+          rounding = 16;
         };
         misc = {
           force_default_wallpaper = "-1";

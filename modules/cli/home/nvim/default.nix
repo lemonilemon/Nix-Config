@@ -51,6 +51,7 @@
     ./plugins/utils/colorizer.nix
     ./plugins/utils/comment.nix
     ./plugins/utils/comment-box.nix
+    ./plugins/utils/edgy.nix
 
     # git
     ./plugins/git/lazygit.nix

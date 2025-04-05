@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   ...
 }:
@@ -20,6 +21,14 @@
       enableModifiedMarkers = true;
       enableRefreshOnWrite = true;
       closeIfLastWindow = true;
+    };
+    edgy.settings = {
+      left = [
+        {
+          title = "Neo-Tree";
+          ft = "neo-tree";
+        }
+      ];
     };
   };
 }

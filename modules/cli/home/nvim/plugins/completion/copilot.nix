@@ -27,6 +27,15 @@
           answer_header = "  Copilot ";
         };
       };
+      # For copilot chat
+      edgy.settings = {
+        right = [
+          {
+            ft = "copilot-chat";
+            title = "Copilot Chat";
+          }
+        ];
+      };
 
     };
     extraConfigLua = ''

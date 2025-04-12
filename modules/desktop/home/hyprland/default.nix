@@ -18,6 +18,7 @@
   config = lib.mkIf config.home.desktop.hyprland.enable {
     # Packages required by hyprland
     home.packages = with pkgs; [
+      hyprpolkitagent # Polkit agent
       grim # Grab images
       slurp # Select region
       wl-clipboard # Clipboard manager
@@ -135,6 +136,8 @@
           "nm-applet --indicator"
           "fcitx5 -d --replace"
           "dunst"
+          # polkit
+          "systemctl --user start hyprpolkitagent"
           # discord
           "webcord --start-minimized"
           # 1password

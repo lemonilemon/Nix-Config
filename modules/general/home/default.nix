@@ -19,7 +19,6 @@
     # Additional program languages I use
     home.general-settings.programlangs.packages = with pkgs; [
       gcc # c/c++
-      python3
       (python3.withPackages (
         ps: with ps; [
           numpy

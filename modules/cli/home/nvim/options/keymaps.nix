@@ -58,7 +58,7 @@
       {
         mode = "n";
         key = "<S-h>";
-        action = "<cmd>tabprevious<CR>";
+        action = "<cmd>bprevious<CR>";
         options = {
           desc = "Go to Previous Buffer";
           noremap = true;
@@ -68,7 +68,7 @@
       {
         mode = "n";
         key = "<S-l>";
-        action = "<cmd>tabnext<CR>";
+        action = "<cmd>bnext<CR>";
         options = {
           desc = "Go to Next Buffer";
           noremap = true;

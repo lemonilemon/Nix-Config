@@ -26,6 +26,7 @@
           };
         };
       };
+      git.lfs.enable = true; # Git LFS (Large File Storage)
       lazygit.enable = true;
       gh = {
         enable = true;

@@ -1,6 +1,5 @@
 {
   programs.nixvim.plugins = {
-    # https://nix-community.github.io/nixvim/plugins/lspkind/index.html
     lspkind = {
       enable = true;
       symbolMap = {

@@ -13,6 +13,9 @@
             case_mode = "smart_case";
           };
         };
+        ui-select = {
+          enable = true;
+        };
       };
     };
   };

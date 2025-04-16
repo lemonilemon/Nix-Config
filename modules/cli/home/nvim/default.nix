@@ -36,6 +36,7 @@
     ./plugins/treesitter/treesitter.nix
 
     # ui
+    ./plugins/ui/bufferline.nix
     ./plugins/ui/lualine.nix
     ./plugins/ui/noice.nix
     ./plugins/ui/notify.nix
@@ -52,6 +53,7 @@
     ./plugins/utils/comment.nix
     ./plugins/utils/comment-box.nix
     ./plugins/utils/edgy.nix
+    ./plugins/utils/snacks.nix
 
     # git
     ./plugins/git/lazygit.nix

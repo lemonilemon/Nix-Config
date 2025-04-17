@@ -31,6 +31,17 @@
           words = {
             enabled = true;
           };
+          image = {
+            # Image viewer using Kitty Graphics Protocol
+            enabled = true;
+          };
+          rename = {
+            # file renaming
+            enabled = true;
+          };
+          bufdelete = {
+            enabled = true;
+          };
         };
       };
     };

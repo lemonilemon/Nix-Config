@@ -54,6 +54,7 @@
     ./plugins/utils/comment-box.nix
     ./plugins/utils/edgy.nix
     ./plugins/utils/snacks.nix
+    ./plugins/utils/zellij-nav.nix
 
     # git
     ./plugins/git/lazygit.nix

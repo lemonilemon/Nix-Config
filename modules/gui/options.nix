@@ -26,6 +26,13 @@
             description = "Enable firefox for browsing";
           };
         };
+        zen = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = config.home.gui-settings.browsers.enable;
+            description = "Enable zen for browsing";
+          };
+        };
       };
 
       apps = {

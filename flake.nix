@@ -25,6 +25,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.hyprlang.follows = "hyprland/hyprlang";
     };
+    zen-browser = {
+      url = "github:0xc000022070/zen-browser-flake";
+      # IMPORTANT: we're using "libgbm" and is only available in unstable so ensure
+      # to have it up to date or simply don't specify the nixpkgs input
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
   outputs =
     inputs@{
@@ -69,7 +76,7 @@
         ];
 
         extraSpecialArgs = {
-          inherit inputs username;
+          inherit inputs username system;
           sys = "hm";
         };
       };
@@ -92,6 +99,7 @@
                   username
                   hostname
                   specialArgs
+                  system
                   ;
               };
               modules = [
@@ -115,6 +123,7 @@
                       hostname
                       sys
                       specialArgs
+                      system
                       ;
                   };
                   home-manager.users.${username} = {

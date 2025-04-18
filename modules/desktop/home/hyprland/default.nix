@@ -36,7 +36,7 @@
         "$MOD2" = "alt+shift";
         "$TERM" = "kitty";
         "$DRUN" = "rofi -show drun";
-        "$BROWSER" = "firefox";
+        "$BROWSER" = "zen";
         "$FILE" = "nemo";
         bind =
           [

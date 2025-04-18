@@ -68,7 +68,6 @@
   };
 
   # Hardware
-
   boot.kernelPackages = pkgs.linuxPackages_latest;
   # Not to suspend usb devices
   boot.kernelParams = [
@@ -82,20 +81,23 @@
       package = config.boot.kernelPackages.nvidiaPackages.stable;
       prime.sync.enable = true;
     };
+    bluetooth.enable = true;
   };
+  # Bluetooth
+  services.blueman.enable = true;
 
   # Sound
-  services.pulseaudio.enable = false;
+  services.pulseaudio.enable = false; # Use pipewire instead
   security.rtkit.enable = true;
   services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
+    enable = lib.mkDefault true;
+    alsa.enable = lib.mkDefault true;
+    alsa.support32Bit = lib.mkDefault true;
+    pulse.enable = lib.mkDefault true;
     jack.enable = lib.mkDefault true;
   };
 
-  security.polkit.enable = true;
+  security.polkit.enable = lib.mkDefault true;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -119,7 +121,6 @@
   # Copy the NixOS configuration file and link it from the resulting system
   # (/run/current-system/configuration.nix). This is useful in case you
   # accidentally delete configuration.nix.
-  # system.copySystemConfiguration = true;
 
   # This option defines the first version of NixOS you have installed on this particular machine,
   # and is used to maintain compatibility with application data (e.g. databases) created on older NixOS versions.

@@ -38,7 +38,6 @@
           "hyprland/window"
         ];
         modules-right = [
-          # "hyprland/scratchpad"
           "idle_inhibitor"
           "custom/kernel"
           "disk#ssd"
@@ -73,7 +72,7 @@
 
         bluetooth = {
           "format-on" = "BT ";
-          "format-off" = "BT ({status}) ";
+          "format-off" = "({status}) ";
           "format-connected" = "{device_alias} ";
           "format-connected-battery" = "{device_alias} [{device_battery_percentage}%] ";
           "format-device-preference" = [
@@ -86,6 +85,7 @@
           "tooltip-format-enumerate-connected" = "{device_alias}\t{device_address}";
           "tooltip-format-enumerate-connected-battery" =
             "{device_alias}\t{device_address}\t{device_battery_percentage}%";
+          "on-click" = "blueman-manager";
         };
 
         "hyprland/submap" = {
@@ -93,21 +93,21 @@
         };
 
         mpris = {
-          interval = 15;
+          interval = 0;
           format = "{player_icon} {dynamic}";
-          "format-paused" = "{status_icon} <i>{dynamic}</i>";
-          "dynamic-order" = [
+          format-paused = "{status_icon} {dynamic}";
+          dynamic-order = [
             "artist"
             "title"
           ];
-          "player-icons" = {
+          player-icons = {
             default = "▶";
             firefox = "▶";
-            "tidal-hifi" = "🎵";
+            tidal-hifi = "🎵";
             cmus = "🎵";
           };
-          "status-icons" = {
-            paused = "⏸";
+          status-icons = {
+            paused = "";
           };
         };
 

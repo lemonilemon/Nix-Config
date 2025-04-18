@@ -14,6 +14,7 @@
     ./network
     ./wlogout
     ./hyprpaper
+    ./bluetooth
   ];
   config = lib.mkIf config.home.desktop.hyprland.enable {
     # Packages required by hyprland
@@ -133,7 +134,7 @@
         # Open when hyprland starts
         exec-once = [
           "waybar"
-          "nm-applet --indicator"
+          # "nm-applet --indicator"
           "fcitx5 -d --replace"
           "dunst"
           # polkit

@@ -78,10 +78,13 @@
       package = config.boot.kernelPackages.nvidiaPackages.stable;
       prime.sync.enable = true;
     };
+    bluetooth.enable = true;
   };
+  # Bluetooth
+  services.blueman.enable = true;
 
   # Sound
-  services.pulseaudio.enable = false;
+  services.pulseaudio.enable = false; # Use pipewire instead
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;

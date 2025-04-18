@@ -11,7 +11,7 @@
       themeFile = "Catppuccin-Mocha";
       font = {
         size = 16;
-        name = "Meslo LG Nerd Font";
+        name = "Meslo LGLDZ Nerd Font";
       };
       keybindings = {
         "ctrl+c" = "copy_or_interrupt";

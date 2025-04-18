@@ -61,6 +61,7 @@
         inherit pkgs;
 
         modules = [
+          ./overlays
           ./home-manager
           nixvim.homeManagerModules.nixvim
           catppuccin.homeModules.catppuccin
@@ -95,6 +96,7 @@
               };
               modules = [
                 ./modules
+                ./overlays
 
                 # nixos-wsl
                 nixos-wsl.nixosModules.wsl

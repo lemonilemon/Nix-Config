@@ -14,6 +14,7 @@
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
     ./config.nix
+    ./nvidia.nix # For NVIDIA graphics cards
     ../base.nix
     ../i18n.nix
   ];
@@ -73,11 +74,6 @@
   ];
   hardware = {
     graphics.enable = true;
-    nvidia = {
-      modesetting.enable = true;
-      package = config.boot.kernelPackages.nvidiaPackages.stable;
-      prime.sync.enable = true;
-    };
     bluetooth.enable = true;
   };
   # Bluetooth

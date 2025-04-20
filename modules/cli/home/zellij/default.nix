@@ -20,6 +20,34 @@
             rounded_corners = true;
           };
         };
+        keybinds = {
+          normal = {
+            "bind \"Enter\"" = {
+              # Passthru `Enter`.
+              WriteChars = "\\u{000D}";
+              # Invoke autolock to immediately assess proper lock state.
+              # (This provides a snappier experience compared to
+              # solely relying on `reaction_seconds` to elapse.)
+              "MessagePlugin \"autolock\"" = { };
+            };
+          };
+          locked = {
+            "bind \"Ctrl g\"" = {
+              "MessagePlugin \"autolock\"" = {
+                payload = "toggle";
+              }; # toggle the autolock plugin.
+              SwitchToMode = "Normal";
+            };
+          };
+          "shared_except \"locked\"" = {
+            "bind \"Ctrl g\"" = {
+              "MessagePlugin \"autolock\"" = {
+                payload = "toggle";
+              }; # Disable the autolock plugin.
+              SwitchToMode = "Locked";
+            };
+          };
+        };
         plugins = {
           autolock = {
             # Props for KDL
@@ -29,7 +57,7 @@
             # Enabled at start?
             is_enabled = true;
             # Lock when any open these programs open.
-            triggers = "nvim|vim|git|fzf|zoxide|atuin";
+            triggers = "nvim|vim";
             # Reaction to input occurs after this many seconds. (default=0.3)
             #(An existing scheduled reaction prevents additional reactions.)
             reaction_seconds = "0.3";

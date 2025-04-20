@@ -10,7 +10,6 @@
       enable = true;
       libraries = with pkgs; [
         stdenv.cc.cc
-        zlib
         fuse3
         icu
         nss
@@ -18,12 +17,19 @@
         curl
         expat
         libcxx
+        glib
         glibc
-        musl
         glibc.static
+        zlib
         zlib.static
+        musl
         libtool
+        libGL
       ];
+    };
+    programs.command-not-found.enable = false;
+    programs.nix-index = {
+      enable = true;
     };
   };
 }

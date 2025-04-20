@@ -16,6 +16,10 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     systems.url = "github:nix-systems/default";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     hyprland.url = "github:hyprwm/Hyprland";
@@ -42,6 +46,7 @@
       nixvim,
       home-manager,
       catppuccin,
+      nix-index-database,
       systems,
       ...
     }:
@@ -72,7 +77,7 @@
           ./home-manager
           nixvim.homeManagerModules.nixvim
           catppuccin.homeModules.catppuccin
-
+          nix-index-database.hmModules.nix-index
         ];
 
         extraSpecialArgs = {
@@ -130,6 +135,7 @@
                     imports = [
                       ./modules/home.nix
                       catppuccin.homeModules.catppuccin
+                      nix-index-database.hmModules.nix-index
                     ];
                   };
 

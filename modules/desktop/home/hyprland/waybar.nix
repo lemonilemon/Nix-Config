@@ -187,9 +187,9 @@
           "format-critical" = "{temperatureC}°C {icon}";
           format = "{temperatureC}°C {icon}";
           "format-icons" = [
-            ""
+            ""
             ""
-            ""
+            ""
           ];
         };
 
@@ -249,7 +249,7 @@
 
         pulseaudio = {
           "scroll-step" = 2;
-          format = "{volume}% {icon} {format_source}";
+          format = "{volume}% {icon}  {format_source}";
           "format-bluetooth" = "{volume}% {icon} {format_source}";
           "format-bluetooth-muted" = "  {icon} {format_source}";
           "format-muted" = "  {format_source}";

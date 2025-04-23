@@ -35,12 +35,12 @@
           "mpris"
         ];
         modules-center = [
-          "hyprland/window"
+          # "hyprland/window"
         ];
         modules-right = [
           "idle_inhibitor"
-          "custom/kernel"
-          "disk#ssd"
+          # "custom/kernel"
+          # "disk#ssd"
           "temperature"
           "cpu"
           "memory"
@@ -101,13 +101,12 @@
             "title"
           ];
           player-icons = {
-            default = "▶";
-            firefox = "▶";
+            default = "";
             tidal-hifi = "🎵";
             cmus = "🎵";
           };
           status-icons = {
-            paused = "";
+            paused = "▶";
           };
         };
 

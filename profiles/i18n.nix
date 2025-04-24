@@ -13,6 +13,7 @@
         waylandFrontend = true;
         addons = with pkgs; [
           fcitx5-gtk
+          kdePackages.fcitx5-qt
           fcitx5-rime
           rime-data
           fcitx5-material-color

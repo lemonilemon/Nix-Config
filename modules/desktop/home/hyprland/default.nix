@@ -142,7 +142,7 @@
           # discord
           "webcord --start-minimized"
           # 1password
-          "1password --silent"
+          "1password --silent --enable-features=UseOzonePlatform --ozone-platform=wayland --enable-wayland-ime"
         ];
         env = [
           "ELECTRON_OZONE_PLATFORM_HINT, wayland"
@@ -161,7 +161,7 @@
 
           # fcitx input-related
           "GLFW_IM_MODULE, fcitx"
-          "QT_IM_MODULE, \"wayland;fcitx;ibus\""
+          "QT_IM_MODULE, wayland;fcitx;ibus"
           "XMODIFIERS, @im=fcitx"
 
           "EDITOR, nvim"
@@ -227,14 +227,16 @@
         drun-match-fields = "name";
         drun-dis-play-format = "{name}";
         kb-cancel = "Escape";
-        # fake-transparency = true;
         sidebar-mode = true;
       };
     };
 
     # XDG portal:
     xdg.portal.enable = true;
-    xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    xdg.portal.extraPortals = with pkgs; [
+      xdg-desktop-portal-gtk
+      xdg-desktop-portal-wlr
+    ];
     home.sessionVariables = {
       WLR_NO_HARDWARE_CURSORS = "1";
     };

@@ -142,7 +142,7 @@
           # discord
           "webcord --start-minimized"
           # 1password
-          "1password --silent --enable-features=UseOzonePlatform --ozone-platform=wayland --enable-wayland-ime"
+          "1password --silent"
         ];
         env = [
           "ELECTRON_OZONE_PLATFORM_HINT, wayland"

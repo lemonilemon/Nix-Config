@@ -29,8 +29,6 @@
             # Check if the executable exists before wrapping
             if [ -f "$spotify_executable" ]; then
               wrapProgram "$spotify_executable" \
-                --add-flags "--enable-features=UseOzonePlatform" \
-                --add-flags "--ozone-platform=wayland" \
                 --add-flags "--enable-wayland-ime" \
                 # Optionally unset conflicting env vars if needed:
                 # --unset ELECTRON_OZONE_PLATFORM_HINT \
@@ -54,8 +52,6 @@
 
             if [ -f "$op_executable" ]; then
               wrapProgram "$op_executable" \
-                --add-flags "--enable-features=UseOzonePlatform" \
-                --add-flags "--ozone-platform=wayland" \
                 --add-flags "--enable-wayland-ime" \
                 # --unset ELECTRON_OZONE_PLATFORM_HINT \
                 # --unset NIXOS_OZONE_WL

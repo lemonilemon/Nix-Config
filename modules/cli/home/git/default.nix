@@ -18,12 +18,14 @@
           ".*"
         ];
         extraConfig = {
-          core = {
+          init = {
             defaultBranch = "main";
+          };
+          core = {
             sshCommand = if sys == "NixOS-wsl" then "ssh.exe" else "ssh";
             editor = "nvim";
-            pull.rebase = true;
           };
+          pull.rebase = true;
         };
       };
       git.lfs.enable = true; # Git LFS (Large File Storage)

@@ -1,7 +1,12 @@
 { pkgs, ... }:
 {
-  # https://nix-community.github.io/nixvim/plugins/conform-nvim/index.html
-  home.packages = with pkgs; [ nixfmt-rfc-style ];
+  home.packages = with pkgs; [
+    nixfmt-rfc-style
+    prettierd
+    stylua
+    isort
+    black
+  ];
   programs.nixvim.plugins = {
     conform-nvim = {
       enable = true;
@@ -12,44 +17,41 @@
         };
         notify_on_error = true;
         formatters_by_ft = {
-          liquidsoap = [ "liquidsoap-prettier" ];
-          html = [
-            [
-              "prettierd"
-              "prettier"
-            ]
+          html = {
+            __unkeyed-1 = "prettierd";
+            __unkeyed-2 = "prettier";
+            stop_after_first = true;
+          };
+          css = {
+            __unkeyed-1 = "prettierd";
+            __unkeyed-2 = "prettier";
+            stop_after_first = true;
+          };
+          javascript = {
+            __unkeyed-1 = "prettierd";
+            __unkeyed-2 = "prettier";
+            stop_after_first = true;
+          };
+          javascriptreact = {
+            __unkeyed-1 = "prettierd";
+            __unkeyed-2 = "prettier";
+            stop_after_first = true;
+          };
+          typescript = {
+            __unkeyed-1 = "prettierd";
+            __unkeyed-2 = "prettier";
+            stop_after_first = true;
+          };
+
+          typescriptreact = {
+            __unkeyed-1 = "prettierd";
+            __unkeyed-2 = "prettier";
+            stop_after_first = true;
+          };
+          python = [
+            "isort"
+            "black"
           ];
-          css = [
-            [
-              "prettierd"
-              "prettier"
-            ]
-          ];
-          javascript = [
-            [
-              "prettierd"
-              "prettier"
-            ]
-          ];
-          javascriptreact = [
-            [
-              "prettierd"
-              "prettier"
-            ]
-          ];
-          typescript = [
-            [
-              "prettierd"
-              "prettier"
-            ]
-          ];
-          typescriptreact = [
-            [
-              "prettierd"
-              "prettier"
-            ]
-          ];
-          python = [ "black" ];
           lua = [ "stylua" ];
           nix = [ "nixfmt" ];
           # markdown = [

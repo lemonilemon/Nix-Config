@@ -9,6 +9,7 @@
     programs.nix-ld = {
       enable = true;
       libraries = with pkgs; [
+        linuxPackages.nvidia_x11
         cudatoolkit # For CUDA support
         stdenv.cc.cc
         fuse3

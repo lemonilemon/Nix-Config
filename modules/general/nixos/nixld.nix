@@ -9,6 +9,7 @@
     programs.nix-ld = {
       enable = true;
       libraries = with pkgs; [
+        cudatoolkit # For CUDA support
         stdenv.cc.cc
         fuse3
         icu

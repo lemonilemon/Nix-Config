@@ -27,5 +27,8 @@
     };
     # Load nvidia driver for Xorg and Wayland
     services.xserver.videoDrivers = [ "nvidia" ];
+    environment.sessionVariables = {
+      CUDA_PATH = "${pkgs.cudatoolkit}"; # CUDA toolkit path
+    };
   };
 }

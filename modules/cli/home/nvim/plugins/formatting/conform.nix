@@ -11,6 +11,11 @@
     conform-nvim = {
       enable = true;
       settings = {
+        formatters = {
+          black = {
+            prepend_args = [ "--fast" ];
+          };
+        };
         format_on_save = {
           lspFallback = true;
           timeoutMs = 500;

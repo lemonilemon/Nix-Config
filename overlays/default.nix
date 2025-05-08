@@ -30,6 +30,7 @@
             if [ -f "$spotify_executable" ]; then
               wrapProgram "$spotify_executable" \
                 --add-flags "--enable-wayland-ime" \
+                --add-flags "--enable-features=WaylandLinuxDrmSyncobj" \
                 # Optionally unset conflicting env vars if needed:
                 # --unset ELECTRON_OZONE_PLATFORM_HINT \
                 # --unset NIXOS_OZONE_WL
@@ -53,6 +54,7 @@
             if [ -f "$op_executable" ]; then
               wrapProgram "$op_executable" \
                 --add-flags "--enable-wayland-ime" \
+                --add-flags "--enable-features=WaylandLinuxDrmSyncobj" \
                 # --unset ELECTRON_OZONE_PLATFORM_HINT \
                 # --unset NIXOS_OZONE_WL
               echo "Finished wrapping 1Password."

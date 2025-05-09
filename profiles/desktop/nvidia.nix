@@ -20,6 +20,7 @@
         # prime = {
         #   sync.enable = true;
         # };
+        powerManagement.enable = true;
         nvidiaSettings = true;
         open = true; # enable the open source NVIDIA kernel module.
       };

@@ -25,6 +25,7 @@
         ]
       )) # python
       uv # python package
+      micromamba # python virtualenv
       nodejs # nodejs
       jre8 # Java Development Kit
       rustc # Rust

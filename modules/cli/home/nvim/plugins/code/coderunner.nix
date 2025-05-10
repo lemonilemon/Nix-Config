@@ -7,12 +7,12 @@
     extraPlugins = with pkgs.vimUtils; [
       (buildVimPlugin {
         pname = "CodeRunner";
-        version = "2025-04-11";
+        version = "2025-05-10";
         src = pkgs.fetchFromGitHub {
           owner = "CRAG666";
           repo = "code_runner.nvim";
           rev = "main";
-          sha256 = "sha256-TOMxkVd6jL76VVrUhUuu7KdC+D2iHk9Dchrdbohj4VY=";
+          sha256 = "sha256-/v2v+aKp4coCIaqSBUHL0Me0z4iH7fFnwP6W8Ofe08c=";
         };
       })
     ];

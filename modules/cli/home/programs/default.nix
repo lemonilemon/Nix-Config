@@ -13,6 +13,7 @@
       unzip
 
       # utils
+      lsd
       bat
       netcat
       neofetch
@@ -43,6 +44,12 @@
       _1password-cli
     ];
     programs = {
+
+      lsd = {
+        enable = true;
+        enableZshIntegration = true;
+      };
+
       bat = {
         enable = true;
         config = {

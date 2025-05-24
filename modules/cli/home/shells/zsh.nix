@@ -8,10 +8,11 @@
     programs.zsh = {
       enable = true;
       shellAliases = {
-        ll = "ls -alF";
-        la = "ls -A";
-        l = "ls -CF";
-        ls = "ls --color=auto";
+        # Use lsd instead
+        # ll = "ls -alF";
+        # la = "ls -A";
+        # l = "ls -CF";
+        # ls = "ls --color=auto";
         lg = "lazygit";
         ".." = "cd ..";
       };

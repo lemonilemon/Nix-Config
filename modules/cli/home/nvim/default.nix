@@ -26,6 +26,7 @@
     ./plugins/completion/lspkind.nix
 
     # code
+    ./plugins/code/typst.nix
     ./plugins/code/markdown.nix
     ./plugins/code/vimtex.nix
     ./plugins/code/competitest.nix

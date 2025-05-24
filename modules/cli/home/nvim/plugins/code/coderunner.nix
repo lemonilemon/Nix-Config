@@ -44,6 +44,9 @@
               markdown = function()
                   vim.api.nvim_command("MarkdownPreview");
               end,
+              typst = function()
+                  vim.api.nvim_command("TypstPreview document");
+              end,
           }
       })
     '';

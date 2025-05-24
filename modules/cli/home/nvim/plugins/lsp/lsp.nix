@@ -3,11 +3,9 @@
 
   home.packages = with pkgs; [ nixfmt-rfc-style ];
   programs.nixvim.plugins = {
-    # https://nix-community.github.io/nixvim/plugins/lsp-format/index.html
     lsp-format = {
       enable = true;
     };
-    # https://nix-community.github.io/nixvim/plugins/lsp/index.html
     lsp = {
       enable = true;
       servers = {
@@ -62,6 +60,12 @@
         };
         texlab = {
           enable = true;
+        };
+        tinymist = {
+          enable = true;
+          settings = {
+            formatterMode = "typstyle";
+          };
         };
       };
     };

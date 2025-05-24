@@ -7,6 +7,8 @@
 {
   config = lib.mkIf config.home.general-settings.pdf.enable {
     home.packages = with pkgs; [
+      # typst
+      typst
       # tex & markdown
       texlive.combined.scheme-full # tex
       multimarkdown # markdown

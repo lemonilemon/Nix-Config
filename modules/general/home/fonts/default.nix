@@ -30,6 +30,7 @@
     };
     home.packages = with pkgs; [
       corefonts # Arial, Times New Roman, Courier New, etc.
+      cm_unicode
       ubuntu_font_family
       source-han-serif
       noto-fonts

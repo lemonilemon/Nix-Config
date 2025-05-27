@@ -26,7 +26,7 @@
           show_help = true;
           question_header = "  User ";
           answer_header = "  Copilot ";
-          model = "gemini-2.5-pro"; # Use the latest model available
+          model = "claude-sonnet-4"; # Use the latest model available
         };
       };
       # For copilot chat

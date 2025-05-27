@@ -1,5 +1,6 @@
 {
   pkgs,
+  ...
 }:
 {
   # Network issues with wpa_supplicant

@@ -172,7 +172,7 @@
       {
         mode = "n";
         key = "<leader>fg";
-        action = "<cmd>Telescope find_files<CR>";
+        action = "<cmd>Telescope live_grep<CR>";
         options = {
           desc = "Grep in Telescope with <leader>fg";
           noremap = true;

@@ -27,6 +27,7 @@
         musl
         libtool
         libGL
+        libxcrypt
       ];
     };
     programs.command-not-found.enable = false;

@@ -12,7 +12,7 @@
 
 #let course = "CS101"
 #let homework = "Homework"
-#let author = {{_author_}}
+#let author = "{{_author_}}"
 
 #set page(
   paper: "a4",

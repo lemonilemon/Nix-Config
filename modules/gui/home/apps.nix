@@ -9,6 +9,7 @@
     home.packages = with pkgs; [
       webcord
       spotify
+      vlc
     ];
     programs.ssh = {
       enable = true;

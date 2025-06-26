@@ -56,6 +56,7 @@
     ./plugins/utils/edgy.nix
     ./plugins/utils/snacks.nix
     ./plugins/utils/zellij-nav.nix
+    ./plugins/utils/hardtime.nix
 
     # git
     ./plugins/git/lazygit.nix

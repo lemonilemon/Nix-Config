@@ -33,7 +33,7 @@
           };
           image = {
             # Image viewer using Kitty Graphics Protocol
-            enabled = true;
+            enabled = false; # Not supported by zellij
           };
           rename = {
             # file renaming

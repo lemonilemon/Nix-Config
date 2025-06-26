@@ -33,9 +33,6 @@
           copilot = {
             endpoint = "https://api.githubcopilot.com";
           };
-        };
-
-        vendors = {
           copilot_claude = {
             __inherited_from = "copilot";
             model = "claude-sonnet-4";
@@ -62,6 +59,7 @@
             display_name = "copilot/chatgpt-o4-mini";
           };
         };
+
         windows = {
           sidebar_header = {
             align = "center";

@@ -71,33 +71,6 @@
           silent = true;
         };
       }
-      # Copilot-chat keymaps
-      {
-        mode = [
-          "n"
-          "v"
-        ];
-        key = "<leader>aa";
-        action = "<cmd>CopilotChatOpen<CR>";
-        options = {
-          desc = "Open Copilot Chat";
-          noremap = true;
-          silent = true;
-        };
-      }
-      {
-        mode = [
-          "n"
-          "v"
-        ];
-        key = "<leader>ax";
-        action = "<cmd>CopilotChatReset<CR>";
-        options = {
-          desc = "Reset Copilot Chat";
-          noremap = true;
-          silent = true;
-        };
-      }
 
       {
         mode = "i";

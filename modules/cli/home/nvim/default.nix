@@ -26,6 +26,7 @@
 
     # ai
     ./plugins/ai/CopilotChat.nix
+    ./plugins/ai/avante.nix
 
     # code
     ./plugins/code/typst.nix

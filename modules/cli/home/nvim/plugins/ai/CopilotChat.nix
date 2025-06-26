@@ -1,7 +1,7 @@
 {
   programs.nixvim.plugins = {
     copilot-chat = {
-      enable = true;
+      enable = false; # Set to true to enable Copilot Chat
       settings = {
         auto_insert_mode = true;
         show_help = true;

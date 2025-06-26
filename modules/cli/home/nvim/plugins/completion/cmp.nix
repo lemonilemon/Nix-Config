@@ -1,11 +1,27 @@
 {
   programs.nixvim = {
     plugins = {
-      # https://nix-community.github.io/nixvim/plugins/cmp-emoji/index.html
       cmp-emoji = {
         enable = true;
       };
-      # https://nix-community.github.io/nixvim/plugins/cmp/index.html
+      copilot-cmp = {
+        enable = true;
+      };
+      copilot-lua = {
+        enable = true;
+        settings = {
+          suggestion = {
+            enabled = false;
+          };
+          panel = {
+            enabled = false;
+          };
+          filetypes = {
+            markdown = true;
+            help = true;
+          };
+        };
+      };
       cmp = {
         enable = true;
         settings = {

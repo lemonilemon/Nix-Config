@@ -22,8 +22,10 @@
 
     # completion
     ./plugins/completion/cmp.nix
-    ./plugins/completion/copilot.nix
     ./plugins/completion/lspkind.nix
+
+    # ai
+    ./plugins/ai/CopilotChat.nix
 
     # code
     ./plugins/code/typst.nix

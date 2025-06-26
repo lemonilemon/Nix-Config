@@ -6,6 +6,9 @@
   ...
 }:
 {
+  imports = [
+    ./atuin.nix
+  ];
   config = lib.mkIf config.home.cli-settings.programs.enable {
     home.packages = with pkgs; [
       # archives

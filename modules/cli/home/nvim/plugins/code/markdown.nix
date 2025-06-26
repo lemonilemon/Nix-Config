@@ -10,16 +10,14 @@
         settings = {
           auto_close = 1;
           auto_start = 0;
-          browser = "firefox";
+          browser = "";
           filetypes = [ "markdown" ];
 
           echo_preview_url = 1;
           highlight_css = {
             __raw = "vim.fn.expand('~/highlight.css')";
           };
-          markdown_css = "/Users/username/markdown.css";
           page_title = "「\${name}」";
-          port = "8080";
           preview_options = {
             disable_filename = 1;
             disable_sync_scroll = 1;

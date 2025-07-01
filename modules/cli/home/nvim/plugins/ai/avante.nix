@@ -60,6 +60,10 @@
           };
         };
 
+        web_search_engine = {
+          provider = "tavily";
+        };
+
         windows = {
           sidebar_header = {
             align = "center";
@@ -73,9 +77,18 @@
     edgy.settings = {
       right = [
         {
-          ft = "avante";
+          ft = "Avante";
           title = "Avante";
         }
+        {
+          ft = "AvanteSelectedFiles";
+          title = "Avante Selected Files";
+        }
+        {
+          ft = "AvanteInput";
+          title = "Avante Input";
+        }
+
       ];
     };
   };

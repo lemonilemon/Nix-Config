@@ -36,5 +36,7 @@
     extraFiles."template/tex/CSIE.tpl".source = ./template/tex/CSIE.tpl;
     # The template for Typst
     extraFiles."template/typ/CSIE.tpl".source = ./template/typst/CSIE.tpl;
+    # The template for Nix
+    extraFiles."template/nix/Project.tpl".source = ./template/nix/Project.tpl;
   };
 }

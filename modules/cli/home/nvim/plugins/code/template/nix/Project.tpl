@@ -1,3 +1,4 @@
+;; nix
 {
   description = "A generic project template";
 

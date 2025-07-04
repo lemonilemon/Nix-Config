@@ -1,6 +1,8 @@
 { pkgs, ... }:
 {
   home.packages = with pkgs; [
+    yamllint
+    yamlfmt
     nixfmt-rfc-style
     prettierd
     stylua

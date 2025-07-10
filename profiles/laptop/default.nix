@@ -25,6 +25,9 @@
 
   networking.wireless.enable = false; # explicitly disable wireless
   networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
+  networking.useDHCP = false;
+  hardware.enableRedistributableFirmware = true;
+  hardware.enableAllFirmware = true;
 
   environment.sessionVariables = {
     NIXHOST = "laptop";
@@ -71,6 +74,8 @@
   boot.kernelParams = [
     "usbcore.autosuspend=-1"
     "usbcore.autosuspend_delay_ms=-1"
+    "pci=nommconf" # Helps with PCI configuration issues
+    "acpi_osi=Linux" # ACPI compatibility
   ];
   hardware = {
     graphics.enable = true;

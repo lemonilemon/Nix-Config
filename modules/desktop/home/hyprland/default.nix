@@ -123,7 +123,7 @@
             {
               # Logitech G Pro Wireless
               name = "logitech-g-pro--1";
-              sensitivity = -1;
+              sensitivity = -0.2;
             }
           ];
           gestures = {

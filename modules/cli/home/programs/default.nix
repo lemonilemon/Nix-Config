@@ -8,6 +8,7 @@
 {
   imports = [
     ./atuin.nix
+    ./ai.nix
   ];
   config = lib.mkIf config.home.cli-settings.programs.enable {
     home.packages = with pkgs; [

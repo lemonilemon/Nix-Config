@@ -18,7 +18,7 @@
       theme = "sddm-astronaut-theme";
       settings = {
         Theme = {
-          CursorTheme = "rose-pine";
+          CursorTheme = "BreezeX-RosePine-Linux";
           CursorSize = 24;
         };
       };

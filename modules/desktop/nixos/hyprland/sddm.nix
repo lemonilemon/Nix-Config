@@ -2,7 +2,6 @@
   lib,
   config,
   pkgs,
-  catppuccin,
   ...
 }:
 {
@@ -19,8 +18,8 @@
       theme = "sddm-astronaut-theme";
       settings = {
         Theme = {
-          # CursorTheme = config.stylix.cursor.name;
-          # CursorSize = config.stylix.cursor.size;
+          CursorTheme = "rose-pine";
+          CursorSize = 24;
         };
       };
       extraPackages = with pkgs; [
@@ -31,6 +30,7 @@
     };
     environment.systemPackages = with pkgs; [
       sddm-astronaut
+      rose-pine-cursor
     ];
     catppuccin.sddm.enable = lib.mkDefault false;
   };

@@ -2,11 +2,11 @@
   lib,
   config,
   pkgs,
-  catppuccin,
   ...
 }:
 {
   imports = [
+    ./fastfetch.nix
     ./atuin.nix
     ./ai.nix
   ];
@@ -20,7 +20,6 @@
       lsd
       bat
       netcat
-      neofetch
       ripgrep
       direnv
       nix-direnv

@@ -5,7 +5,6 @@
 {
   pkgs,
   config,
-  hostname,
   lib,
   ...
 }:
@@ -16,12 +15,8 @@
     ./config.nix
     ../base.nix
     ../i18n.nix
+    ../boot.nix
   ];
-
-  # Use the systemd-boot EFI boot loader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.systemd-boot.configurationLimit = 5;
-  boot.loader.efi.canTouchEfiVariables = true;
 
   networking.wireless.enable = false; # explicitly disable wireless
   networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
@@ -69,14 +64,6 @@
   };
 
   # Hardware
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-  # Not to suspend usb devices
-  boot.kernelParams = [
-    "usbcore.autosuspend=-1"
-    "usbcore.autosuspend_delay_ms=-1"
-    "pci=nommconf" # Helps with PCI configuration issues
-    "acpi_osi=Linux" # ACPI compatibility
-  ];
   hardware = {
     graphics.enable = true;
     nvidia = {

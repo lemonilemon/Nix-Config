@@ -4,6 +4,7 @@
 {
   imports = [
     ./gnome.nix
-    ./hyprland.nix
+    ./hyprland/hyprland.nix
+    ./hyprland/sddm.nix
   ];
 }

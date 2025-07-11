@@ -13,7 +13,7 @@
     package = inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default;
     hyprcursor = {
       enable = true;
-      size = 36;
+      size = 24;
     };
   };
   gtk = {

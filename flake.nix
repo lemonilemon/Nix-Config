@@ -24,6 +24,7 @@
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     hyprland.url = "github:hyprwm/Hyprland";
     catppuccin.url = "github:catppuccin/nix";
+    grub2-themes.url = "github:vinceliuice/grub2-themes";
     rose-pine-hyprcursor = {
       url = "github:ndom91/rose-pine-hyprcursor";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -40,14 +41,15 @@
   outputs =
     inputs@{
       self,
+      systems,
       nixpkgs,
       nixos-wsl,
       nixos-hardware,
-      nixvim,
-      home-manager,
-      catppuccin,
       nix-index-database,
-      systems,
+      home-manager,
+      grub2-themes,
+      nixvim,
+      catppuccin,
       ...
     }:
     let
@@ -113,6 +115,7 @@
 
                 # nixos-wsl
                 nixos-wsl.nixosModules.wsl
+                grub2-themes.nixosModules.default
 
                 catppuccin.nixosModules.catppuccin
 

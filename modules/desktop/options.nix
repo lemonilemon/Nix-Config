@@ -35,6 +35,11 @@
         default = config.nixos.desktop.enable;
         description = "Enable hyprland for desktop environment";
       };
+      displayManager = lib.mkOption {
+        type = lib.types.str;
+        default = "sddm";
+        description = "The display manager to use for the desktop environment";
+      };
     };
   };
 }

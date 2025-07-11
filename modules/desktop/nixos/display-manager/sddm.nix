@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.nixos.desktop.hyprland.enable {
+  config = lib.mkIf (config.nixos.desktop.displayManager == "sddm") {
     services.displayManager.sddm = {
       enable = true;
       wayland = {

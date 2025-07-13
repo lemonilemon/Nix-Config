@@ -12,6 +12,21 @@
         description = "Enable my GUI settings for home-manager modules";
       };
 
+      development = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.home.gui-settings.enable;
+          description = "Enable development tools";
+        };
+        web = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = config.home.gui-settings.development.enable;
+            description = "Enable web development tools";
+          };
+        };
+      };
+
       browsers = {
         enable = lib.mkOption {
           type = lib.types.bool;

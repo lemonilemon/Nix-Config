@@ -35,9 +35,11 @@
         let
           MOD1 = "SUPER";
           MOD2 = "alt+shift";
+          MOD3 = "alt";
+          MOD4 = "SUPER+SHIFT";
           TERM = "kitty";
           DRUN = "rofi -show drun";
-          BROWSER = "zen";
+          BROWSER = "zen-beta";
           FILE = "nemo";
         in
         {
@@ -46,15 +48,20 @@
               "${MOD1}, m, exit,"
               "${MOD1}, x, killactive,"
               "${MOD1}, f, fullscreen,"
-              "${MOD1}, s, togglefloating,"
-              "${MOD1}, up, movefocus, u"
-              "${MOD1}, down, movefocus, d"
-              "${MOD1}, left, movefocus, l"
-              "${MOD1}, right, movefocus, r"
-              "${MOD1}, g, togglegroup,"
-              "${MOD1}, Tab, changegroupactive,"
-              "${MOD1}, c, centerwindow,"
-              "${MOD1}, Tab, cyclenext," # change focus to another window
+              "${MOD1}, t, togglefloating,"
+              # For window movement
+              "${MOD4}, s, movetoworkspace, special:scratchpad"
+              "${MOD4}, 1, movetoworkspace, 1"
+              "${MOD4}, 2, movetoworkspace, 2"
+              "${MOD4}, 3, movetoworkspace, 3"
+              "${MOD4}, 4, movetoworkspace, 4"
+              "${MOD4}, 5, movetoworkspace, 5"
+              # Vim-like keybindings for focus movement
+              "${MOD1}, k, movefocus, u"
+              "${MOD1}, j, movefocus, d"
+              "${MOD1}, h, movefocus, l"
+              "${MOD1}, l, movefocus, r"
+              "${MOD3}, Tab, cyclenext," # change focus to another window
 
               ", Print, exec, grim -g \"$(slurp)\" - | wl-copy"
               "${MOD1}+SHIFT, s, exec, grim -g \"$(slurp)\" - | wl-copy"
@@ -77,8 +84,9 @@
             );
           bindr = [
             "${MOD2}, f, exec, ${BROWSER}" # Browser
-            "${MOD2}, q, exec, ${TERM}" # Terminal
-            "${MOD2}, space, exec, ${DRUN}" # Launcher
+            "${MOD2}, q, togglespecialworkspace, mainterm" # Terminal
+            "${MOD2}, s, togglespecialworkspace, scratchpad" # Scratchpad
+            "${MOD2}, space, exec, pkill ${DRUN} || ${DRUN}" # Launcher
             "${MOD2}, e, exec, ${FILE}" # File manager
           ];
 
@@ -106,8 +114,19 @@
 
           # rule
           windowrule = [
-            "stayfocused, class:(Rofi)$"
+            "tag +browser, class:(${BROWSER})$"
+            "tag +term, class:(${TERM})$"
+            "tag +file, class:(${FILE})$"
+            "tag +launcher, class:(rofi|Rofi)$"
+            "stayfocused, tag:launcher"
             "pseudo, class:(fcitx5)$"
+            "maximize, tag:term, onworkspace:special:mainterm"
+            "tag +mainterm, tag:term, onworkspace:special:mainterm"
+            "opacity 0.8, tag:(browser|file)"
+          ];
+
+          workspace = [
+            "special:mainterm, on-created-empty: ${TERM}"
           ];
 
           input = {

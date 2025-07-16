@@ -2,6 +2,8 @@
   pkgs,
   config,
   lib,
+  system,
+  inputs,
   ...
 }:
 {
@@ -10,6 +12,8 @@
       webcord
       spotify
       vlc
+      tradingview
+      inputs.claude-desktop.packages.${system}.claude-desktop
     ];
     programs.ssh = {
       enable = true;

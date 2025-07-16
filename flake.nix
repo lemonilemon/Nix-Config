@@ -21,6 +21,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     systems.url = "github:nix-systems/default";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.systems.follows = "systems";
+    };
+
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     hyprland.url = "github:hyprwm/Hyprland";
     catppuccin.url = "github:catppuccin/nix";
@@ -36,7 +41,11 @@
       # to have it up to date or simply don't specify the nixpkgs input
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
+    claude-desktop = {
+      url = "github:k3d3/claude-desktop-linux-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
   outputs =
     inputs@{

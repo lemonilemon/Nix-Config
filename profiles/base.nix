@@ -18,16 +18,16 @@
   environment.shells = [ pkgs.zsh ];
   security.sudo.wheelNeedsPassword = lib.mkDefault false;
 
-  virtualisation.containers.enable = true;
+  virtualisation.containers.enable = lib.mkDefault true;
   virtualisation = {
     podman = {
-      enable = true;
+      enable = lib.mkDefault true;
 
       # Create a `docker` alias for podman, to use it as a drop-in replacement
       # dockerCompat = true;
 
       # Required for containers under podman-compose to be able to talk to each other.
-      defaultNetwork.settings.dns_enabled = true;
+      defaultNetwork.settings.dns_enabled = lib.mkDefault true;
     };
   };
 

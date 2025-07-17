@@ -19,7 +19,13 @@
   ];
 
   networking.wireless.enable = false; # explicitly disable wireless
-  networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
+  networking.networkmanager = {
+    enable = true; # Easiest to use and most distros use this by default.
+    plugins = with pkgs; [
+      networkmanager-openvpn # OpenVPN support
+      networkmanager-openconnect # OpenConnect support
+    ];
+  };
   networking.useDHCP = false;
   hardware.enableRedistributableFirmware = true;
   hardware.enableAllFirmware = true;
@@ -80,14 +86,14 @@
   services.pulseaudio.enable = false; # Use pipewire instead
   security.rtkit.enable = true;
   services.pipewire = {
-    enable = lib.mkDefault true;
-    alsa.enable = lib.mkDefault true;
-    alsa.support32Bit = lib.mkDefault true;
-    pulse.enable = lib.mkDefault true;
-    jack.enable = lib.mkDefault true;
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
   };
 
-  security.polkit.enable = lib.mkDefault true;
+  security.polkit.enable = true;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

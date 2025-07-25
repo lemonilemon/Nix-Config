@@ -36,7 +36,7 @@
           MOD1 = "SUPER";
           MOD2 = "alt+shift";
           MOD3 = "alt";
-          MOD4 = "SUPER+SHIFT";
+          MOD4 = "SUPER+alt";
           TERM = "kitty";
           DRUN = "rofi -show drun";
           BROWSER = "zen-beta";

@@ -1,4 +1,5 @@
 {
+  lib,
   pkgs,
   inputs,
   ...
@@ -18,16 +19,16 @@
   };
   gtk = {
     enable = true;
-    iconTheme = {
-      name = "rose-pine";
-      package = pkgs.rose-pine-icon-theme;
-    };
-    theme = {
-      name = "rose-pine";
-      package = pkgs.rose-pine-gtk-theme;
-    };
+    # iconTheme = {
+    #   name = lib.mkForce "rose-pine";
+    #   package = pkgs.rose-pine-icon-theme;
+    # };
+    # theme = {
+    #   name = lib.mkForce "rose-pine";
+    #   package = pkgs.rose-pine-gtk-theme;
+    # };
     cursorTheme = {
-      name = "BreezeX-RosePine-Linux";
+      name = lib.mkForce "BreezeX-RosePine-Linux";
       package = pkgs.rose-pine-cursor;
       size = 24;
     };

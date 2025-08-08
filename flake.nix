@@ -86,9 +86,9 @@
         modules = [
           ./overlays
           ./home-manager
-          nixvim.homeManagerModules.nixvim
+          nixvim.homeModules.nixvim
           catppuccin.homeModules.catppuccin
-          nix-index-database.hmModules.nix-index
+          nix-index-database.homeModules.nix-index
         ];
 
         extraSpecialArgs = {
@@ -147,11 +147,11 @@
                     imports = [
                       ./modules/home.nix
                       catppuccin.homeModules.catppuccin
-                      nix-index-database.hmModules.nix-index
+                      nix-index-database.homeModules.nix-index
                     ];
                   };
 
-                  home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
+                  home-manager.sharedModules = [ nixvim.homeModules.nixvim ];
                 }
                 # profile settings
                 profile

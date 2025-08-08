@@ -44,6 +44,7 @@
     glxinfo # Test utilities for OpenGL
   ];
 
+  services.upower.enable = true; # UPower is needed for battery management
   # Power
   powerManagement = {
     enable = true;

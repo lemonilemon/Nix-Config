@@ -10,7 +10,7 @@
     ./hyprlock.nix
     ./ranger.nix
     ./nemo.nix
-    ./hyprcursor
+    ./theme
     ./network
     ./wlogout
     ./hyprpaper
@@ -43,45 +43,44 @@
           FILE = "nemo";
         in
         {
-          bind =
-            [
-              "${MOD1}, m, exit,"
-              "${MOD1}, x, killactive,"
-              "${MOD1}, f, fullscreen,"
-              "${MOD1}, t, togglefloating,"
-              # For window movement
-              "${MOD4}, s, movetoworkspace, special:scratchpad"
-              "${MOD4}, 1, movetoworkspace, 1"
-              "${MOD4}, 2, movetoworkspace, 2"
-              "${MOD4}, 3, movetoworkspace, 3"
-              "${MOD4}, 4, movetoworkspace, 4"
-              "${MOD4}, 5, movetoworkspace, 5"
-              # Vim-like keybindings for focus movement
-              "${MOD1}, k, movefocus, u"
-              "${MOD1}, j, movefocus, d"
-              "${MOD1}, h, movefocus, l"
-              "${MOD1}, l, movefocus, r"
-              "${MOD3}, Tab, cyclenext," # change focus to another window
+          bind = [
+            "${MOD1}, m, exit,"
+            "${MOD1}, x, killactive,"
+            "${MOD1}, f, fullscreen,"
+            "${MOD1}, t, togglefloating,"
+            # For window movement
+            "${MOD4}, s, movetoworkspace, special:scratchpad"
+            "${MOD4}, 1, movetoworkspace, 1"
+            "${MOD4}, 2, movetoworkspace, 2"
+            "${MOD4}, 3, movetoworkspace, 3"
+            "${MOD4}, 4, movetoworkspace, 4"
+            "${MOD4}, 5, movetoworkspace, 5"
+            # Vim-like keybindings for focus movement
+            "${MOD1}, k, movefocus, u"
+            "${MOD1}, j, movefocus, d"
+            "${MOD1}, h, movefocus, l"
+            "${MOD1}, l, movefocus, r"
+            "${MOD3}, Tab, cyclenext," # change focus to another window
 
-              ", Print, exec, grim -g \"$(slurp)\" - | wl-copy"
-              "${MOD1}+SHIFT, s, exec, grim -g \"$(slurp)\" - | wl-copy"
-            ]
-            ++ (
-              # workspaces
-              # binds $mod + [shift +] {1..5} to [move to] workspace {1..5}
-              builtins.concatLists (
-                builtins.genList (
-                  i:
-                  let
-                    ws = i + 1;
-                  in
-                  [
-                    "${MOD1}, code:1${toString i}, workspace, ${toString ws}"
-                    "${MOD1}+SHIFT, code:1${toString i}, movetoworkspace, ${toString ws}"
-                  ]
-                ) 5
-              )
-            );
+            ", Print, exec, grim -g \"$(slurp)\" - | wl-copy"
+            "${MOD1}+SHIFT, s, exec, grim -g \"$(slurp)\" - | wl-copy"
+          ]
+          ++ (
+            # workspaces
+            # binds $mod + [shift +] {1..5} to [move to] workspace {1..5}
+            builtins.concatLists (
+              builtins.genList (
+                i:
+                let
+                  ws = i + 1;
+                in
+                [
+                  "${MOD1}, code:1${toString i}, workspace, ${toString ws}"
+                  "${MOD1}+SHIFT, code:1${toString i}, movetoworkspace, ${toString ws}"
+                ]
+              ) 5
+            )
+          );
           bindr = [
             "${MOD2}, f, exec, ${BROWSER}" # Browser
             "${MOD2}, q, togglespecialworkspace, mainterm" # Terminal
@@ -254,12 +253,6 @@
       };
     };
 
-    # XDG portal:
-    xdg.portal.enable = true;
-    xdg.portal.extraPortals = with pkgs; [
-      xdg-desktop-portal-gtk
-      xdg-desktop-portal-wlr
-    ];
     home.sessionVariables = {
       WLR_NO_HARDWARE_CURSORS = "1";
     };

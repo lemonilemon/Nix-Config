@@ -29,6 +29,8 @@
         common = {
           default = [ "hyprland" ];
           "org.freedesktop.impl.portal.Settings" = [ "gtk" ];
+          "org.freedesktop.impl.portal.ScreenCast" = [ "hyprland" ];
+          "org.freedesktop.impl.portal.Screenshot" = [ "hyprland" ];
         };
         hyprland = {
           default = [
@@ -36,6 +38,8 @@
             "gtk"
           ];
           "org.freedesktop.impl.portal.Settings" = [ "gtk" ];
+          "org.freedesktop.impl.portal.ScreenCast" = [ "hyprland" ];
+          "org.freedesktop.impl.portal.Screenshot" = [ "hyprland" ];
         };
       };
     };

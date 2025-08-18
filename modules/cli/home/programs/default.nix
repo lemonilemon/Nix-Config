@@ -9,29 +9,14 @@
     ./fastfetch.nix
     ./atuin.nix
     ./ai.nix
+    ./utils.nix
   ];
   config = lib.mkIf config.home.cli-settings.programs.enable {
     home.packages = with pkgs; [
-      # archives
-      zip
-      unzip
-
-      # utils
-      lsd
-      bat
-      netcat
-      ripgrep
-      direnv
-      nix-direnv
-      gnumake
-      curl
-      wget
-
       # package manager
       yarn
 
       # finder / viewer
-      fd
       fzf
       tree
 
@@ -40,28 +25,10 @@
       # note taking
       obsidian
 
-      # google cloud sdk
-      google-cloud-sdk
-
       # 1password cli-client
       _1password-cli
     ];
     programs = {
-
-      lsd = {
-        enable = true;
-        enableZshIntegration = true;
-      };
-
-      bat = {
-        enable = true;
-        config = {
-          pager = "less -FR";
-          # Theme controlled by catppuccin
-          # theme = "Catppuccin-mocha";
-        };
-      };
-
       direnv = {
         enable = true;
         enableZshIntegration = true;

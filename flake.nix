@@ -86,18 +86,18 @@
             hostname = hostName;
           };
           modules = [
-            # Existing module structure (preserve backward compatibility)
+            # Core module structure
             ./modules
             ./overlays
             
-            # Add platform-specific common module for platform detection
+            # Host-specific configuration
+            ./hosts/${hostName}
+            
+            # Platform detection and common settings
             ./modules/common
 
             # Platform-specific modules  
             ./modules/platforms/${platform}
-            
-            # Original profile structure - this provides the working base configuration
-            ./profiles/${platform}
             
             # Third-party modules
             catppuccin.nixosModules.catppuccin

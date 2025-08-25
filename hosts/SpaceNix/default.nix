@@ -1,6 +1,6 @@
 { config, lib, pkgs, platformConfig, ... }: {
   imports = [
-    # Import appropriate hardware and boot configuration based on platform
+    # Import hardware and boot configuration based on platform
     ./boot.nix
     ./sound.nix
     ./i18n.nix
@@ -14,6 +14,12 @@
   # Host-specific settings
   networking.hostName = "SpaceNix";
   
-  # Import platform-agnostic host settings if they exist
-  nixos.desktop.gnome.enable = false;
+  # Set system state version
+  system.stateVersion = "25.05";
+  
+  # Set time zone for this host
+  time.timeZone = "Asia/Taipei";
+  
+  # Disable GNOME (using Hyprland instead)
+  nixos.desktop.gnome.enable = lib.mkDefault false;
 }

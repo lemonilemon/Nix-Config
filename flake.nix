@@ -16,18 +16,49 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     systems.url = "github:nix-systems/default";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.systems.follows = "systems";
+    };
+
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
+    hyprland.url = "github:hyprwm/Hyprland";
+    catppuccin.url = "github:catppuccin/nix";
+    grub2-themes.url = "github:vinceliuice/grub2-themes";
+    rose-pine-hyprcursor = {
+      url = "github:ndom91/rose-pine-hyprcursor";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.hyprlang.follows = "hyprland/hyprlang";
+    };
+    zen-browser = {
+      url = "github:0xc000022070/zen-browser-flake";
+      # IMPORTANT: we're using "libgbm" and is only available in unstable so ensure
+      # to have it up to date or simply don't specify the nixpkgs input
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    claude-desktop = {
+      url = "github:k3d3/claude-desktop-linux-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
   outputs =
     inputs@{
       self,
+      systems,
       nixpkgs,
       nixos-wsl,
       nixos-hardware,
-      nixvim,
+      nix-index-database,
       home-manager,
-      systems,
+      grub2-themes,
+      nixvim,
+      catppuccin,
       ...
     }:
     let
@@ -53,12 +84,15 @@
         inherit pkgs;
 
         modules = [
+          ./overlays
           ./home-manager
-          nixvim.homeManagerModules.nixvim
+          nixvim.homeModules.nixvim
+          catppuccin.homeModules.catppuccin
+          nix-index-database.homeModules.nix-index
         ];
 
         extraSpecialArgs = {
-          inherit inputs username;
+          inherit inputs username system;
           sys = "hm";
         };
       };
@@ -67,20 +101,32 @@
       nixosConfigurations =
         let
           hostname = "SpaceNix";
-        in
-        {
-          NixOS-wsl =
-            let
-              sys = "wsl";
-            in
+          make_nixosConfig =
+            {
+              sys ? "default",
+              profile,
+              specialArgs ? { },
+            }:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
               specialArgs = {
-                inherit inputs username hostname;
+                inherit
+                  inputs
+                  username
+                  hostname
+                  specialArgs
+                  system
+                  ;
               };
               modules = [
+                ./modules
+                ./overlays
+
                 # nixos-wsl
                 nixos-wsl.nixosModules.wsl
+                grub2-themes.nixosModules.default
+
+                catppuccin.nixosModules.catppuccin
 
                 # home-manager
                 home-manager.nixosModules.home-manager
@@ -93,16 +139,41 @@
                       username
                       hostname
                       sys
+                      specialArgs
+                      system
                       ;
                   };
-                  home-manager.users.${username} = import ./home-manager;
-                  home-manager.sharedModules = [ nixvim.homeManagerModules.nixvim ];
+                  home-manager.users.${username} = {
+                    imports = [
+                      ./modules/home.nix
+                      catppuccin.homeModules.catppuccin
+                      nix-index-database.homeModules.nix-index
+                    ];
+                  };
+
+                  home-manager.sharedModules = [ nixvim.homeModules.nixvim ];
                 }
                 # profile settings
-                ./profiles/wsl
-                ./profiles/base.nix
+                profile
               ];
+
             };
+        in
+        {
+          NixOS-wsl = make_nixosConfig {
+            sys = "NixOS-wsl";
+            profile = ./profiles/wsl;
+          };
+
+          laptop = make_nixosConfig {
+            sys = "laptop";
+            profile = ./profiles/laptop;
+          };
+
+          desktop = make_nixosConfig {
+            sys = "desktop";
+            profile = ./profiles/desktop;
+          };
         };
     };
 }

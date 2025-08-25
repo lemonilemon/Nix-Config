@@ -16,16 +16,28 @@
   networking.hostName = lib.mkDefault hostname;
   programs.zsh.enable = lib.mkDefault true;
   environment.shells = [ pkgs.zsh ];
-  environment.sessionVariables = {
-    NIXHOST = "NixOS-wsl";
-  };
   security.sudo.wheelNeedsPassword = lib.mkDefault false;
+
+  virtualisation.containers.enable = lib.mkDefault true;
+  virtualisation = {
+    podman = {
+      enable = lib.mkDefault true;
+
+      # Create a `docker` alias for podman, to use it as a drop-in replacement
+      # dockerCompat = true;
+
+      # Required for containers under podman-compose to be able to talk to each other.
+      defaultNetwork.settings.dns_enabled = lib.mkDefault true;
+    };
+  };
 
   users.users.${username} = {
     isNormalUser = true;
     shell = pkgs.zsh;
     extraGroups = [
       "wheel"
+      "docker"
+      "networkmanager"
     ];
   };
 

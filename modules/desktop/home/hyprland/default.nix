@@ -10,6 +10,7 @@
     ./hyprlock.nix
     ./ranger.nix
     ./nemo.nix
+    ./imv.nix
     ./theme
     ./network
     ./wlogout

@@ -66,6 +66,68 @@
       username = "lemonilemon";
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+      hostname = "SpaceNix";
+
+      # Platform configuration factory
+      mkSystem = { platform, hostOverride ? null, system ? "x86_64-linux" }:
+        let
+          hostName = if hostOverride != null then hostOverride else hostname;
+          platformConfig = {
+            type = platform;
+            isWSL = platform == "wsl";
+            isLaptop = platform == "laptop";
+            isDesktop = platform == "desktop";
+          };
+        in
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = { 
+            inherit inputs username platformConfig;
+            hostname = hostName;
+          };
+          modules = [
+            # Existing module structure (preserve backward compatibility)
+            ./modules
+            ./overlays
+            
+            # Add platform-specific common module for platform detection
+            ./modules/common
+
+            # Platform-specific modules  
+            ./modules/platforms/${platform}
+            
+            # Original profile structure - this provides the working base configuration
+            ./profiles/${platform}
+            
+            # Third-party modules
+            catppuccin.nixosModules.catppuccin
+            grub2-themes.nixosModules.default
+          ] ++ nixpkgs.lib.optionals (platform == "wsl") [
+            nixos-wsl.nixosModules.wsl
+          ] ++ [
+            # Home Manager integration - use original working approach
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                extraSpecialArgs = { 
+                  inherit inputs username platformConfig system; 
+                  sys = if platform == "wsl" then "NixOS-wsl" else platform;  # Map platform to sys for backward compatibility
+                  hostname = hostName;
+                };
+                users.${username} = {
+                  imports = [
+                    ./modules/home.nix
+                    catppuccin.homeModules.catppuccin
+                    nix-index-database.homeModules.nix-index
+                  ];
+                };
+                sharedModules = [ nixvim.homeModules.nixvim ];
+              };
+            }
+          ];
+        };
     in
     {
       formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
@@ -93,87 +155,20 @@
 
         extraSpecialArgs = {
           inherit inputs username system;
-          sys = "hm";
+          platformConfig = { type = "standalone"; isWSL = false; isLaptop = false; isDesktop = false; };
         };
       };
 
-      # For NixOS
-      nixosConfigurations =
-        let
-          hostname = "SpaceNix";
-          make_nixosConfig =
-            {
-              sys ? "default",
-              profile,
-              specialArgs ? { },
-            }:
-            nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
-              specialArgs = {
-                inherit
-                  inputs
-                  username
-                  hostname
-                  specialArgs
-                  system
-                  ;
-              };
-              modules = [
-                ./modules
-                ./overlays
-
-                # nixos-wsl
-                nixos-wsl.nixosModules.wsl
-                grub2-themes.nixosModules.default
-
-                catppuccin.nixosModules.catppuccin
-
-                # home-manager
-                home-manager.nixosModules.home-manager
-                {
-                  home-manager.useGlobalPkgs = true;
-                  home-manager.useUserPackages = true;
-                  home-manager.extraSpecialArgs = {
-                    inherit
-                      inputs
-                      username
-                      hostname
-                      sys
-                      specialArgs
-                      system
-                      ;
-                  };
-                  home-manager.users.${username} = {
-                    imports = [
-                      ./modules/home.nix
-                      catppuccin.homeModules.catppuccin
-                      nix-index-database.homeModules.nix-index
-                    ];
-                  };
-
-                  home-manager.sharedModules = [ nixvim.homeModules.nixvim ];
-                }
-                # profile settings
-                profile
-              ];
-
-            };
-        in
-        {
-          NixOS-wsl = make_nixosConfig {
-            sys = "NixOS-wsl";
-            profile = ./profiles/wsl;
-          };
-
-          laptop = make_nixosConfig {
-            sys = "laptop";
-            profile = ./profiles/laptop;
-          };
-
-          desktop = make_nixosConfig {
-            sys = "desktop";
-            profile = ./profiles/desktop;
-          };
-        };
+      # NixOS Configurations
+      nixosConfigurations = {
+        # WSL configuration
+        NixOS-wsl = mkSystem { platform = "wsl"; };
+        
+        # Laptop configuration  
+        laptop = mkSystem { platform = "laptop"; };
+        
+        # Desktop configuration
+        desktop = mkSystem { platform = "desktop"; };
+      };
     };
 }

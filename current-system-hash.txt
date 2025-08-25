@@ -1,0 +1,1 @@
+/nix/store/0w37q01qvyhncz2q7sf54bibprm1d5c0-nixos-system-SpaceNix-25.11.20250806.c2ae88e

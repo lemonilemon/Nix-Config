@@ -14,9 +14,9 @@
     ./general/home
   ];
   config = lib.mkIf config.home.enable {
-    home.username = "${username}";
-    home.homeDirectory = "/home/${username}";
-    home.stateVersion = "24.11";
+    home.username = lib.mkDefault "${username}";
+    home.homeDirectory = lib.mkDefault "/home/${username}";
+    home.stateVersion = lib.mkDefault "25.05";
     programs.home-manager.enable = true;
     catppuccin = {
       enable = true;

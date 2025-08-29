@@ -1,23 +1,21 @@
 { config, lib, pkgs, platformConfig, ... }: {
   imports = [
-    # Import hardware and boot configuration
+    # Import hardware configuration specific to this host
     ./hardware-configuration.nix
-    ./boot.nix
-    ./sound.nix
-    ./i18n.nix
+    
+    # Import common modules
+    ../common/boot.nix
+    ../common/sound.nix
+    ../common/i18n.nix
   ] ++ lib.optionals platformConfig.isDesktop [
-    ./nvidia.nix
+    ../common/nvidia.nix
   ];
 
   # Host-specific settings
-  networking.hostName = "SpaceNix";
+  networking.hostName = "SpaceNix-Laptop";
   
-  # Set system state version
+  # Common settings
   system.stateVersion = "25.05";
-  
-  # Set time zone for this host
   time.timeZone = "Asia/Taipei";
-  
-  # Disable GNOME (using Hyprland instead)
   nixos.desktop.gnome.enable = lib.mkDefault false;
 }

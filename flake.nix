@@ -69,7 +69,7 @@
       hostname = "SpaceNix";
 
       # Platform configuration factory
-      mkSystem = { platform, hostOverride ? null, system ? "x86_64-linux" }:
+      mkSystem = { platform, hostDir, hostOverride ? null, system ? "x86_64-linux" }:
         let
           hostName = if hostOverride != null then hostOverride else hostname;
           platformConfig = {
@@ -91,7 +91,7 @@
             ./overlays
             
             # Host-specific configuration
-            ./hosts/${hostName}
+            ./hosts/${hostDir}
             
             # Platform detection and common settings
             ./modules/common
@@ -162,13 +162,13 @@
       # NixOS Configurations
       nixosConfigurations = {
         # WSL configuration
-        NixOS-wsl = mkSystem { platform = "wsl"; };
+        NixOS-wsl = mkSystem { platform = "wsl"; hostDir = "WSL"; };
         
         # Laptop configuration  
-        laptop = mkSystem { platform = "laptop"; };
+        laptop = mkSystem { platform = "laptop"; hostDir = "Laptop"; };
         
         # Desktop configuration
-        desktop = mkSystem { platform = "desktop"; };
+        desktop = mkSystem { platform = "desktop"; hostDir = "Desktop"; };
       };
     };
 }

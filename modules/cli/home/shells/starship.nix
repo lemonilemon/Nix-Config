@@ -49,6 +49,24 @@
           diverged = "⇕⇡$\{ahead_count}⇣$\{behind_count}";
           behind = "⇣$\{count}";
         };
+        aws = {
+          disabled = true;
+        };
+        azure = {
+          disabled = true;
+        };
+        gcloud = {
+          disabled = true;
+        };
+        kubernetes = {
+          disabled = true;
+        };
+        docker_context = {
+          disabled = true;
+        };
+        cmd_duration = {
+          disabled = true;
+        };
 
         # The color palette for the prompt, the default one is "mocha"
         palettes.catppuccin_mocha = {

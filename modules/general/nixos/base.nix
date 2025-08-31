@@ -52,5 +52,5 @@
   time.timeZone = lib.mkDefault "Asia/Taipei";
 
   # System state version
-  system.stateVersion = lib.mkDefault "25.05";
+  system.stateVersion = "25.11";
 }

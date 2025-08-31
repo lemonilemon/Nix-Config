@@ -1,8 +1,8 @@
 {
   lib,
-  sys,
   config,
   pkgs,
+  isWSL,
   ...
 }:
 {
@@ -22,7 +22,7 @@
             defaultBranch = "main";
           };
           core = {
-            sshCommand = if sys == "NixOS-wsl" then "ssh.exe" else "ssh";
+            sshCommand = if isWSL then "ssh.exe" else "ssh";
             editor = "nvim";
           };
           pull.rebase = true;

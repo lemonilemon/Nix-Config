@@ -47,105 +47,25 @@
   };
   outputs =
     inputs@{
-      self,
       systems,
       nixpkgs,
-      nixos-wsl,
-      nixos-hardware,
-      nix-index-database,
-      home-manager,
-      grub2-themes,
-      nixvim,
-      catppuccin,
       ...
     }:
     let
       eachSystem = nixpkgs.lib.genAttrs (import systems);
-      username = "lemonilemon";
-      system = "x86_64-linux";
-      pkgs = import ./config {
-        inherit inputs;
-        inherit system;
-      };
+      helpers = (import ./lib) { inherit inputs; };
 
+      username = "lemonilemon";
       hostname = "SpaceNix";
 
-      # Platform configuration factory
-      mkSystem =
-        {
-          platform,
-          hostDir,
-          hostOverride ? null,
-          system ? "x86_64-linux",
-        }:
-        let
-          hostName = if hostOverride != null then hostOverride else hostname;
-          platformConfig = {
-            type = platform;
-            isWSL = platform == "wsl";
-            isLaptop = platform == "laptop";
-            isDesktop = platform == "desktop";
-          };
-        in
-        nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = {
-            inherit inputs username platformConfig;
-            hostname = hostName;
-          };
-          modules = [
-            # Core module structure
-            ./modules
-            ./overlays
-
-            # Host-specific configuration
-            ./hosts/${hostDir}
-
-            # Platform detection and common settings
-            ./modules/common
-
-            # Platform-specific modules
-            ./modules/platforms/${platform}
-
-            # Third-party modules
-            catppuccin.nixosModules.catppuccin
-            grub2-themes.nixosModules.default
-          ]
-          ++ nixpkgs.lib.optionals (platform == "wsl") [
-            nixos-wsl.nixosModules.wsl
-          ]
-          ++ [
-            # Home Manager integration - use original working approach
-            home-manager.nixosModules.home-manager
-            {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                extraSpecialArgs = {
-                  inherit
-                    inputs
-                    username
-                    platformConfig
-                    system
-                    ;
-                  sys = if platform == "wsl" then "NixOS-wsl" else platform; # Map platform to sys for backward compatibility
-                  hostname = hostName;
-                };
-                users.${username} = {
-                  imports = [
-                    ./modules/home.nix
-                    catppuccin.homeModules.catppuccin
-                    nix-index-database.homeModules.nix-index
-                  ];
-                };
-                sharedModules = [ nixvim.homeModules.nixvim ];
-              };
-            }
-          ];
-        };
     in
     {
-      legacyPackages.${system} = pkgs;
+      legacyPackages = eachSystem (
+        system:
+        (import ./nixpkgs {
+          inherit inputs system;
+        })
+      );
 
       formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
 
@@ -159,100 +79,41 @@
       });
 
       # For non-NixOS
-      homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
+      # homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
+      #
+      #   modules = [
+      #     ./overlays
+      #     ./home-manager
+      #     nixvim.homeModules.nixvim
+      #     catppuccin.homeModules.catppuccin
+      #     nix-index-database.homeModules.nix-index
+      #   ];
+      #
+      #   extraSpecialArgs = {
+      #     inherit inputs username;
+      #     sys = "hm";
+      #   };
+      # };
+      #
+      # For NixOS
+      nixosConfigurations = {
+        NixOS-wsl = helpers.mkSystem {
+          system = "x86_64-linux";
+          inherit username hostname;
+          profile = "wsl";
+        };
 
-        modules = [
-          ./overlays
-          ./home-manager
-          nixvim.homeModules.nixvim
-          catppuccin.homeModules.catppuccin
-          nix-index-database.homeModules.nix-index
-        ];
+        laptop = helpers.mkSystem {
+          system = "x86_64-linux";
+          inherit username hostname;
+          profile = "laptop";
+        };
 
-        extraSpecialArgs = {
-          inherit inputs username system;
-          sys = "hm";
+        desktop = helpers.mkSystem {
+          system = "x86_64-linux";
+          inherit username hostname;
+          profile = "desktop";
         };
       };
-
-      # For NixOS
-      nixosConfigurations =
-        let
-          hostname = "SpaceNix";
-          make_nixosConfig =
-            {
-              sys ? "default",
-              profile,
-              specialArgs ? { },
-            }:
-            nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
-              specialArgs = {
-                inherit
-                  inputs
-                  username
-                  hostname
-                  specialArgs
-                  system
-                  ;
-              };
-              modules = [
-                ./modules
-                ./overlays
-
-                # nixos-wsl
-                nixos-wsl.nixosModules.wsl
-                grub2-themes.nixosModules.default
-
-                catppuccin.nixosModules.catppuccin
-
-                # home-manager
-                home-manager.nixosModules.home-manager
-                {
-                  home-manager.useGlobalPkgs = true;
-                  home-manager.useUserPackages = true;
-                  home-manager.extraSpecialArgs = {
-                    inherit
-                      inputs
-                      username
-                      hostname
-                      sys
-                      specialArgs
-                      system
-                      ;
-                  };
-                  home-manager.users.${username} = {
-                    imports = [
-                      ./modules/home.nix
-                      catppuccin.homeModules.catppuccin
-                      nix-index-database.homeModules.nix-index
-                    ];
-                  };
-
-                  home-manager.sharedModules = [ nixvim.homeModules.nixvim ];
-                }
-                # profile settings
-                profile
-              ];
-
-            };
-        in
-        {
-          NixOS-wsl = make_nixosConfig {
-            sys = "NixOS-wsl";
-            profile = ./profiles/wsl;
-          };
-
-          laptop = make_nixosConfig {
-            sys = "laptop";
-            profile = ./profiles/laptop;
-          };
-
-          desktop = make_nixosConfig {
-            sys = "desktop";
-            profile = ./profiles/desktop;
-          };
-        };
     };
 }

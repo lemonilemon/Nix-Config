@@ -68,7 +68,21 @@
         })
       );
 
-      formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
+      formatter = eachSystem (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        pkgs.writeShellScriptBin "smart-nixfmt" ''
+          # Skip large generated files, focus on source files
+          find . \( -name "*.nix" -not -path "./result*" -not -path "./.direnv/*" \) \
+            -newer .nixfmt-timestamp 2>/dev/null -print0 | \
+            ${pkgs.parallel}/bin/parallel --citation -0 -j$(nproc) ${pkgs.nixfmt-rfc-style}/bin/nixfmt
+
+          # Update timestamp
+          touch .nixfmt-timestamp
+        ''
+      );
 
       checks = eachSystem (system: {
         pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {

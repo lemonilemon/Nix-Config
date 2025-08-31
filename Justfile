@@ -49,7 +49,7 @@ nixhost := x"${NIXHOST}"
 # build system with new config
 [group('NixOS')]
 build:
-    sudo nixos-rebuild switch --flake .#{{ nixhost }} --show-trace
+    sudo nixos-rebuild switch --flake .#{{ nixhost }}
 
 [group('NixOS')]
 dry-build:

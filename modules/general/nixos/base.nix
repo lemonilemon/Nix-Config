@@ -7,12 +7,9 @@
   ...
 }:
 {
+  nixpkgs.config.allowUnfree = true;
   nix.registry.nixpkgs.flake = inputs.nixpkgs;
   nix.channel.enable = false;
-  # Basic hardware and system settings
-  hardware.graphics.enable32Bit = lib.mkDefault true;
-  services.dbus.implementation = lib.mkDefault "broker";
-  networking.hostName = lib.mkDefault hostname;
 
   # Shell configuration
   programs.zsh.enable = lib.mkDefault true;

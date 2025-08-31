@@ -6,41 +6,15 @@
   ...
 }:
 {
-  # Allow unfree and broken packages system wide
-  nixpkgs.config = {
-    allowUnfree = true;
-    allowBroken = true;
-  };
+  # Basic hardware and system settings
   hardware.graphics.enable32Bit = lib.mkDefault true;
   services.dbus.implementation = lib.mkDefault "broker";
   networking.hostName = lib.mkDefault hostname;
-  programs.zsh.enable = lib.mkDefault true;
-  environment.shells = [ pkgs.zsh ];
-  security.sudo.wheelNeedsPassword = lib.mkDefault false;
 
-  virtualisation.containers.enable = lib.mkDefault true;
-  virtualisation = {
-    podman = {
-      enable = lib.mkDefault true;
-
-      # Create a `docker` alias for podman, to use it as a drop-in replacement
-      # dockerCompat = true;
-
-      # Required for containers under podman-compose to be able to talk to each other.
-      defaultNetwork.settings.dns_enabled = lib.mkDefault true;
-    };
-  };
-
-  users.users.${username} = {
-    isNormalUser = true;
-    shell = pkgs.zsh;
-    extraGroups = [
-      "wheel"
-      "docker"
-      "networkmanager"
-    ];
+  nixpkgs.config = {
+    allowUnfree = true;
   };
 
   time.timeZone = "Asia/Taipei";
-  system.stateVersion = "25.05";
+  system.stateVersion = "25.11";
 }

@@ -47,6 +47,7 @@
   };
   outputs =
     inputs@{
+      self,
       systems,
       nixpkgs,
       ...
@@ -78,29 +79,23 @@
         };
       });
 
-      # For non-NixOS
-      # homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
-      #
-      #   modules = [
-      #     ./overlays
-      #     ./home-manager
-      #     nixvim.homeModules.nixvim
-      #     catppuccin.homeModules.catppuccin
-      #     nix-index-database.homeModules.nix-index
-      #   ];
-      #
-      #   extraSpecialArgs = {
-      #     inherit inputs username;
-      #     sys = "hm";
-      #   };
-      # };
-      #
+      devShells = eachSystem (system: {
+        default = nixpkgs.legacyPackages.${system}.mkShell {
+          inherit (self.checks.${system}.pre-commit-check) shellHook;
+
+          buildInputs = with nixpkgs.legacyPackages.${system}; [
+            nixfmt-rfc-style
+          ];
+        };
+      });
+
       # For NixOS
       nixosConfigurations = {
         NixOS-wsl = helpers.mkSystem {
           system = "x86_64-linux";
           inherit username hostname;
           profile = "wsl";
+          isWSL = true;
         };
 
         laptop = helpers.mkSystem {

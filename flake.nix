@@ -73,14 +73,10 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
-        pkgs.writeShellScriptBin "smart-nixfmt" ''
-          # Skip large generated files, focus on source files
+        pkgs.writeShellScriptBin "parallel-nixfmt" ''
           find . \( -name "*.nix" -not -path "./result*" -not -path "./.direnv/*" \) \
-            -newer .nixfmt-timestamp 2>/dev/null -print0 | \
+            -print0 | \
             ${pkgs.parallel}/bin/parallel --no-notice -0 -j$(nproc) ${pkgs.nixfmt-rfc-style}/bin/nixfmt
-
-          # Update timestamp
-          touch .nixfmt-timestamp
         ''
       );
 

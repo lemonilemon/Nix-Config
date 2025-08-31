@@ -37,8 +37,6 @@
     };
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
-      # IMPORTANT: we're using "libgbm" and is only available in unstable so ensure
-      # to have it up to date or simply don't specify the nixpkgs input
       inputs.nixpkgs.follows = "nixpkgs";
     };
     claude-desktop = {
@@ -65,9 +63,90 @@
       eachSystem = nixpkgs.lib.genAttrs (import systems);
       username = "lemonilemon";
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import ./config {
+        inherit inputs;
+        inherit system;
+      };
+
+      hostname = "SpaceNix";
+
+      # Platform configuration factory
+      mkSystem =
+        {
+          platform,
+          hostDir,
+          hostOverride ? null,
+          system ? "x86_64-linux",
+        }:
+        let
+          hostName = if hostOverride != null then hostOverride else hostname;
+          platformConfig = {
+            type = platform;
+            isWSL = platform == "wsl";
+            isLaptop = platform == "laptop";
+            isDesktop = platform == "desktop";
+          };
+        in
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            inherit inputs username platformConfig;
+            hostname = hostName;
+          };
+          modules = [
+            # Core module structure
+            ./modules
+            ./overlays
+
+            # Host-specific configuration
+            ./hosts/${hostDir}
+
+            # Platform detection and common settings
+            ./modules/common
+
+            # Platform-specific modules
+            ./modules/platforms/${platform}
+
+            # Third-party modules
+            catppuccin.nixosModules.catppuccin
+            grub2-themes.nixosModules.default
+          ]
+          ++ nixpkgs.lib.optionals (platform == "wsl") [
+            nixos-wsl.nixosModules.wsl
+          ]
+          ++ [
+            # Home Manager integration - use original working approach
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                extraSpecialArgs = {
+                  inherit
+                    inputs
+                    username
+                    platformConfig
+                    system
+                    ;
+                  sys = if platform == "wsl" then "NixOS-wsl" else platform; # Map platform to sys for backward compatibility
+                  hostname = hostName;
+                };
+                users.${username} = {
+                  imports = [
+                    ./modules/home.nix
+                    catppuccin.homeModules.catppuccin
+                    nix-index-database.homeModules.nix-index
+                  ];
+                };
+                sharedModules = [ nixvim.homeModules.nixvim ];
+              };
+            }
+          ];
+        };
     in
     {
+      legacyPackages.${system} = pkgs;
+
       formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
 
       checks = eachSystem (system: {

@@ -17,7 +17,7 @@
           username
         ];
         substituters = lib.mkAfter [
-          "https://nix-community.cachix.org?priority"
+          "https://nix-community.cachix.org"
         ];
         extra-substituters = [
           "https://aseipp-nix-cache.global.ssl.fastly.net"

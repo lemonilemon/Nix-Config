@@ -3,13 +3,18 @@
   lib,
   username,
   pkgs,
-  hostname,
   ...
 }:
 {
-  nixpkgs.config.allowUnfree = true;
-  nix.registry.nixpkgs.flake = inputs.nixpkgs;
   nix.channel.enable = false;
+  nix.registry.nixpkgs.flake = inputs.nixpkgs;
+  nixpkgs.config.allowUnfree = true;
+  nix.nixPath = [
+    "nixpkgs=${pkgs.path}"
+  ];
+  environment.sessionVariables = {
+    NIXPKGS_ALLOW_UNFREE = "1";
+  };
 
   # Shell configuration
   programs.zsh.enable = lib.mkDefault true;
@@ -24,7 +29,6 @@
     podman = {
       enable = lib.mkDefault true;
       # Create a `docker` alias for podman, to use it as a drop-in replacement
-      # dockerCompat = true;
       # Required for containers under podman-compose to be able to talk to each other.
       defaultNetwork.settings.dns_enabled = lib.mkDefault true;
     };

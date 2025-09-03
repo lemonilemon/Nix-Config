@@ -12,30 +12,49 @@
 
 #let course = "CS101"
 #let homework = "Homework"
-#let author = "{{_author_}}"
+#let author = "lemonilemon"
+#let studentId = "123456789"
 
 #set page(
   paper: "a4",
   margin: (x: 2cm, y: 3cm),
   numbering: "1",
   header: [
-    _ #course _
-    #h(1fr)
-    #homework
+    #box(width: 1fr, context [
+      #set align(left)
+      #course
+    ])
+    #box(width: 1fr, context [
+      #set align(center)
+    ])
+    #box(width: 1fr, context [
+      #set align(right)
+      #homework
+    ])
     #box(fill: black, width: 100%, height: 1pt) // Top bar
   ],
   footer: context [
-    #box(fill: black, width: 100%, height: 1pt)
-    #author
-    #h(1fr)
-    #counter(page).display("1")
+    #box(fill: black, width: 100%, height: 1pt)\
+    #box(width: 1fr, context [
+      #set align(left)
+      Name: #author
+    ])
+    #box(width: 1fr, context [
+      #set align(center)
+      #counter(page).display("1")
+    ])
+    #box(width: 1fr, context [
+      #set align(right)
+      Student ID: #studentId
+    ])
+
   ],
 )
 
 #set text(
   font: (
     (name: "CMU serif", covers: "latin-in-cjk"),
-    "Noto Serif CJK TC",
+    "思源宋體",
   ),
   size: 12pt,
   cjk-latin-spacing: auto,
@@ -43,5 +62,3 @@
 )
 
 #set par(justify: true)
-
-{{_cursor_}}

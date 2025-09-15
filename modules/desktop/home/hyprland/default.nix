@@ -146,7 +146,7 @@
             }
           ];
           gestures = {
-            workspace_swipe = true;
+            workspace = true;
           };
           xwayland = {
             force_zero_scaling = true;
@@ -239,7 +239,7 @@
     # Windows switcher / App launcher:
     programs.rofi = {
       enable = true;
-      package = pkgs.rofi-wayland;
+      package = pkgs.rofi;
       font = "JetBrains Mono Nerd Font 14";
       extraConfig = {
         show-icons = true;

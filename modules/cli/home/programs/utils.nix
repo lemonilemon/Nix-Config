@@ -22,6 +22,7 @@
       lsd # ls
       bat # cat
       fd # find
+      jq # json parser
       ripgrep # grep
     ];
     programs = {

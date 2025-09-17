@@ -26,13 +26,23 @@
   # Container support
   virtualisation.containers.enable = lib.mkDefault true;
   virtualisation = {
+    docker = {
+      enable = lib.mkDefault false; # Disabled by default, enable if needed
+      enableOnBoot = lib.mkDefault true;
+      autoPrune.enable = lib.mkDefault true;
+    };
     podman = {
       enable = lib.mkDefault true;
-      # Create a `docker` alias for podman, to use it as a drop-in replacement
+      # Create a `docker` alias for podman, to use it as a drop-in replacement (default false)
+      dockerCompat = lib.mkDefault true;
       # Required for containers under podman-compose to be able to talk to each other.
       defaultNetwork.settings.dns_enabled = lib.mkDefault true;
+      dockerSocket.enable = lib.mkDefault true;
     };
   };
+  environment.systemPackages = with pkgs; [
+    podman-compose
+  ];
 
   # User configuration
   users.users.${username} = {
@@ -41,6 +51,7 @@
     extraGroups = [
       "wheel"
       "docker"
+      "podman"
       "networkmanager"
     ];
     group = username;

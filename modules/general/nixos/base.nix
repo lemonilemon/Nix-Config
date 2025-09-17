@@ -52,6 +52,7 @@
       "wheel"
       "docker"
       "podman"
+      "wireshark"
       "networkmanager"
     ];
     group = username;

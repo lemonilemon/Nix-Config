@@ -17,19 +17,9 @@
     ../i18n.nix
     ../boot.nix
     ../sound.nix
+    ../network.nix
+    ../firewall.nix
   ];
-
-  networking.wireless.enable = false; # explicitly disable wireless
-  networking.networkmanager = {
-    enable = true; # Easiest to use and most distros use this by default.
-    plugins = with pkgs; [
-      networkmanager-openvpn # OpenVPN support
-      networkmanager-openconnect # OpenConnect support
-    ];
-  };
-  networking.useDHCP = false;
-  hardware.enableRedistributableFirmware = true;
-  hardware.enableAllFirmware = true;
 
   environment.sessionVariables = {
     NIXHOST = "laptop";

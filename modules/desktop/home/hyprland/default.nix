@@ -120,7 +120,6 @@
             "tag +launcher, class:(rofi|Rofi)$"
             "stayfocused, tag:launcher"
             "pseudo, class:(fcitx5)$"
-            "maximize, tag:term, onworkspace:special:mainterm"
             "tag +mainterm, tag:term, onworkspace:special:mainterm"
             "opacity 0.8, tag:(browser|file)"
           ];
@@ -196,6 +195,10 @@
           ];
           decoration = {
             rounding = 16;
+            blur = {
+              size = 10;
+              passes = 1;
+            };
           };
           misc = {
             force_default_wallpaper = "-1";

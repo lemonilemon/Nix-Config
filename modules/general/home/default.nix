@@ -27,6 +27,7 @@
       uv # python package
       micromamba # python virtualenv
       nodejs # nodejs
+      bun
       jre8 # Java Development Kit
       rustc # Rust
       cargo # Rust projects

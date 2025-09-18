@@ -145,9 +145,11 @@
               sensitivity = -0.2;
             }
           ];
-          gestures = {
-            workspace = true;
-          };
+          gesture = [
+            "3, horizontal, workspace"
+            "3, down, mod: ALT, close"
+            "3, up, mod: SUPER, fullscreen"
+          ];
           xwayland = {
             force_zero_scaling = true;
           };

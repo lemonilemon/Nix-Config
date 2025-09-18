@@ -21,8 +21,9 @@
         enable = true;
         plugins = [
           { name = "nix-community/nix-zsh-completions"; }
-          { name = "zsh-users/zsh-autosuggestions"; }
-          { name = "zsh-users/zsh-history-substring-search"; }
+          # Use zsh-autocomplete instead
+          # { name = "zsh-users/zsh-autosuggestions"; }
+          # { name = "zsh-users/zsh-history-substring-search"; }
           {
             name = "marlonrichert/zsh-autocomplete";
             tags = [ "at:main" ];

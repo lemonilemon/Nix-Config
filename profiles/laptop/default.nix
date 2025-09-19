@@ -19,6 +19,7 @@
     ../sound.nix
     ../network.nix
     ../firewall.nix
+    ../smb.nix
   ];
 
   environment.sessionVariables = {

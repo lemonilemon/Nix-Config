@@ -22,16 +22,16 @@
       };
 
       # Public share (no authentication)
-      public = {
-        path = "/home/${username}/Public";
-        browseable = "yes";
-        "read only" = "no";
-        "guest ok" = "yes";
-        "create mask" = "0664";
-        "directory mask" = "0775";
-        "force user" = "${username}";
-        "force group" = "users";
-      };
+      # public = {
+      #   path = "/home/${username}/Public";
+      #   browseable = "yes";
+      #   "read only" = "no";
+      #   "guest ok" = "yes";
+      #   "create mask" = "0664";
+      #   "directory mask" = "0775";
+      #   "force user" = "${username}";
+      #   "force group" = "users";
+      # };
 
       # Private share (requires login)
       private = {
@@ -56,7 +56,7 @@
 
   # Create the directories
   systemd.tmpfiles.rules = [
-    "d /home/${username}/Public 0775 ${username} users -"
+    # "d /home/${username}/Public 0775 ${username} users -"
     "d /home/${username}/Private 0775 ${username} users -"
     "d /home/${username}/Media 0775 ${username} users -"
   ];

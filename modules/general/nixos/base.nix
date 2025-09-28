@@ -50,9 +50,7 @@
     shell = pkgs.zsh;
     extraGroups = [
       "wheel"
-      "docker"
       "podman"
-      "wireshark"
       "networkmanager"
     ];
     group = username;

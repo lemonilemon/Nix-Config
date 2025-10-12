@@ -25,7 +25,7 @@
         ]
       )) # python
       uv # python package
-      micromamba # python virtualenv
+      # micromamba # python virtualenv
       nodejs # nodejs
       bun
       jre8 # Java Development Kit

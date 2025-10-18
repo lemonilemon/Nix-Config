@@ -17,6 +17,7 @@
       gnumake
       curl
       wget
+      rqbit # a lightweight bittorrent client
 
       # command alternatives
       lsd # ls

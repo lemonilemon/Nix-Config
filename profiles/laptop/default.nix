@@ -33,7 +33,7 @@
     ntfs3g # NTFS driver
     pciutils # Inspecting PCI devices
     mesa # 3D graphics library
-    glxinfo # Test utilities for OpenGL
+    mesa-demos # Test utilities for OpenGL
   ];
 
   services.upower.enable = true; # UPower is needed for battery management

@@ -17,7 +17,7 @@
           fcitx5-rime
           rime-data
           fcitx5-material-color
-          fcitx5-chinese-addons
+          qt6Packages.fcitx5-chinese-addons
         ];
         settings = {
           inputMethod = {

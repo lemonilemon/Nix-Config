@@ -31,12 +31,11 @@
     home.packages = with pkgs; [
       corefonts # Arial, Times New Roman, Courier New, etc.
       cm_unicode
-      ubuntu_font_family
+      ubuntu-classic
       source-han-serif
       noto-fonts
       noto-fonts-cjk-sans
       noto-fonts-cjk-serif
-      noto-fonts-emoji
       noto-fonts-color-emoji
       nerd-fonts.fira-code
       nerd-fonts.jetbrains-mono

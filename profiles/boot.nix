@@ -16,7 +16,7 @@
         })
       ];
     };
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages_zen; # Use zen kernel for better desktop performance
     kernelParams = [
       # Not to suspend usb devices
       "usbcore.autosuspend=-1"

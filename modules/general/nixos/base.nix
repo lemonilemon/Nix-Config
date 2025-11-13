@@ -9,12 +9,15 @@
   nix.channel.enable = false;
   nix.registry.nixpkgs.flake = inputs.nixpkgs;
   nixpkgs.config.allowUnfree = true;
-  nix.nixPath = [
+  nixpkgs.config.permittedInsecurePackages = [
+    "electron-36.9.5"
+  ];
+  nixpkgs.config.nix.nixPath = [
     "nixpkgs=${pkgs.path}"
   ];
-  environment.sessionVariables = {
-    NIXPKGS_ALLOW_UNFREE = "1";
-  };
+  # environment.sessionVariables = {
+  #   NIXPKGS_ALLOW_UNFREE = "1";
+  # };
 
   # Shell configuration
   programs.zsh.enable = lib.mkDefault true;

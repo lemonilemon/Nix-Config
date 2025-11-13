@@ -11,13 +11,11 @@
     programs = {
       git = {
         enable = true;
-        userName = "lemonilemon";
-        userEmail = "imlemonilemon@gmail.com";
-        ignores = [
-          "*.swp"
-          ".*"
-        ];
-        extraConfig = {
+        settings = {
+          user = {
+            name = "lemonilemon";
+            email = "imlemonilemon@gmail.com";
+          };
           init = {
             defaultBranch = "main";
           };
@@ -27,6 +25,10 @@
           };
           pull.rebase = true;
         };
+        ignores = [
+          "*.swp"
+          ".*"
+        ];
       };
       git.lfs.enable = true; # Git LFS (Large File Storage)
       lazygit.enable = true;

@@ -13,6 +13,7 @@
       spotify
       vlc
       tradingview
+      gopeed
       # inputs.claude-desktop.packages.${system}.claude-desktop
     ];
     programs.ssh = {

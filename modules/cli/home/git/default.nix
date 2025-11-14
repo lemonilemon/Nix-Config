@@ -22,7 +22,7 @@
           core = {
             sshCommand = if isWSL then "ssh.exe" else "ssh";
             editor = "nvim";
-            autocrlf = true;
+            autocrlf = "input";
           };
           pull.rebase = true;
         };

@@ -23,8 +23,4 @@
   environment.sessionVariables = {
     NIXHOST = "NixOS-wsl";
   };
-  # cli-settings.enable = true;
-  # general-settings.enable = true;
-  # gui-settings.enable = false;
-  # gui-settings.browsers.enable = true;
 }

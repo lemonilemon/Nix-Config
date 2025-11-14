@@ -74,6 +74,40 @@
         "type": "github"
       }
     },
+    "coderunner-nvim": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1760846553,
+        "narHash": "sha256-bTVGrwm11I9xwnm2pluoca+5ZoQPq5NGbgpwtPYtlgI=",
+        "owner": "CRAG666",
+        "repo": "code_runner.nvim",
+        "rev": "45dfea066a6110abcbc3cd361457ac3cbaefd68b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CRAG666",
+        "repo": "code_runner.nvim",
+        "rev": "45dfea066a6110abcbc3cd361457ac3cbaefd68b",
+        "type": "github"
+      }
+    },
+    "copilot-lualine-nvim": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1762302740,
+        "narHash": "sha256-HYNqPdwatrNTNUGo6I2SzmNxSI4iqX+Ls7GHQcU8+Fk=",
+        "owner": "AndreM222",
+        "repo": "copilot-lualine",
+        "rev": "222e90bd8dcdf16ca1efc4e784416afb5f011c31",
+        "type": "github"
+      },
+      "original": {
+        "owner": "AndreM222",
+        "repo": "copilot-lualine",
+        "rev": "222e90bd8dcdf16ca1efc4e784416afb5f011c31",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -844,6 +878,8 @@
       "inputs": {
         "catppuccin": "catppuccin",
         "claude-desktop": "claude-desktop",
+        "coderunner-nvim": "coderunner-nvim",
+        "copilot-lualine-nvim": "copilot-lualine-nvim",
         "flake-utils": "flake-utils",
         "grub2-themes": "grub2-themes",
         "home-manager": "home-manager",
@@ -856,6 +892,7 @@
         "pre-commit-hooks": "pre-commit-hooks_2",
         "rose-pine-hyprcursor": "rose-pine-hyprcursor",
         "systems": "systems_5",
+        "template-nvim": "template-nvim",
         "zen-browser": "zen-browser"
       }
     },
@@ -956,6 +993,23 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "template-nvim": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1749878180,
+        "narHash": "sha256-6yeMCE5GhnICKZqDjphqJ5/W0IuOcEZ157haZGF363Y=",
+        "owner": "nvimdev",
+        "repo": "template.nvim",
+        "rev": "308f6f8f0bf98cb7c71855ffa8a3019a5642d1cd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nvimdev",
+        "repo": "template.nvim",
+        "rev": "308f6f8f0bf98cb7c71855ffa8a3019a5642d1cd",
         "type": "github"
       }
     },

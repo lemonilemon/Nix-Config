@@ -1,4 +1,5 @@
 {
+  inputs,
   pkgs,
   ...
 }:
@@ -7,14 +8,8 @@
     extraPlugins = with pkgs.vimUtils; [
       (buildVimPlugin {
         pname = "copilot-lualine";
-        version = "2024-09-08";
-        src = pkgs.fetchFromGitHub {
-          owner = "AndreM222";
-          repo = "copilot-lualine";
-          rev = "main";
-          sha256 = "sha256-PXiJ7rdlE8J93TFtu+D+8398Wg7DhK7EZ0Aw4JDoqWM=";
-        };
-
+        version = "2025-11-14";
+        src = inputs.copilot-lualine-nvim;
       })
     ];
     plugins = {

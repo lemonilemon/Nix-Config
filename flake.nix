@@ -43,6 +43,18 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+    template-nvim = {
+      url = "github:nvimdev/template.nvim/308f6f8f0bf98cb7c71855ffa8a3019a5642d1cd";
+      flake = false;
+    };
+    coderunner-nvim = {
+      url = "github:CRAG666/code_runner.nvim/45dfea066a6110abcbc3cd361457ac3cbaefd68b";
+      flake = false;
+    };
+    copilot-lualine-nvim = {
+      url = "github:AndreM222/copilot-lualine/222e90bd8dcdf16ca1efc4e784416afb5f011c31";
+      flake = false;
+    };
   };
   outputs =
     inputs@{

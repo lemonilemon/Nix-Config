@@ -1,5 +1,6 @@
 {
   pkgs,
+  inputs,
   ...
 }:
 {
@@ -7,13 +8,8 @@
     extraPlugins = with pkgs.vimUtils; [
       (buildVimPlugin {
         pname = "CodeRunner";
-        version = "2025-05-10";
-        src = pkgs.fetchFromGitHub {
-          owner = "CRAG666";
-          repo = "code_runner.nvim";
-          rev = "main";
-          sha256 = "sha256-YGNcwFHSCOD3a80IH1mOUSM6YvZA9KIvDO0yEdAc20o=";
-        };
+        version = "2025-11-14";
+        src = inputs.coderunner-nvim;
       })
     ];
     extraConfigLua = ''

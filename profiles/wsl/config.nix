@@ -1,7 +1,6 @@
 {
-  config,
   ...
 }:
 {
-
+  gui-settings.enable = false;
 }

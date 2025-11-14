@@ -1,5 +1,6 @@
 {
   pkgs,
+  inputs,
   ...
 }:
 {
@@ -7,13 +8,8 @@
     extraPlugins = with pkgs.vimUtils; [
       (buildVimPlugin {
         pname = "template.nvim";
-        version = "2024-09-08";
-        src = pkgs.fetchFromGitHub {
-          owner = "nvimdev";
-          repo = "template.nvim";
-          rev = "main";
-          sha256 = "sha256-SsTqdOve0uAP9fApBSVIUj0JIOjneQD02CXbA0dRCWo=";
-        };
+        version = "2025-11-14";
+        src = inputs.template-nvim;
       })
     ];
     extraConfigLua = ''

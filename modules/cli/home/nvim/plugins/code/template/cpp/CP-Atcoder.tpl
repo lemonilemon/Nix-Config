@@ -6,6 +6,7 @@
  * Description :
  */
 
+// Docs for AC-library: https://atcoder.github.io/ac-library/production/document_en/
 #include <bits/stdc++.h>
 #include <atcoder/all>
 #pragma GCC optimize("Ofast")

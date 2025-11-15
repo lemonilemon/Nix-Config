@@ -27,6 +27,7 @@
     extraFiles."template/cpp/Basic.tpl".source = ./template/cpp/Basic.tpl;
     extraFiles."template/cpp/CompetitiveProgramming.tpl".source =
       ./template/cpp/CompetitiveProgramming.tpl;
+    extraFiles."template/cpp/CP_Atcoder.tpl".source = ./template/cpp/CP_Atcoder.tpl;
     # The template of LaTeX
     extraFiles."template/tex/Basic.tpl".source = ./template/tex/Basic.tpl;
     extraFiles."template/tex/CSIE.tpl".source = ./template/tex/CSIE.tpl;

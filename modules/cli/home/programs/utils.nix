@@ -10,6 +10,7 @@
       # archives
       zip
       unzip
+      _7zz # 7zip
       # utils
       netcat
       direnv

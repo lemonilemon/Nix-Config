@@ -12,7 +12,6 @@
     ./general
     ./desktop
   ];
-  home.gui-settings.apps.enable = false;
   home-manager.users.${username} = {
     imports = [
       ./home.nix

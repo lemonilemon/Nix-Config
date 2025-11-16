@@ -41,7 +41,7 @@ in
         {
           home-manager = {
             useGlobalPkgs = lib.mkDefault true;
-            useUserPackages = lib.mkDefault true;
+            useUserPackages = lib.mkDefault false; # default to use system-wide packages
             extraSpecialArgs = {
               inherit
                 inputs

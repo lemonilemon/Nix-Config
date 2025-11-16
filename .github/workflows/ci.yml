@@ -24,8 +24,6 @@ jobs:
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
       - name: Run checks
         run: nix flake check
-      - name: Build packages
-        run: nix build
       - name: Check formatting
         run: |
           nix fmt
@@ -35,3 +33,15 @@ jobs:
             git diff
             exit 1
           fi
+      - name: Dry build NixOS-wsl configuration
+        run: |
+          echo "🔍 Dry building NixOS-wsl configuration..."
+          nixos-rebuild dry-build --flake .#NixOS-wsl
+      - name: Dry build laptop configuration
+        run: |
+          echo "🔍 Dry building laptop configuration..."
+          nixos-rebuild dry-build --flake .#laptop
+      - name: Dry build desktop configuration
+        run: |
+          echo "🔍 Dry building desktop configuration..."
+          nixos-rebuild dry-build --flake .#desktop

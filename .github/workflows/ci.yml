@@ -36,12 +36,12 @@ jobs:
       - name: Dry build NixOS-wsl configuration
         run: |
           echo "🔍 Dry building NixOS-wsl configuration..."
-          nixos-rebuild dry-build --flake .#NixOS-wsl
+          nix build .#nixosConfigurations.NixOS-wsl.config.system.build.toplevel --dry-run
       - name: Dry build laptop configuration
         run: |
           echo "🔍 Dry building laptop configuration..."
-          nixos-rebuild dry-build --flake .#laptop
+          nix build .#nixosConfigurations.laptop.config.system.build.toplevel --dry-run
       - name: Dry build desktop configuration
         run: |
           echo "🔍 Dry building desktop configuration..."
-          nixos-rebuild dry-build --flake .#desktop
+          nix build .#nixosConfigurations.desktop.config.system.build.toplevel --dry-run

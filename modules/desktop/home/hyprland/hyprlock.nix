@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.programs.hyprland.enable {
+  config = lib.mkIf config.home.desktop.enable {
     catppuccin.hyprlock.enable = false;
     programs.hyprlock = {
       enable = true;

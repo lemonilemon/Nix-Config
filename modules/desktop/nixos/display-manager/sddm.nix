@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf (config.nixos.desktop.displayManager == "sddm") {
+  config = lib.mkIf (config.nixos.desktop.enable && config.nixos.desktop.displayManager == "sddm") {
     services.displayManager.sddm = {
       enable = true;
       wayland = {

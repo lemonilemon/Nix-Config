@@ -4,8 +4,10 @@
 }:
 {
   imports = [
+    ./cli
     ./gui
     ./general
+    ./desktop
   ];
   config = {
     home-manager.backupFileExtension = "backup";

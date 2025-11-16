@@ -81,13 +81,13 @@
     };
 
     home.packages = with pkgs; [ neovim-remote ];
-    xdg.mimeApps = {
+    xdg.mimeApps = lib.mkIf config.desktop.enable {
       enable = true;
       defaultApplications = {
         "text/plain" = "nvim.desktop";
       };
     };
-    xdg.desktopEntries = {
+    xdg.desktopEntries = lib.mkIf config.desktop.enable {
       nvim = {
         name = "Neovim";
         genericName = "Text Editor";

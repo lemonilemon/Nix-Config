@@ -9,7 +9,7 @@
     home.general-settings = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = config.home.enable;
+        default = config.home.enable && config.general-settings.enable;
         description = "Enable my home-manager general settings";
       };
 
@@ -65,7 +65,7 @@
     nixos.general-settings = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = config.nixos.enable;
+        default = config.nixos.enable && config.general-settings.enable;
         description = "Enable my NixOS general settings";
       };
 

@@ -8,7 +8,7 @@
     home.desktop = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = config.home.enable;
+        default = config.home.enable && config.desktop.enable;
         description = "Enable desktop environment configuration for home-manager modules";
       };
 
@@ -22,7 +22,7 @@
     nixos.desktop = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = config.nixos.enable;
+        default = config.nixos.enable && config.desktop.enable;
         description = "Enable desktop environment configuration";
       };
       gnome.enable = lib.mkOption {

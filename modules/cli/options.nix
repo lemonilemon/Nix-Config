@@ -8,7 +8,7 @@
     home.cli-settings = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = config.home.enable;
+        default = config.home.enable && config.cli-settings.enable;
         description = "Enable my CLI settings, including configurations for git, nvim, various programs, shells, and zellij";
       };
 
@@ -78,7 +78,7 @@
     nixos.cli-settings = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = config.nixos.enable;
+        default = config.nixos.enable && config.cli-settings.enable;
         description = "Enable my CLI settings for NixOS modules";
       };
     };

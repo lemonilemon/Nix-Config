@@ -8,6 +8,7 @@
 {
   # Mainly for home-manager, which imports all the home-manager modules
   imports = [
+    ./options.nix
     ./cli/home
     ./gui/home
     ./desktop/home

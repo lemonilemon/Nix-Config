@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.general-settings.fonts.enable {
+  config = lib.mkIf config.home.general.fonts.enable {
     fonts.fontconfig = {
       enable = true;
       # defaultFonts = {

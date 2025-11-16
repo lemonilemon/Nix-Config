@@ -4,7 +4,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.gui-settings.browsers.firefox.enable {
+  config = lib.mkIf config.home.gui.browsers.firefox.enable {
     programs.firefox.enable = false;
 
     # xdg.mimeApps = {

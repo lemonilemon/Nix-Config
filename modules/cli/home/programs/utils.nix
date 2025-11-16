@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.cli-settings.programs.enable {
+  config = lib.mkIf config.home.cli.programs.enable {
     home.packages = with pkgs; [
       # archives
       zip

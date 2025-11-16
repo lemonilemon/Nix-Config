@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.gui-settings.kitty.enable {
+  config = lib.mkIf config.home.gui.kitty.enable {
     programs.kitty = {
       enable = true;
       themeFile = "Catppuccin-Mocha";

@@ -7,7 +7,7 @@
 }:
 {
 
-  config = lib.mkIf config.home.cli-settings.git.enable {
+  config = lib.mkIf config.home.cli.git.enable {
     programs = {
       git = {
         enable = true;

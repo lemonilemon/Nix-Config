@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.gui-settings.development.web.enable {
+  config = lib.mkIf config.home.gui.development.web.enable {
     home.packages = with pkgs; [
       postman # API development tool
       tcpdump # Command-line packet analyzer

@@ -4,7 +4,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.cli-settings.shells.zoxide.enable {
+  config = lib.mkIf config.home.cli.shells.zoxide.enable {
     programs.zoxide = {
       enable = true;
       options = [

@@ -14,17 +14,17 @@
       default = true;
       description = "Enable my NixOS settings";
     };
-    cli-settings.enable = lib.mkOption {
+    cli.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
       description = "Enable my CLI settings";
     };
-    gui-settings.enable = lib.mkOption {
+    gui.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
       description = "Enable my GUI settings";
     };
-    general-settings.enable = lib.mkOption {
+    general.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
       description = "Enable my general settings";

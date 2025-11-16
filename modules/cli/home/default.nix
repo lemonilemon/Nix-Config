@@ -3,8 +3,7 @@
 }:
 {
   imports = [
-    ../options.nix
-    ../../options.nix
+    ./options.nix
     ./git
     ./nvim
     ./programs

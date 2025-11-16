@@ -4,7 +4,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.cli-settings.shells.zsh.enable {
+  config = lib.mkIf config.home.cli.shells.zsh.enable {
     programs.zsh = {
       enable = true;
       shellAliases = {

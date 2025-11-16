@@ -1,6 +1,4 @@
 {
-  config,
-  username,
   ...
 }:
 {
@@ -12,9 +10,4 @@
     ./general
     ./desktop
   ];
-  home-manager.users.${username} = {
-    imports = [
-      ./home.nix
-    ];
-  };
 }

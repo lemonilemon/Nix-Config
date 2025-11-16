@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.general-settings.secrets.enable {
+  config = lib.mkIf config.home.general.secrets.enable {
     # Nothing for now
   };
 }

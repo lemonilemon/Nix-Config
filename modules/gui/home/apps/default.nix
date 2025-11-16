@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.gui-settings.apps.enable {
+  config = lib.mkIf config.home.gui.apps.enable {
     home.packages = with pkgs; [
       webcord
       spotify

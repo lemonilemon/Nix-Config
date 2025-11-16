@@ -6,7 +6,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.nixos.general-settings.nix.enable {
+  config = lib.mkIf config.nixos.general.nix.enable {
     # Nix settings needed (mkDefault has lower priority in this case)
     nix = {
       package = pkgs.nix;

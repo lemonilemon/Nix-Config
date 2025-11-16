@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.nixos.general-settings.enable {
+  config = lib.mkIf config.nixos.general.enable {
     programs.nix-ld = {
       enable = true;
       libraries = with pkgs; [

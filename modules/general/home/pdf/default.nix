@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.general-settings.pdf.enable {
+  config = lib.mkIf config.home.general.pdf.enable {
     home.packages = with pkgs; [
       # typst
       typst

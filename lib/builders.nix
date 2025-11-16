@@ -40,6 +40,7 @@ in
         inputs.home-manager.nixosModules.home-manager
         {
           home-manager = {
+            backupFileExtension = "backup";
             useGlobalPkgs = lib.mkDefault true;
             useUserPackages = lib.mkDefault false; # default to use system-wide packages
             extraSpecialArgs = {

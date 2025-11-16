@@ -4,7 +4,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.cli-settings.shells.starship.enable {
+  config = lib.mkIf config.home.cli.shells.starship.enable {
     programs.starship = {
       enable = true;
       settings = {

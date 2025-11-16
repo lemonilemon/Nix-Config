@@ -6,18 +6,17 @@
 }:
 {
   imports = [
-    ../options.nix
-    ../../options.nix
+    ./options.nix
     ./programlangs
     ./pdf
     ./secrets
     ./fonts
     ./utils
   ];
-  config = lib.mkIf config.home.general-settings.enable {
+  config = lib.mkIf config.home.general.enable {
     # All the submodules are enabled by default
     # Additional program languages I use
-    home.general-settings.programlangs.packages = with pkgs; [
+    home.general.programlangs.packages = with pkgs; [
       gcc # c/c++
       (python3.withPackages (
         ps: with ps; [

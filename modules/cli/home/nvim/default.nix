@@ -65,7 +65,7 @@
     ./plugins/git/lazygit.nix
     ./plugins/git/gitsigns.nix
   ];
-  config = lib.mkIf config.home.cli-settings.nvim.enable {
+  config = lib.mkIf config.home.cli.nvim.enable {
     programs.nixvim = {
       enable = true;
       defaultEditor = true;

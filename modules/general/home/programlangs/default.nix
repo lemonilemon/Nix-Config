@@ -5,7 +5,7 @@
 }:
 {
 
-  config = lib.mkIf config.home.general-settings.programlangs.enable {
-    home.packages = config.home.general-settings.programlangs.packages;
+  config = lib.mkIf config.home.general.programlangs.enable {
+    home.packages = config.home.general.programlangs.packages;
   };
 }

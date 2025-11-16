@@ -2,6 +2,6 @@
   ...
 }:
 {
-  gui-settings.enable = false;
+  gui.enable = false;
   desktop.enable = false;
 }

@@ -7,9 +7,10 @@
   config = lib.mkIf config.home.cli.zellij.enable {
     programs.zellij = {
       enable = true;
-      enableZshIntegration = true;
+      # Switch to custom setup in my zshrc
+      enableZshIntegration = false;
+      exitShellOnExit = false;
       # attachExistingSession = true;
-      exitShellOnExit = true;
       # For KDL settings in Nix, see: https://github.com/nix-community/home-manager/blob/master/modules/lib/generators.nix
       settings = {
         show_startup_tips = false;
@@ -74,6 +75,26 @@
       enable = true;
       recursive = true;
       source = ./plugins;
+    };
+    # Auto-start Zellij in zsh
+    programs.zsh = {
+      enable = true; # Ensure zsh is managed by HM
+      initContent = ''
+        # Auto-start Zellij with a specific session name
+        # Only run if not already inside Zellij
+        if [[ -z "$ZELLIJ" ]]; then
+            # Replace "main" with whatever you want your persistent session to be called
+            ZJ_SESSION_NAME="main"
+
+            # Check if we are in a clean terminal (optional safety)
+            zellij attach -c "$ZJ_SESSION_NAME"
+            
+            # If Zellij exits successfully, exit the shell (replaces exitShellOnExit)
+            if [[ "$?" == "0" ]]; then
+                exit
+            fi
+        fi
+      '';
     };
   };
 }

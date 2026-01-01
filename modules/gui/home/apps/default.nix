@@ -13,6 +13,7 @@
       tradingview
       gopeed
       antigravity-fhs
+      obsidian
       # inputs.claude-desktop.packages.${system}.claude-desktop
     ];
     programs.ssh = {

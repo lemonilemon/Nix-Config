@@ -12,6 +12,7 @@
       vlc
       tradingview
       gopeed
+      antigravity-fhs
       # inputs.claude-desktop.packages.${system}.claude-desktop
     ];
     programs.ssh = {

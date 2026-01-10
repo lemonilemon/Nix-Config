@@ -14,6 +14,7 @@
       gopeed
       antigravity-fhs
       obsidian
+      libreoffice
       # inputs.claude-desktop.packages.${system}.claude-desktop
     ];
     programs.ssh = {

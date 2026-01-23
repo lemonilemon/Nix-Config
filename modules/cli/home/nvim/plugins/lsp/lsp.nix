@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
 
-  home.packages = with pkgs; [ nixfmt-rfc-style ];
+  home.packages = with pkgs; [ nixfmt ];
   programs.nixvim.plugins = {
     lsp-format = {
       enable = true;
@@ -37,7 +37,7 @@
         nixd = {
           enable = true;
           settings = {
-            formatting.command = [ "nixfmt-rfc-style" ];
+            formatting.command = [ "nixfmt" ];
           };
         };
         marksman = {

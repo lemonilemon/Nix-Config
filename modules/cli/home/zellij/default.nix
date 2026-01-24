@@ -4,7 +4,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.cli.zellij.enable {
+  config = lib.mkIf config.home.cli.multiplexer.zellij.enable {
     programs.zellij = {
       enable = true;
       # Switch to custom setup in my zshrc

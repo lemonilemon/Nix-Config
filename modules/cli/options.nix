@@ -68,10 +68,25 @@
         };
       };
 
-      zellij.enable = lib.mkOption {
-        type = lib.types.bool;
-        default = config.home.cli.enable;
-        description = "Enable zellij multiplexer";
+      multiplexer = {
+        program = lib.mkOption {
+          type = lib.types.enum [
+            "tmux"
+            "zellij"
+          ];
+          default = "tmux";
+          description = "Choose your terminal multiplexer";
+        };
+        zellij.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.home.cli.multiplexer.program == "zellij";
+          description = "Enable zellij multiplexer";
+        };
+        tmux.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.home.cli.multiplexer.program == "tmux";
+          description = "Enable tmux multiplexer";
+        };
       };
     };
 

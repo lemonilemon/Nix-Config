@@ -6,14 +6,14 @@
 {
   programs.fastfetch = {
     enable = true;
-    package = pkgs.fastfetchMinimal;
+    package = pkgs.fastfetch;
 
     settings = {
       "$schema" = "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json";
       logo = {
         type = "auto";
         height = 15;
-        width = 30;
+        width = 15;
         padding = {
           top = 5;
           left = 3;

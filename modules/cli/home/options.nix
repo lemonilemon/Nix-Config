@@ -11,7 +11,7 @@
         type = lib.types.bool;
         default =
           if osConfig == null then config.home.enable && config.cli.enable else osConfig.home.cli.enable;
-        description = "Enable my CLI settings, including configurations for git, nvim, various programs, shells, and zellij";
+        description = "Enable my CLI settings, including configurations for git, nvim, various programs, shells, and multiplexers";
       };
 
       git = {
@@ -76,10 +76,25 @@
         };
       };
 
-      zellij.enable = lib.mkOption {
-        type = lib.types.bool;
-        default = if osConfig == null then config.home.cli.enable else osConfig.home.cli.zellij.enable;
-        description = "Enable zellij multiplexer";
+      multiplexer = {
+        program = lib.mkOption {
+          type = lib.types.enum [
+            "tmux"
+            "zellij"
+          ];
+          default = if osConfig == null then "tmux" else osConfig.home.cli.multiplexer.program;
+          description = "Which terminal multiplexer to use";
+        };
+        zellij.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.home.cli.multiplexer.program == "zellij";
+          description = "Enable zellij multiplexer";
+        };
+        tmux.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.home.cli.multiplexer.program == "tmux";
+          description = "Enable tmux multiplexer";
+        };
       };
     };
   };

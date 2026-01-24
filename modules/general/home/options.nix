@@ -2,75 +2,71 @@
   lib,
   config,
   pkgs,
-  osConfig,
+  osConfig ? null,
+  helpers,
   ...
 }:
 {
   options = {
     home.general = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default =
-          if osConfig == null then
-            config.home.enable && config.general.enable
-          else
-            osConfig.home.general.enable;
+      enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.general.enable";
+        default = config.home.enable && config.general.enable;
         description = "Enable my home-manager general settings";
       };
 
       fonts = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default =
-            if osConfig == null then config.home.general.enable else osConfig.home.general.fonts.enable;
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.general.fonts.enable";
+          default = config.home.general.enable;
           description = "Enable my font settings";
         };
       };
 
       pdf = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = if osConfig == null then config.home.general.enable else osConfig.home.general.pdf.enable;
-
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.general.pdf.enable";
+          default = config.home.general.enable;
           description = "Enable my PDF settings";
         };
       };
 
       programlangs = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default =
-            if osConfig == null then config.home.general.enable else osConfig.home.general.programlangs.enable;
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.general.programlangs.enable";
+          default = config.home.general.enable;
           description = "Enable my programming languages settings";
         };
-        packages = lib.mkOption {
+        packages = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.general.programlangs.packages";
           type = lib.types.listOf lib.types.package;
-          default =
-            if osConfig == null then
-              lib.mkDefault [
-                pkgs.gcc
-                pkgs.python3
-              ]
-            else
-              osConfig.home.general.programlangs.packages;
+          default = lib.mkDefault [
+            pkgs.gcc
+            pkgs.python3
+          ];
           description = "Packages for programming languages";
         };
       };
 
       secrets = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default =
-            if osConfig == null then config.home.general.enable else osConfig.home.general.secrets.enable;
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.general.secrets.enable";
+          default = config.home.general.enable;
           description = "Enable my settings of secrets";
         };
       };
 
       utils = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default =
-            if osConfig == null then config.home.general.enable else osConfig.home.general.utils.enable;
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.general.utils.enable";
+          default = config.home.general.enable;
           description = "Enable my settings of utilities";
         };
       };

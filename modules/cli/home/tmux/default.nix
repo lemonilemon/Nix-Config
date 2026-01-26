@@ -60,6 +60,22 @@
         # Better copy/paste behavior
         tmuxPlugins.yank
       ];
+
+    };
+    programs.zsh = {
+      enable = true;
+      localVariables = {
+        ZSH_TMUX_AUTOSTART = true;
+        ZSH_TMUX_AUTOCONNECT = true; # Connects to an existing session if one exists
+        ZSH_TMUX_FIXTERM = true; # Fixes TERM variable issues when launching tmux from zsh
+        ZSH_TMUX_UNICODE = true; # Enables better Unicode support in tmux
+      };
+      zplug.plugins = [
+        {
+          name = "plugins/tmux";
+          tags = [ "from:oh-my-zsh" ];
+        }
+      ];
     };
   };
 }

@@ -30,7 +30,7 @@
         auto-optimise-store = true;
         show-trace = true;
       };
-      extraOptions = ''experimental-features = nix-command flakes'';
+      extraOptions = "experimental-features = nix-command flakes";
     };
   };
 }

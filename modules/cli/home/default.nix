@@ -9,5 +9,6 @@
     ./programs
     ./shells
     ./zellij
+    ./tmux
   ];
 }

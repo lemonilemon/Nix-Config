@@ -87,7 +87,7 @@
         pkgs.writeShellScriptBin "parallel-nixfmt" ''
           find . \( -name "*.nix" -not -path "./result*" -not -path "./.direnv/*" \) \
             -print0 | \
-            ${pkgs.parallel}/bin/parallel --no-notice -0 -j$(nproc) ${pkgs.nixfmt-rfc-style}/bin/nixfmt
+            ${pkgs.parallel}/bin/parallel --no-notice -0 -j$(nproc) ${pkgs.nixfmt}/bin/nixfmt
         ''
       );
 
@@ -95,7 +95,7 @@
         pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
-            nixfmt-rfc-style.enable = true;
+            nixfmt.enable = true;
           };
         };
       });
@@ -105,7 +105,7 @@
           inherit (self.checks.${system}.pre-commit-check) shellHook;
 
           buildInputs = with nixpkgs.legacyPackages.${system}; [
-            nixfmt-rfc-style
+            nixfmt
           ];
         };
       });

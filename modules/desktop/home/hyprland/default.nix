@@ -114,14 +114,19 @@
 
           # rule
           windowrule = [
-            "tag +browser, class:(${BROWSER})$"
-            "tag +term, class:(${TERM})$"
-            "tag +file, class:(${FILE})$"
-            "tag +launcher, class:(rofi|Rofi)$"
-            "stayfocused, tag:launcher"
-            "pseudo, class:(fcitx5)$"
-            "tag +mainterm, tag:term, onworkspace:special:mainterm"
-            "opacity 0.8, tag:(browser|file)"
+            "match:class ${BROWSER}, tag +browser"
+            "match:class ${TERM}, tag +term"
+            "match:class ${FILE}, tag +file"
+            "match:class (rofi|Rofi), tag +launcher"
+            "match:tag launcher, stay_focused on" # ensure focus stays on rofi
+            "match:modal true, pseudo on"
+            "match:class fcitx5, pseudo on"
+            "match:tag term, match:workspace special:mainterm, tag +mainterm"
+            "match:tag (browser|file), opacity 0.8"
+          ];
+
+          layerrule = [
+            "match:namespace waybar, blur on"
           ];
 
           workspace = [

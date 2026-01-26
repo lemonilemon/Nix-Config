@@ -1,6 +1,29 @@
 { inputs }:
 let
   inherit (inputs.nixpkgs) lib;
+
+  # Helper for Home Manager options that mirror NixOS options
+  mkHomeOpt =
+    {
+      osConfig ? null,
+      path,
+      default,
+      description,
+      type ? lib.types.bool,
+      ...
+    }:
+    let
+      # Automatically split the dot-string into a list
+      pathList = lib.splitString "." path;
+    in
+    lib.mkOption {
+      inherit type description;
+      # Logic:
+      # 1. If osConfig is available (NixOS), try to find the path in it.
+      # 2. If found, use that value.
+      # 3. If NOT found (or if on standalone Home Manager), fall back to 'default'.
+      default = if osConfig != null then lib.attrByPath pathList default osConfig else default;
+    };
 in
 {
   # NixOS system builder
@@ -51,6 +74,9 @@ in
                 system
                 isWSL
                 ;
+              helpers = {
+                inherit mkHomeOpt;
+              };
             };
             users.${username} = {
               imports = [
@@ -100,6 +126,11 @@ in
           username
           system
           ;
+        helpers = {
+          inherit mkHomeOpt;
+        };
       };
     };
+
+  inherit mkHomeOpt;
 }

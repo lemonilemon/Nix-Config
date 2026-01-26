@@ -1,85 +1,104 @@
 {
   lib,
   config,
-  osConfig,
+  osConfig ? null,
+  helpers,
   ...
 }:
 {
   options = {
     home.cli = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default =
-          if osConfig == null then config.home.enable && config.cli.enable else osConfig.home.cli.enable;
-        description = "Enable my CLI settings, including configurations for git, nvim, various programs, shells, and zellij";
+      enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.cli.enable";
+        default = config.home.enable && config.cli.enable;
+        description = "Enable my CLI settings, including configurations for git, nvim, various programs, shells, and multiplexers";
       };
 
       git = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = if osConfig == null then config.home.cli.enable else osConfig.home.cli.git.enable;
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.git.enable";
+          default = config.home.cli.enable;
           description = "Enable git settings";
         };
       };
 
       nvim = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = if osConfig == null then config.home.cli.enable else osConfig.home.cli.nvim.enable;
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.nvim.enable";
+          default = config.home.cli.enable;
           description = "Enable nvim settings";
         };
       };
 
       programs = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = if osConfig == null then config.home.cli.enable else osConfig.home.cli.programs.enable;
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.programs.enable";
+          default = config.home.cli.enable;
           description = "Enable my CLI programs settings";
         };
       };
 
       shells = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = if osConfig == null then config.home.cli.enable else osConfig.home.cli.shells.enable;
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.shells.enable";
+          default = config.home.cli.enable;
           description = "Enable shell configuration";
         };
 
         zoxide = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
-            default =
-              if osConfig == null then config.home.cli.shells.enable else osConfig.home.cli.shells.zoxide.enable;
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.cli.shells.zoxide.enable";
+            default = config.home.cli.shells.enable;
             description = "Enable zoxide";
           };
         };
 
         starship = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
-            default =
-              if osConfig == null then
-                config.home.cli.shells.enable
-              else
-                osConfig.home.cli.shells.starship.enable;
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.cli.shells.starship.enable";
+            default = config.home.cli.shells.enable;
             description = "Enable starship prompt";
           };
         };
 
         zsh = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
-            default =
-              if osConfig == null then config.home.cli.shells.enable else osConfig.home.cli.shells.zsh.enable;
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.cli.shells.zsh.enable";
+            default = config.home.cli.shells.enable;
             description = "Enable zsh shell settings";
           };
         };
       };
 
-      zellij.enable = lib.mkOption {
-        type = lib.types.bool;
-        default = if osConfig == null then config.home.cli.enable else osConfig.home.cli.zellij.enable;
-        description = "Enable zellij multiplexer";
+      multiplexer = {
+        program = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.multiplexer.program";
+          default = "tmux";
+          type = lib.types.enum [
+            "tmux"
+            "zellij"
+          ];
+          description = "Which terminal multiplexer to use";
+        };
+        zellij.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.home.cli.multiplexer.program == "zellij";
+          description = "Enable zellij multiplexer";
+        };
+        tmux.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.home.cli.multiplexer.program == "tmux";
+          description = "Enable tmux multiplexer";
+        };
       };
     };
   };

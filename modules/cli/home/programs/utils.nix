@@ -19,6 +19,7 @@
       curl
       wget
       rqbit # a lightweight bittorrent client
+      ffmpeg
 
       # command alternatives
       lsd # ls

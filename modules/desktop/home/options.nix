@@ -1,26 +1,24 @@
 {
   lib,
   config,
-  osConfig,
+  osConfig ? null,
+  helpers,
   ...
 }:
 {
   options = {
     home.desktop = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default =
-          if osConfig == null then
-            config.home.enable && config.desktop.enable
-          else
-            osConfig.home.desktop.enable;
+      enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.enable";
+        default = config.home.enable && config.desktop.enable;
         description = "Enable desktop environment configuration for home-manager modules";
       };
 
-      hyprland.enable = lib.mkOption {
-        type = lib.types.bool;
-        default =
-          if osConfig == null then config.home.desktop.enable else osConfig.home.desktop.hyprland.enable;
+      hyprland.enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.enable";
+        default = config.home.desktop.enable;
         description = "Enable hyprland for desktop environment";
       };
     };

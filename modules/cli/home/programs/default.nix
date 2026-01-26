@@ -22,8 +22,6 @@
 
       # pdf reader
       zathura
-      # note taking
-      obsidian
 
       # 1password cli-client
       _1password-cli

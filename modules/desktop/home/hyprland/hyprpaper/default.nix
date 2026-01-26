@@ -1,29 +1,27 @@
 {
   lib,
   config,
-  username,
   ...
 }:
 {
   config = lib.mkIf config.home.desktop.hyprland.enable {
-    home.file.".config/hypr/wallpaper.png" = {
+    home.file.".config/hypr/wallpaper/pixel_sunset.jxl" = {
       enable = true;
-      source = ./wallpaper.png;
+      source = ./wallpaper/pixel_sunset.jxl;
     };
     services.hyprpaper = {
       enable = true;
       settings = {
         ipc = "on";
         splash = false;
-        splash_offset = 2.0;
+        splash_offset = 2;
+        splash_opacity = 0.4;
 
-        preload = [
-          "/home/${username}/.config/hypr/wallpaper.png"
-        ];
-
-        wallpaper = [
-          ",/home/${username}/.config/hypr/wallpaper.png"
-        ];
+        wallpaper = {
+          monitor = "";
+          path = "${config.home.homeDirectory}/.config/hypr/wallpaper/pixel_sunset.jxl";
+          fit_mode = "cover";
+        };
       };
     };
   };

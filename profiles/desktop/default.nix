@@ -19,7 +19,7 @@
     ../sound.nix
   ];
 
-  networking.wireless.enable = false; # explicitly disable wireless
+  # networking.wireless.enable = false; # explicitly disable wireless
   networking.networkmanager = {
     enable = true; # Easiest to use and most distros use this by default.
     plugins = with pkgs; [

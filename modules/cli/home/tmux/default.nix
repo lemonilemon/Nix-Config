@@ -13,9 +13,8 @@
       escapeTime = 0; # Fixes delay issues in Vim/Neovim
       keyMode = "vi"; # Vi-style navigation in copy mode
       mouse = true; # Enable mouse support (clickable windows/panes)
+      sensibleOnTop = true;
 
-      # 2. The Solution to your "Graphics Protocol" issue
-      # "allow-passthrough" enables Yazi/Neovim images to render directly
       extraConfig = ''
         set -g allow-passthrough on
         set -g set-clipboard on
@@ -82,6 +81,16 @@
         }
         # Better copy/paste behavior
         tmuxPlugins.yank
+        # Sensible defaults
+        tmuxPlugins.sensible
+        # which-key style popup for tmux commands
+        {
+          plugin = tmuxPlugins.tmux-which-key;
+          extraConfig = ''
+            set -g @tmux-which-key-xdg-enable 1
+            set -g @tmux-which-key-disable-autobuild 1
+          '';
+        }
       ];
 
     };

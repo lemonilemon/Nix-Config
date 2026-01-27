@@ -8,7 +8,6 @@
   imports = [
     ./waybar.nix
     ./hyprlock.nix
-    ./ranger.nix
     ./nemo.nix
     ./imv.nix
     ./theme

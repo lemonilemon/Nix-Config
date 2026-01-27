@@ -10,6 +10,7 @@
     ./atuin.nix
     ./ai.nix
     ./utils.nix
+    ./yazi.nix
   ];
   config = lib.mkIf config.home.cli.programs.enable {
     home.packages = with pkgs; [

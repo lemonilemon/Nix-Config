@@ -17,39 +17,39 @@
       }
 
       # Move to window using the <ctrl> hjkl keys (Use zellij-nav instead)
-      # {
-      #   mode = "n";
-      #   key = "<C-h>";
-      #   action = "<C-w>h";
-      #   options = {
-      #     desc = "Go to Left Window";
-      #   };
-      # }
-      #
-      # {
-      #   mode = "n";
-      #   key = "<C-j>";
-      #   action = "<C-w>j";
-      #   options = {
-      #     desc = "Go to Lower Window";
-      #   };
-      # }
-      # {
-      #   mode = "n";
-      #   key = "<C-k>";
-      #   action = "<C-w>k";
-      #   options = {
-      #     desc = "Go to Upper Window";
-      #   };
-      # }
-      # {
-      #   mode = "n";
-      #   key = "<C-l>";
-      #   action = "<C-w>l";
-      #   options = {
-      #     desc = "Go to Right Window";
-      #   };
-      # }
+      {
+        mode = "n";
+        key = "<C-h>";
+        action = "<C-w>h";
+        options = {
+          desc = "Go to Left Window";
+        };
+      }
+
+      {
+        mode = "n";
+        key = "<C-j>";
+        action = "<C-w>j";
+        options = {
+          desc = "Go to Lower Window";
+        };
+      }
+      {
+        mode = "n";
+        key = "<C-k>";
+        action = "<C-w>k";
+        options = {
+          desc = "Go to Upper Window";
+        };
+      }
+      {
+        mode = "n";
+        key = "<C-l>";
+        action = "<C-w>l";
+        options = {
+          desc = "Go to Right Window";
+        };
+      }
       # Use `H` and `L` to move between buffers
       {
         mode = "n";

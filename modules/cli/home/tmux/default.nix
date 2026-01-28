@@ -18,18 +18,38 @@
       # "allow-passthrough" enables Yazi/Neovim images to render directly
       extraConfig = ''
         set -g allow-passthrough on
+        set -g set-clipboard on
+        set -g detach-on-destroy off
+        set -g renumber-windows on
+
+        # Status bar customization
+        set -g status-position top
+        set -g status-right-length 100
+        set -g status-left-length 100
+        set -g status-left ""
+
         set -ga update-environment TERM
         set -ga update-environment TERM_PROGRAM
 
         # Split panes using | and - (more visual than % and ")
+        unbind %
+        unbind '"'
         bind | split-window -h -c "#{pane_current_path}"
         bind - split-window -v -c "#{pane_current_path}"
 
         # Keep new windows in the current path
         bind c new-window -c "#{pane_current_path}"
+
+        # Vim like pane navigation with Alt + h/j/k/l
+        bind -n M-h select-pane -L
+        bind -n M-j select-pane -D
+        bind -n M-k select-pane -U
+        bind -n M-l select-pane -R
+
+        # Reload config file
+        bind r source-file ~/.config/tmux/tmux.conf \; display-message "Config reloaded!"
       '';
 
-      # 3. Recommended Plugins (Installed via Nix, no TPM needed)
       plugins = with pkgs; [
         {
           # Theme: Catppuccin (Modern, clean, similar vibes to Zellij)
@@ -37,12 +57,15 @@
           extraConfig = ''
             set -g @catppuccin_flavour 'mocha' 
             set -g @catppuccin_window_tabs_enabled on
+            set -g @catppuccin_window_status_style "rounded"
             set -g @catppuccin_date_time "%H:%M"
+            set -g status-right "#{E:@catppuccin_status_application}"
+            set -ag status-right "#{E:@catppuccin_status_session}"
+            set -ag status-right "#{E:@catppuccin_status_uptime}"
           '';
         }
         {
           # Navigation: Navigate between Vim and Tmux panes seamlessly
-          # (Matches Zellij's directional navigation)
           plugin = tmuxPlugins.vim-tmux-navigator;
         }
         {

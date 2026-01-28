@@ -1,4 +1,9 @@
 {
+  lib,
+  config,
+  ...
+}:
+{
   programs.nixvim = {
     plugins = {
       snacks = {
@@ -31,9 +36,9 @@
           words = {
             enabled = true;
           };
-          image = {
+          image = lib.mkIf (config.home.cli.multiplexer.program == "tmux") {
             # Image viewer using Kitty Graphics Protocol
-            enabled = false; # Not supported by zellij
+            enabled = true; # Not supported by zellij, but tmux is okay
           };
           rename = {
             # file renaming

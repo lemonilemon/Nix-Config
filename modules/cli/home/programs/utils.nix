@@ -11,6 +11,8 @@
       zip
       unzip
       _7zz # 7zip
+      ouch
+
       # utils
       netcat
       direnv
@@ -20,6 +22,7 @@
       wget
       rqbit # a lightweight bittorrent client
       ffmpeg
+      glow # markdown viewer
 
       # command alternatives
       lsd # ls

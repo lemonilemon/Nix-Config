@@ -11,16 +11,15 @@
     settings = {
       "$schema" = "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json";
       logo = {
-        type = "auto";
-        height = 15;
-        width = 15;
+        source = "NixOS";
+        width = 12;
+        height = 12;
         padding = {
-          top = 5;
-          left = 3;
+          top = 2;
+          right = 2;
         };
       };
       modules = [
-        "break"
         {
           type = "custom";
           format = "{#89}┌──────────────────────Hardware──────────────────────┐";
@@ -32,22 +31,22 @@
         }
         {
           type = "cpu";
-          key = "│ ├";
+          key = "│ ├ CPU";
           keyColor = "green";
         }
         {
           type = "gpu";
-          key = "│ ├󰍛";
+          key = "│ ├󰍛 GPU";
           keyColor = "green";
         }
         {
           type = "memory";
-          key = "│ ├󰍛";
+          key = "│ ├ Memory";
           keyColor = "green";
         }
         {
           type = "disk";
-          key = "└ └";
+          key = "└ └ Disk";
           keyColor = "green";
         }
         {
@@ -66,25 +65,14 @@
         }
         {
           type = "kernel";
-          key = "│ ├";
-          keyColor = "yellow";
-        }
-        {
-          type = "bios";
-          key = "│ ├";
+          key = "│ ├ Kernel";
           keyColor = "yellow";
         }
         {
           type = "packages";
-          key = "│ ├󰏖";
+          key = "└ └󰏖 Packages";
           keyColor = "yellow";
         }
-        {
-          type = "shell";
-          key = "└ └";
-          keyColor = "yellow";
-        }
-        "break"
         {
           type = "de";
           key = " DE";
@@ -92,12 +80,12 @@
         }
         {
           type = "lm";
-          key = "│ ├";
+          key = "│ ├ LM";
           keyColor = "blue";
         }
         {
           type = "wm";
-          key = "│ ├";
+          key = "│ ├ WM";
           keyColor = "blue";
         }
         {
@@ -105,9 +93,15 @@
           key = "│ ├󰉼";
           keyColor = "blue";
         }
+
         {
           type = "terminal";
-          key = "└ └";
+          key = "│ ├ Terminal";
+          keyColor = "blue";
+        }
+        {
+          type = "shell";
+          key = "└ └ Shell";
           keyColor = "blue";
         }
         {
@@ -117,7 +111,7 @@
         "break"
         {
           type = "custom";
-          format = "{#89}┌────────────────────Uptime / Age / DT────────────────────┐";
+          format = "{#89}┌─────────────────Uptime / Age / DT-─────────────────┐";
         }
         {
           type = "command";
@@ -137,7 +131,7 @@
         }
         {
           type = "custom";
-          format = "{#89}└─────────────────────────────────────────────────────────┘";
+          format = "{#89}└────────────────────────────────────────────────────┘";
         }
 
         {

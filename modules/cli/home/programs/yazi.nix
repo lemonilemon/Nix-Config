@@ -13,6 +13,7 @@
         glow
         ouch
       ];
+      shellWrapperName = "y";
       plugins = {
         piper = pkgs.yaziPlugins.piper;
         ouch = pkgs.yaziPlugins.ouch;

@@ -161,7 +161,7 @@
           };
           # Open when hyprland starts
           exec-once = [
-            "waybar"
+            # "waybar"
             # "nm-applet --indicator"
             "fcitx5 -d --replace"
             "dunst"

@@ -23,7 +23,7 @@
     # Status bar
     programs.waybar = {
       enable = true;
-      # systemd.enable = true;
+      systemd.enable = true;
       settings = {
         mainBar = {
           layer = "top";
@@ -96,7 +96,7 @@
           };
 
           mpris = {
-            interval = 0;
+            interval = 1;
             format = "{player_icon} {dynamic}";
             format-paused = "{status_icon} {dynamic}";
             dynamic-order = [

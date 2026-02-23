@@ -1,4 +1,5 @@
 {
+  inputs,
   pkgs,
   config,
   lib,
@@ -12,7 +13,8 @@
       vlc
       tradingview
       gopeed
-      antigravity-fhs
+      inputs.antigravity-nix.packages.${pkgs.system}.default
+      podman-desktop
       obsidian
       libreoffice
       # inputs.claude-desktop.packages.${system}.claude-desktop

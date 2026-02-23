@@ -55,6 +55,10 @@
       url = "github:AndreM222/copilot-lualine/222e90bd8dcdf16ca1efc4e784416afb5f011c31";
       flake = false;
     };
+    antigravity-nix = {
+      url = "github:jacopone/antigravity-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs =
     inputs@{

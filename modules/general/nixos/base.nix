@@ -44,7 +44,7 @@
     };
   };
   environment.systemPackages = with pkgs; [
-    podman-compose
+    docker-compose
   ];
 
   # User configuration
@@ -53,6 +53,7 @@
     shell = pkgs.zsh;
     extraGroups = [
       "wheel"
+      "docker"
       "podman"
       "networkmanager"
     ];

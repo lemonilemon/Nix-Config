@@ -64,3 +64,7 @@ changehost input:
 [group('NixOS')]
 test:
     nix eval .#{{ nixhost }} --show-trace --print-build-logs --verbose
+
+[group('NixOS')]
+gc:
+    sudo nix-collect-garbage -d

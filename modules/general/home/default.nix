@@ -24,12 +24,18 @@
         ]
       )) # python
       uv # python package
-      # micromamba # python virtualenv
+      micromamba # python virtualenv
       nodejs # nodejs
       bun
       jre8 # Java Development Kit
       rustc # Rust
       cargo # Rust projects
     ];
+    home.sessionVariables = {
+      MAMBA_ROOT_PREFIX = "${config.home.homeDirectory}/.micromamba";
+    };
+    programs.zsh.initContent = ''
+      eval "$(micromamba shell hook --shell zsh)"
+    '';
   };
 }

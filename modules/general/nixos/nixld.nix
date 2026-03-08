@@ -28,6 +28,8 @@
         libtool
         libGL
         libxcrypt
+        libX11
+        libXext
       ];
     };
     programs.command-not-found.enable = false;

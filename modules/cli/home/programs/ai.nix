@@ -11,5 +11,8 @@
     socat
     bubblewrap
   ];
+  programs.opencode = {
+    enable = true;
+  };
 
 }

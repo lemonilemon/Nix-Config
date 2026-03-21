@@ -42,7 +42,6 @@ in
       isStandalone = !isWSL && !isDarwin;
     in
     lib.nixosSystem {
-      inherit system;
       specialArgs = {
         inherit inputs username hostname;
       }
@@ -52,6 +51,8 @@ in
       ]);
 
       modules = [
+        { nixpkgs.hostPlatform = system; }
+
         # Core modules
         ../modules
         ../overlays

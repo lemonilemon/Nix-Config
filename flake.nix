@@ -99,7 +99,10 @@
         pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
-            nixfmt.enable = true;
+            nixfmt = {
+              enable = true;
+              package = nixpkgs.legacyPackages.${system}.nixfmt;
+            };
           };
         };
       });

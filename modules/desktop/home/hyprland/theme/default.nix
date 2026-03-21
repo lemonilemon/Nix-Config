@@ -15,7 +15,7 @@
     home.pointerCursor = {
       enable = true;
       name = "rose-pine-hyprcursor";
-      package = inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default;
+      package = inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default;
       hyprcursor = {
         enable = true;
         size = 24;

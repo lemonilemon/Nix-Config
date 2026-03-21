@@ -153,20 +153,23 @@ For using Home Manager on non-NixOS distributions:
 ├── flake.nix           # Main flake configuration and system definitions
 ├── flake.lock          # Locked flake dependencies
 ├── Justfile            # Command runner recipes for common tasks
-├── CLAUDE.md           # AI assistant guidance for this repository
-├── lib/                # Helper functions and builders
+├── lib/                # Helper functions and builders (mkSystem, mkHome)
 ├── modules/            # Modular configuration components
+│   ├── options.nix    # All custom option declarations (feature flags)
+│   ├── home.nix       # Home Manager entry point
+│   ├── nixos.nix      # NixOS base configuration
 │   ├── cli/           # CLI tools and terminal configuration
 │   ├── desktop/       # Desktop environment modules
 │   ├── general/       # General system settings
-│   ├── gui/           # GUI applications
-│   └── home.nix       # Home Manager entry point
+│   └── gui/           # GUI applications
 ├── profiles/          # Machine-specific configurations
+│   ├── base.nix      # Shared base (hostname, timezone, state version)
 │   ├── wsl/          # WSL profile
 │   ├── laptop/       # Laptop profile
 │   └── desktop/      # Desktop profile
-├── overlays/         # Package overlays and custom packages
-└── nixpkgs/          # Nixpkgs configuration
+├── overlays/         # Package overlays (Firefox, Spotify, 1Password)
+├── nixpkgs/          # Nixpkgs instantiation with overlays applied
+└── .claude/          # Claude Code integration (skills, permissions)
 ```
 
 ## Usage
@@ -221,6 +224,8 @@ sudo nixos-rebuild switch --flake .#desktop
 This configuration uses a hierarchical module system with feature flags:
 
 **Top-level options** (defined in `modules/options.nix`):
+- `home.enable` - Home Manager configuration
+- `nixos.enable` - NixOS system configuration
 - `cli.enable` - CLI tools and terminal configuration
 - `gui.enable` - GUI applications
 - `general.enable` - General system settings
@@ -327,25 +332,12 @@ nix fmt
 
 ## Included Software
 
-### CLI Tools
-- **Shell**: zsh with starship prompt, zoxide directory navigation
-- **Editor**: Neovim with extensive plugin configuration (LSP, completion, AI integration)
-- **Terminal Multiplexer**: Zellij
-- **Version Control**: Git with custom configuration
-- **System Monitoring**: fastfetch, atuin (shell history)
-- **AI Tools**: Integration with Claude and GitHub Copilot
+See the module-level READMEs for full details on what each module provides:
 
-### Desktop Environment (Optional)
-- **Window Manager**: Hyprland (Wayland compositor)
-- **Alternative DE**: GNOME
-- **Display Managers**: SDDM (default), GDM
-- **Status Bar**: Waybar
-- **Utilities**: rofi, wlogout, hyprlock, hyprpaper
-
-### Development
-- **Languages**: gcc, python3 (configurable via `home.general.programlangs.packages`)
-- **LSP Support**: Configured in Neovim for multiple languages
-- **Formatters**: Language-specific formatters via conform.nvim
+- [`modules/cli/README.md`](modules/cli/README.md) — shell, Neovim, git, Zellij, AI CLI tools
+- [`modules/gui/README.md`](modules/gui/README.md) — browsers, terminal emulator, GUI apps
+- [`modules/desktop/README.md`](modules/desktop/README.md) — Hyprland, GNOME, display managers
+- [`modules/general/README.md`](modules/general/README.md) — fonts, programming languages, system utilities
 
 ## Troubleshooting
 

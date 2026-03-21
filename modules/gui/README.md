@@ -185,10 +185,13 @@ programs.kitty = {
 General GUI applications and utilities.
 
 **Home Manager Apps** (`home/apps/default.nix`):
-- User-specific applications
-- Personal productivity tools
-- Media applications
-- Communication apps
+- **Communication**: Webcord (Discord client)
+- **Media**: Spotify (Wayland IME), VLC
+- **Productivity**: Obsidian (notes), Trading View
+- **Download**: Gopeed
+- **Containers**: Podman Desktop
+- **Utilities**: Antigravity
+- **SSH**: SSH config with 1Password agent forwarding
 
 **System Apps** (`nixos/apps/`):
 - System-wide applications

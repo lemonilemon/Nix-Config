@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__mcp-nixos__nixos_search",
+      "Bash(readlink:*)",
+      "Bash(mkdir:*)",
+      "Bash(git add:*)",
+      "Bash(export NIXHOST=laptop)",
+      "Bash(just dry-build:*)",
+      "Bash(fd:*)",
+      "Bash(ls:*)",
+      "Bash(cp:*)",
+      "Bash(echo:*)"
+    ],
+    "deny": []
+  }
+}

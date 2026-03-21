@@ -9,6 +9,11 @@
     programs.nix-ld = {
       enable = true;
       libraries = with pkgs; [
+        SDL2
+        SDL2_image
+        SDL2_mixer
+        SDL2_ttf
+        wayland
         linuxPackages.nvidia_x11
         cudatoolkit # For CUDA support
         stdenv.cc.cc
@@ -30,6 +35,7 @@
         libxcrypt
         libX11
         libXext
+        libdecor
       ];
     };
     programs.command-not-found.enable = false;

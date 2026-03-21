@@ -16,7 +16,7 @@
       inputs.antigravity-nix.packages.${pkgs.system}.default
       podman-desktop
       obsidian
-      libreoffice
+      # libreoffice
       # inputs.claude-desktop.packages.${system}.claude-desktop
     ];
     programs.ssh = {

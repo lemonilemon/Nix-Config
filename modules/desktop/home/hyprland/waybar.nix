@@ -157,7 +157,7 @@
 
           memory = {
             interval = 3;
-            format = "󰸎 {}%";
+            format = " {}%";
             "on-click" = "kitty -- htop";
             "tooltip-format" = "Used: {used:0.1f}G/{total:0.1f}G\nSwap: {swapUsed:0.1f}G/{swapTotal:0.1f}G";
             states = {
@@ -166,8 +166,8 @@
           };
 
           bluetooth = {
-            "format-on" = "󰂯 ";
-            "format-off" = "󰂲 ";
+            "format-on" = "";
+            "format-off" = "";
             "format-connected" = "󰂯 {device_alias}";
             "format-connected-battery" = "󰂯 {device_alias} {device_battery_percentage}%";
             "format-device-preference" = [

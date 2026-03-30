@@ -209,6 +209,8 @@
             no_update_news = true;
             no_donation_nag = true;
           };
+          # Fallback: matched by nwg-displays rules when monitors.conf exists
+          monitor = ",preferred,auto,1";
         };
       extraConfig = ''
         source = ~/.config/hypr/monitors.conf
@@ -266,5 +268,13 @@
     home.sessionVariables = {
       WLR_NO_HARDWARE_CURSORS = "1";
     };
+
+    # Seed monitors.conf so `source` doesn't error before nwg-displays is run
+    home.activation.seedMonitorsConf = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      if [ ! -f "$HOME/.config/hypr/monitors.conf" ]; then
+        $DRY_RUN_CMD mkdir -p "$HOME/.config/hypr"
+        $DRY_RUN_CMD printf 'monitor=,preferred,auto,1\n' > "$HOME/.config/hypr/monitors.conf"
+      fi
+    '';
   };
 }

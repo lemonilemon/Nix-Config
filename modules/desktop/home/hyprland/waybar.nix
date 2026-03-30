@@ -180,12 +180,10 @@
             "tooltip-format-enumerate-connected" = "{device_alias}\t{device_address}";
             "tooltip-format-enumerate-connected-battery" =
               "{device_alias}\t{device_address}\t{device_battery_percentage}%";
-            "on-click" = "blueman-manager";
           };
 
           network = {
             interval = 60;
-            "on-click" = "foot --app-id nmtui nmtui";
             "interface-ethernet" = "enp1s*";
             "interface-wifi" = "wlan0";
             "format-ethernet" = "󰌗 {ifname}";

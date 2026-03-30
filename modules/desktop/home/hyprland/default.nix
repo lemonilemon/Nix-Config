@@ -26,6 +26,7 @@
       brightnessctl # Brightness control
       playerctl # Player control
       pw-volume # Volume control
+      nwg-displays # Monitor layout GUI
     ];
 
     wayland.windowManager.hyprland = {
@@ -105,10 +106,6 @@
             ", XF86AudioPlay, exec, playerctl play-pause"
             ", XF86AudioPrev, exec, playerctl previous"
             ", XF86AudioNext, exec, playerctl next"
-          ];
-
-          monitor = [
-            ",preferred,auto,1"
           ];
 
           # rule
@@ -213,6 +210,9 @@
             no_donation_nag = true;
           };
         };
+      extraConfig = ''
+        source = ~/.config/hypr/monitors.conf
+      '';
     };
     # Notification daemon:
     services.dunst = {

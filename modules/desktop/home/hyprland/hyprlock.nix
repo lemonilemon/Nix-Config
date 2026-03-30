@@ -113,17 +113,24 @@ in
         general = {
           lock_cmd = "pidof hyprlock || hyprlock"; # avoid starting multiple hyprlock instances.
           before_sleep_cmd = "loginctl lock-session"; # lock before suspend.
-          after_sleep_cmd = "hyprctl dispatch dpms on"; # to avoid having to press a key twice to turn on the display.
+          # Re-enable display then restart hyprlock if it crashed during GPU reset on suspend.
+          after_sleep_cmd = "hyprctl dispatch dpms on; pidof hyprlock || hyprlock";
         };
         listener = [
           {
-            timeout = 900;
+            timeout = 900; # 15 min
             on-timeout = "loginctl lock-session";
           }
-
           {
-            timeout = 1800; # 30min
-            on-timeout = "systemctl suspend"; # suspend pc
+            # Turn off display while locked to save power.
+            # on-resume brings it back if user wakes before suspend fires.
+            timeout = 1200; # 20 min
+            on-timeout = "hyprctl dispatch dpms off";
+            on-resume = "hyprctl dispatch dpms on";
+          }
+          {
+            timeout = 1800; # 30 min
+            on-timeout = "systemctl suspend";
           }
         ];
       };

@@ -32,6 +32,7 @@
     wayland.windowManager.hyprland = {
       enable = true; # enable Hyprland
       xwayland.enable = true; # enable xwayland
+      systemd.enable = true; # import env vars into systemd user session
       settings =
         let
           MOD1 = "SUPER";

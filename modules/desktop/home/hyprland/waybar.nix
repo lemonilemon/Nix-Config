@@ -51,7 +51,7 @@
             "memory"
             "bluetooth"
             "network"
-            "pulseaudio"
+            "wireplumber"
             "battery"
             "custom/power"
           ];
@@ -197,27 +197,15 @@
             "format-disconnected" = "⚠ Disconnected";
           };
 
-          pulseaudio = {
+          wireplumber = {
             "scroll-step" = 2;
             format = "{icon} {volume}%";
-            "format-bluetooth" = "󰂯 {icon} {volume}%";
-            "format-bluetooth-muted" = "󰂲 ";
             "format-muted" = "󰝟 ";
-            "format-source" = " {volume}%";
-            "format-source-muted" = " ";
-            "format-icons" = {
-              headphone = " ";
-              "hands-free" = " ";
-              headset = " ";
-              phone = "";
-              portable = "";
-              car = "";
-              default = [
-                ""
-                ""
-                ""
-              ];
-            };
+            "format-icons" = [
+              ""
+              ""
+              ""
+            ];
             "on-click" = "foot --app-id pulsemixer pulsemixer";
           };
 
@@ -363,7 +351,7 @@
 
         #mpris,
         #clock,
-        #pulseaudio,
+        #wireplumber,
         #bluetooth,
         #network,
         #memory,
@@ -456,11 +444,11 @@
           color: @overlay1;
         }
 
-        #pulseaudio {
+        #wireplumber {
           color: @yellow;
         }
 
-        #pulseaudio.muted {
+        #wireplumber.muted {
           color: @overlay1;
         }
 

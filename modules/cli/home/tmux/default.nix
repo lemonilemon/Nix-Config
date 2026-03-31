@@ -5,6 +5,8 @@
   ...
 }:
 {
+  imports = [ ./sesh.nix ];
+
   config = lib.mkIf config.home.cli.multiplexer.tmux.enable {
     programs.tmux = {
       enable = true;

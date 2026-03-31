@@ -97,7 +97,7 @@
         }
         {
           "label" = "logout";
-          "action" = "hyprctl dispatch exit";
+          "action" = "hyprshutdown && hyprctl dispatch exit";
           "text" = "Logout";
           "keybind" = "e";
         }

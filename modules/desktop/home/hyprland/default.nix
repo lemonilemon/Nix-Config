@@ -7,6 +7,7 @@
 {
   imports = [
     ./waybar.nix
+    ./dunst.nix
     ./hyprlock.nix
     ./nemo.nix
     ./imv.nix
@@ -163,7 +164,6 @@
             # "waybar"
             # "nm-applet --indicator"
             "fcitx5 -d --replace"
-            "dunst"
             # polkit
             "systemctl --user start hyprpolkitagent"
             # discord
@@ -217,36 +217,6 @@
       extraConfig = ''
         source = ~/.config/hypr/monitors.conf
       '';
-    };
-    # Notification daemon:
-    services.dunst = {
-      enable = true;
-      settings = {
-        global = {
-          frame_color = "#89b4fa";
-          separator_color = "frame";
-          highlight = "#89b4fa";
-          transparency = 10;
-          origin = "top-right";
-          font = "JetBrains Mono Nerd Font 10";
-        };
-
-        urgency_low = {
-          background = "#1e1e2e";
-          foreground = "#cdd6f4";
-        };
-
-        urgency_normal = {
-          background = "#1e1e2e";
-          foreground = "#cdd6f4";
-        };
-
-        urgency_critical = {
-          background = "#1e1e2e";
-          foreground = "#cdd6f4";
-          frame_color = "#fab387";
-        };
-      };
     };
 
     # Windows switcher / App launcher:

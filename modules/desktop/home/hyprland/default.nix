@@ -66,6 +66,7 @@
             "${MOD1}, l, movefocus, r"
             "${MOD3}, Tab, cyclenext," # change focus to another window
 
+            "${MOD2}, t, exec, ${TERM}" # New terminal (non-special workspace)
             ", Print, exec, grim -g \"$(slurp)\" - | wl-copy"
             "${MOD1}+SHIFT, s, exec, grim -g \"$(slurp)\" - | wl-copy"
           ]

@@ -118,6 +118,18 @@
         };
       }
 
+      # Buffer delete
+      {
+        mode = "n";
+        key = "<leader>bd";
+        action.__raw = "function() Snacks.bufdelete.delete() end";
+        options = {
+          desc = "Delete buffer";
+          noremap = true;
+          silent = true;
+        };
+      }
+
       # neo-tree
       {
         mode = "n";

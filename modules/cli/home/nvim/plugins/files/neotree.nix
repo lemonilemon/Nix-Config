@@ -17,11 +17,11 @@
     neo-tree = {
       enable = lib.mkDefault true;
       settings = {
-        enableDiagnostics = true;
-        enableGitStatus = true;
-        enableModifiedMarkers = true;
-        enableRefreshOnWrite = true;
-        closeIfLastWindow = true;
+        enable_diagnostics = true;
+        enable_git_status = true;
+        enable_modified_markers = true;
+        enable_refresh_on_write = true;
+        close_if_last_window = true;
       };
     };
     edgy.settings = {

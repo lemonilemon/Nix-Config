@@ -14,6 +14,8 @@
       multimarkdown # markdown
       # file conversion
       pandoc
+      # pdf manipulation
+      qpdf
     ];
 
     # pdf viewer

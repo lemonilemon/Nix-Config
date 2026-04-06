@@ -31,6 +31,7 @@
 
         set -ga update-environment TERM
         set -ga update-environment TERM_PROGRAM
+        set -ga update-environment PATH
 
         # Split panes using | and - (more visual than % and ")
         unbind '%'

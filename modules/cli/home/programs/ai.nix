@@ -13,8 +13,10 @@
   ];
   programs.opencode = {
     enable = true;
-    settings = {
+    tui = {
       theme = "catppuccin";
+    };
+    settings = {
       agent = {
         team-lead = {
           mode = "primary";

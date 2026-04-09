@@ -10,7 +10,8 @@
       "Bash(fd:*)",
       "Bash(ls:*)",
       "Bash(cp:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "mcp__mcp-nixos__nix"
     ],
     "deny": []
   }

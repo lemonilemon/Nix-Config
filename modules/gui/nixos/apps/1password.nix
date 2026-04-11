@@ -9,7 +9,7 @@
   config = lib.mkIf config.nixos.gui.apps.enable {
     programs._1password.enable = true;
     programs._1password-gui = {
-      package = pkgs._1password-gui-beta;
+      package = pkgs._1password-gui;
       enable = true;
     };
     programs._1password-gui.polkitPolicyOwners = [ username ];

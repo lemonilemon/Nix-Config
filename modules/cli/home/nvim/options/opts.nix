@@ -10,6 +10,9 @@
       number-toggle = {
         clear = true;
       };
+      auto-reload = {
+        clear = true;
+      };
     };
 
     # [[ AutoCommands ]]
@@ -17,8 +20,17 @@
     autoCmd = [
       {
         event = [
-          "InsertEnter"
+          "FocusGained"
+          "BufEnter"
+          "CursorHold"
+          "CursorHoldI"
         ];
+        group = "auto-reload";
+        desc = "Reload buffer when file changes externally (e.g. AI edits)";
+        command = "checktime";
+      }
+      {
+        event = [ "InsertEnter" ];
         desc = "Toggle between relative and absolute line numbers when entering insert mode";
         callback.__raw = ''
           function()
@@ -27,9 +39,7 @@
         '';
       }
       {
-        event = [
-          "InsertLeave"
-        ];
+        event = [ "InsertLeave" ];
         desc = "Toggle between relative and absolute line numbers when leaving insert mode";
         callback.__raw = ''
           function()
@@ -37,7 +47,6 @@
           end
         '';
       }
-
       {
         event = "InsertEnter";
         desc = "Vertically center the document when entering insert mode";
@@ -60,6 +69,10 @@
 
       autochdir = true;
       autowrite = true;
+      autoread = true;
+
+      # fire CursorHold sooner for faster auto-reload detection (community standard)
+      updatetime = 300;
 
       # keymapping timeout
       ttimeout = true; # separate mapping and keycode timeout

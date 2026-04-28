@@ -171,6 +171,7 @@
             "webcord --start-minimized"
             # 1password
             "1password --silent"
+            "blueman-applet"
           ];
           env = [
             "ELECTRON_OZONE_PLATFORM_HINT, wayland"

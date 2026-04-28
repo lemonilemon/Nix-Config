@@ -7,16 +7,10 @@
   programs.nixvim = {
     plugins.treesitter = {
       enable = true;
-      settings = {
-        indent = {
-          enable = true;
-        };
-        highlight = {
-          enable = true;
-          disable = [
-            "latex" # Use vimtex instead
-          ];
-        };
+      indent.enable = true;
+      highlight = {
+        enable = true;
+        disable = [ "latex" ];
       };
       folding.enable = false;
       nixvimInjections = true;

@@ -50,6 +50,24 @@
 
         # Reload config file
         bind r source-file ~/.config/tmux/tmux.conf \; display-message "Config reloaded!"
+
+        # ==============================================
+        # Nested Tmux / Passthrough Toggle (F12)
+        # ==============================================
+        bind -T root F12  \
+          set prefix None \;\
+          set key-table off \;\
+          set status-style "fg=#bac2de,bg=#313244" \;\
+          set status-left "#[fg=#11111b,bg=#f9e2af,bold] PASSTHROUGH #[default]" \;\
+          if -F '#{pane_in_mode}' 'send-keys -X cancel' \;\
+          refresh-client -S \;\
+
+        bind -T off F12 \
+          set -u prefix \;\
+          set -u key-table \;\
+          set -u status-style \;\
+          set -u status-left \;\
+          refresh-client -S
       '';
 
       plugins = with pkgs; [

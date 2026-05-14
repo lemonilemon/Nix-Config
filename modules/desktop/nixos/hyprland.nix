@@ -13,6 +13,7 @@
     programs.hyprland = {
       enable = true; # enable Hyprland
       xwayland.enable = true;
+      withUWSM = true; # launch Hyprland as a systemd user session via UWSM
     };
     services.xserver.desktopManager.runXdgAutostartIfNone = true;
     # XDG portal:

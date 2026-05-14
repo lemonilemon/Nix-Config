@@ -79,6 +79,9 @@
         # combinePlugins.enable = true; # It causes some collisions
       };
 
+      # Nixvim builds its own pkgs instance; mirror system allowUnfree so
+      # plugins flagged unfree (e.g. cmp-emoji) can be evaluated.
+      nixpkgs.config.allowUnfree = true;
     };
 
     home.packages = with pkgs; [ neovim-remote ];

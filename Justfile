@@ -46,6 +46,7 @@ fmt:
 ############################################################################
 
 nixhost := x"${NIXHOST}"
+username := env_var_or_default("USER", "lemonilemon")
 # build system with new config
 [group('NixOS')]
 build:
@@ -68,3 +69,10 @@ test:
 [group('NixOS')]
 gc:
     sudo nix-collect-garbage -d
+
+# Build current host's toplevel and push its closure to <username>.cachix.org.
+# Requires `cachix authtoken <token>` to have been run once.
+[group('NixOS')]
+push:
+    cachix watch-exec {{ username }} -- \
+      nix build .#nixosConfigurations.{{ nixhost }}.config.system.build.toplevel --no-link --print-out-paths

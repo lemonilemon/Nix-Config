@@ -1,5 +1,10 @@
+{ inputs, ... }:
 {
   nixpkgs.overlays = [
+    # AI coding agents — packages live under `pkgs.llm-agents.*`. The flake's
+    # pinned nixpkgs is used on purpose so builds hit cache.numtide.com.
+    inputs.llm-agents.overlays.default
+
     # Use no-remote as default (firefox)
     (final: prev: {
       firefox = prev.firefox.overrideAttrs (oldAttrs: {

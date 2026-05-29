@@ -17,6 +17,7 @@ Key inputs declared in `flake.nix`:
 | `nix-index-database` | comma / nix-index |
 | `rose-pine-hyprcursor` | Hyprland cursor theme |
 | `antigravity-nix` | Antigravity GUI app |
+| `llm-agents` | AI coding agents (claude-code, gemini-cli, opencode, ...); daily updates, served from cache.numtide.com — overlay wired in `nixpkgs/overlays.nix`, packages live under `pkgs.llm-agents.*` |
 | `template-nvim` | custom Neovim plugin (non-flake, pinned commit) |
 | `coderunner-nvim` | custom Neovim plugin (non-flake, pinned commit) |
 | `copilot-lualine-nvim` | custom Neovim plugin (non-flake, pinned commit) |

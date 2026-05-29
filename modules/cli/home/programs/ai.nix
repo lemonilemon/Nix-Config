@@ -4,8 +4,8 @@
 }:
 {
   home.packages = with pkgs; [
-    claude-code
-    gemini-cli
+    llm-agents.claude-code
+    llm-agents.gemini-cli
 
     # for sandbox
     socat
@@ -13,6 +13,7 @@
   ];
   programs.opencode = {
     enable = true;
+    package = pkgs.llm-agents.opencode;
     tui = {
       theme = "catppuccin";
     };

@@ -11,6 +11,7 @@
       cachix
       mosh
       sshfs
+      autossh
       killall
     ];
   };

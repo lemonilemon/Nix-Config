@@ -6,6 +6,7 @@
   home.packages = with pkgs; [
     llm-agents.claude-code
     llm-agents.gemini-cli
+    llm-agents.codex
 
     # for sandbox
     socat

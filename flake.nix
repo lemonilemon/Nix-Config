@@ -1,6 +1,19 @@
 {
   description = "Lemonilemon's Nix Flake";
 
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.numtide.com"
+      "https://lemonilemon.cachix.org"
+      "https://aseipp-nix-cache.global.ssl.fastly.net"
+      "https://mirrors.ustc.edu.cn/nix-channels/store"
+    ];
+    extra-trusted-public-keys = [
+      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+      "lemonilemon.cachix.org-1:3JBE3d5E5WuJRgOXNz+I5BUG+HRtBecADu0RBBJV1qI="
+    ];
+  };
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";

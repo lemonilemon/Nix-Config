@@ -7,6 +7,7 @@
     llm-agents.claude-code
     llm-agents.gemini-cli
     llm-agents.codex
+    llm-agents.antigravity-cli
 
     # for sandbox
     socat

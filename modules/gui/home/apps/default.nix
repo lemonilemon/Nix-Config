@@ -13,7 +13,6 @@
       vlc
       tradingview
       gopeed
-      inputs.antigravity-nix.packages.${pkgs.stdenv.hostPlatform.system}.default
       podman-desktop
       obsidian
       # libreoffice

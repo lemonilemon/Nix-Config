@@ -7,6 +7,7 @@
 }:
 {
   config = lib.mkIf config.home.desktop.hyprland.enable {
+    catppuccin.hyprland.enable = false; # incompatible with configType = "hyprlang"
     catppuccin.kvantum.enable = false;
     catppuccin.gtk.icon.enable = false;
     home.packages = with pkgs; [

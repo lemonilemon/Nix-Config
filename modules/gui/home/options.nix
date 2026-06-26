@@ -21,6 +21,14 @@
           default = config.home.gui.enable;
           description = "Enable development tools";
         };
+        cursor = {
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.gui.development.cursor.enable";
+            default = config.home.gui.development.enable;
+            description = "Enable Cursor editor";
+          };
+        };
         web = {
           enable = helpers.mkHomeOpt {
             inherit osConfig;

@@ -9,6 +9,7 @@
     ./options.nix
     ./programlangs
     ./pdf
+    ./rime
     ./secrets
     ./fonts
     ./utils

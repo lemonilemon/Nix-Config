@@ -21,6 +21,14 @@
         };
       };
 
+      rime = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.home.general.enable;
+          description = "Enable Rime IME configuration (臺灣字形 default)";
+        };
+      };
+
       pdf = {
         enable = lib.mkOption {
           type = lib.types.bool;

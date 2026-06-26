@@ -25,6 +25,15 @@
         };
       };
 
+      rime = {
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.general.rime.enable";
+          default = config.home.general.enable;
+          description = "Enable Rime IME configuration (臺灣字形 default)";
+        };
+      };
+
       pdf = {
         enable = helpers.mkHomeOpt {
           inherit osConfig;

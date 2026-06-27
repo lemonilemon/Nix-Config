@@ -64,4 +64,8 @@
   };
   catppuccin.plymouth.enable = lib.mkDefault false; # use plymouth theme instead
   catppuccin.grub.enable = lib.mkDefault false; # use grub2-theme instead
+  # Override the bootloader's expected kernel filename.
+  # The Linux 7.0+ Zen kernel in Nixpkgs outputs 'vmlinuz' instead of the traditional 'bzImage'.
+  # Without this, GRUB/systemd-boot will fail to find the kernel image and break the build.
+  system.boot.loader.kernelFile = lib.mkForce "vmlinuz";
 }

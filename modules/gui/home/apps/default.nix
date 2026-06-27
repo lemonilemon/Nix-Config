@@ -21,17 +21,13 @@
     programs.ssh = {
       enable = true;
       enableDefaultConfig = false;
-      matchBlocks = {
+      includes = [ "~/.ssh/1Password/config" ];
+      settings = {
         "*" = {
-          forwardAgent = true;
-          extraOptions = {
-            IdentityAgent = "~/.1password/agent.sock";
-          };
+          ForwardAgent = true;
+          IdentityAgent = "~/.1password/agent.sock";
         };
       };
-      extraConfig = ''
-        Include ~/.ssh/1Password/config
-      '';
     };
   };
 }

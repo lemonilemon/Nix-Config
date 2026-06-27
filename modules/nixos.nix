@@ -12,6 +12,7 @@
   ];
   config = {
     catppuccin.enable = lib.mkDefault true;
+    catppuccin.autoEnable = lib.mkDefault true;
     catppuccin.flavor = lib.mkDefault "mocha";
   };
 }

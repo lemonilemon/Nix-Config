@@ -8,6 +8,7 @@
     llm-agents.gemini-cli
     llm-agents.codex
     llm-agents.antigravity-cli
+    llm-agents.skills
 
     # for sandbox
     socat

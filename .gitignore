@@ -1,5 +1,7 @@
 .pre-commit-config.yaml
 CLAUDE.md
+__pycache__/
+*.py[cod]
 !.agents/
 !.agents/skills/
 !.agents/skills/**

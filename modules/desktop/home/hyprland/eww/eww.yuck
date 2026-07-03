@@ -1,0 +1,75 @@
+(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":"","cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
+
+(defvar show_date false)
+(defvar show_battery_time false)
+
+(defwindow bar
+  :monitor 0
+  :geometry (geometry
+    :x "0"
+    :y "8px"
+    :width "100%"
+    :height "34px"
+    :anchor "top center")
+  :stacking "fg"
+  :exclusive true
+  :focusable false
+  :namespace "eww-bar"
+  (bar))
+
+(defwidget bar []
+  (box :class "bar-window" :orientation "h" :hexpand true
+    (centerbox :class "bar-root" :hexpand true
+      (box :class "left" :orientation "h" :space-evenly false :halign "start" :hexpand true
+        (box :class "bar-island left-island" :orientation "h" :space-evenly false
+          (workspaces)
+          (label :class "submap" :visible {bar_state.submap != ""} :text {bar_state.submap})
+          (label :class "media" :visible {bar_state.media != ""} :text {bar_state.media != "" ? " ${bar_state.media}" : ""})))
+      (box :class "center" :orientation "h" :space-evenly false :halign "center"
+        (box :class "bar-island clock-island" :orientation "h" :space-evenly false
+          (button :class "clock"
+            :onclick "eww update show_date=${show_date == 'true' ? 'false' : 'true'}"
+            :onrightclick "gsimplecal"
+            :tooltip {bar_state.clock.tooltip}
+            (label :text {show_date == "true" ? bar_state.clock.date : bar_state.clock.time}))))
+      (box :class "right" :orientation "h" :space-evenly false :halign "end" :hexpand true
+        (box :class "bar-island tray-island" :orientation "h" :space-evenly false
+          (systray :class "tray" :icon-size 14 :spacing 8)
+          (button :class "idle-inhibitor ${bar_state.idle_inhibited == 'true' ? 'active' : ''}"
+            :onclick "eww-barctl idle toggle"
+            (label :text {bar_state.idle_inhibited == "true" ? "" : ""}))
+          (label :class "module network ${bar_state.network.class}" :tooltip {bar_state.network.tooltip} :text {bar_state.network.text})
+          (label :class "module bluetooth ${bar_state.bluetooth.class}" :visible {bar_state.bluetooth.text != ""} :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text}))
+        (box :class "bar-island sys-island" :orientation "h" :space-evenly false
+          (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
+          (button :class "module-button cpu" :onclick "kitty -- htop"
+            (label :text {bar_state.cpu}))
+          (button :class "module-button memory ${bar_state.memory.class}"
+            :onclick "kitty -- htop"
+            :tooltip {bar_state.memory.tooltip}
+            (label :text {bar_state.memory.text})))
+        (box :class "bar-island session-island" :orientation "h" :space-evenly false
+          (eventbox
+            :onscroll "eww-barctl volume {}"
+            (button :class "module-button volume"
+              :onclick "kitty -- pulsemixer"
+              (label :text {bar_state.volume})))
+          (button :class "module-button battery ${bar_state.battery.class}"
+            :onclick "eww update show_battery_time=${show_battery_time == 'true' ? 'false' : 'true'}"
+            (label :text {show_battery_time == "true" ? bar_state.battery.alt : bar_state.battery.text}))
+          (button :class "power-button" :onclick "wlogout"
+            (label :text "")))))))
+
+(defwidget workspaces []
+  (box :class "workspaces" :orientation "h" :space-evenly false
+    (workspace :id "1" :state_class {bar_state.workspace_state.ws1_class} :icon {bar_state.workspace_state.ws1_text})
+    (workspace :id "2" :state_class {bar_state.workspace_state.ws2_class} :icon {bar_state.workspace_state.ws2_text})
+    (workspace :id "3" :state_class {bar_state.workspace_state.ws3_class} :icon {bar_state.workspace_state.ws3_text})
+    (workspace :id "4" :state_class {bar_state.workspace_state.ws4_class} :icon {bar_state.workspace_state.ws4_text})
+    (workspace :id "5" :state_class {bar_state.workspace_state.ws5_class} :icon {bar_state.workspace_state.ws5_text})))
+
+(defwidget workspace [id state_class icon]
+  (button
+    :class "workspace ${state_class}"
+    :onclick "hyprctl dispatch workspace ${id}"
+    (label :text icon)))

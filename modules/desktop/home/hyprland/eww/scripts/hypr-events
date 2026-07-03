@@ -1,0 +1,95 @@
+mode=$1
+
+emit_workspace() {
+  hyprctl activeworkspace -j 2>/dev/null \
+    | sed -n 's/.*"id":[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/p' \
+    | head -n1
+}
+
+json_output_or_default() {
+  default=$1
+  shift
+  value=$("$@" 2>/dev/null || true)
+
+  if printf '%s\n' "$value" | jq -e . >/dev/null 2>&1; then
+    printf '%s' "$value"
+  else
+    printf '%s' "$default"
+  fi
+}
+
+emit_workspace_state() {
+  active_json=$(json_output_or_default '{}' hyprctl activeworkspace -j)
+  workspaces_json=$(json_output_or_default '[]' hyprctl workspaces -j)
+  clients_json=$(json_output_or_default '[]' hyprctl clients -j)
+
+  jq -nc \
+    --argjson active "$active_json" \
+    --argjson workspaces "$workspaces_json" \
+    --argjson clients "$clients_json" '
+      def state($id):
+        ($active.id // 0) as $active_id
+        | any($workspaces[]?; .id == $id and ((.windows // 0) > 0)) as $occupied
+        | any($clients[]?; (.urgent // false) == true and ((.workspace.id // 0) == $id)) as $urgent
+        | if $urgent and $active_id == $id then {class: "active urgent", text: ""}
+          elif $urgent then {class: "occupied urgent", text: ""}
+          elif $active_id == $id then {class: "active", text: ""}
+          elif $occupied then {class: "occupied", text: ""}
+          else {class: "empty", text: ""}
+          end;
+
+      reduce range(1; 6) as $id ({};
+        (state($id)) as $state
+        | . + {
+            ("ws\($id)_class"): $state.class,
+            ("ws\($id)_text"): $state.text
+          }
+      )
+    '
+}
+
+socket_dir=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/${HYPRLAND_INSTANCE_SIGNATURE}
+socket=${socket_dir}/.socket2.sock
+
+case "$mode" in
+  workspace)
+    emit_workspace
+    ;;
+  workspace-state)
+    emit_workspace_state
+    ;;
+  submap)
+    printf '\n'
+    ;;
+esac
+
+[ -S "$socket" ] || exit 0
+
+socat -U - "UNIX-CONNECT:${socket}" 2>/dev/null | while IFS= read -r line; do
+  case "$mode:$line" in
+    workspace:workspace\>\>*)
+      value=${line#workspace>>}
+      case "$value" in
+        special:*) printf '\n' ;;
+        *) printf '%s\n' "$value" ;;
+      esac
+      ;;
+    workspace:focusedmon\>\>*)
+      value=${line##*,}
+      case "$value" in
+        special:*) printf '\n' ;;
+        *) printf '%s\n' "$value" ;;
+      esac
+      ;;
+    submap:submap\>\>*)
+      value=${line#submap>>}
+      case "$value" in
+        default|reset) printf '\n' ;;
+        *) printf '%s\n' "$value" ;;
+      esac
+      ;;
+    workspace-state:workspace\>\>*|workspace-state:focusedmon\>\>*|workspace-state:openwindow\>\>*|workspace-state:closewindow\>\>*|workspace-state:movewindow\>\>*|workspace-state:createworkspace\>\>*|workspace-state:destroyworkspace\>\>*|workspace-state:urgent\>\>*|workspace-state:activewindow\>\>*|workspace-state:activewindowv2\>\>*)
+      emit_workspace_state
+      ;;
+  esac
+done

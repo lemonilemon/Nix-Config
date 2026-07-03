@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Toggle idle inhibitor via systemd-inhibit.
+# Stores PID in XDG_RUNTIME_DIR so it persists across eww restarts
+# but not across reboots.
+
+PIDFILE="${XDG_RUNTIME_DIR:-/tmp}/eww-idle-inhibit.pid"
+BACKEND_PIDFILE="${XDG_RUNTIME_DIR:-/tmp}/eww-backend.pid"
+
+is_inhibited() {
+  [ -r "$PIDFILE" ] || return 1
+  pid=$(cat "$PIDFILE")
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+}
+
+notify_backend() {
+  [ -r "$BACKEND_PIDFILE" ] || return 0
+  backend_pid=$(cat "$BACKEND_PIDFILE")
+  case "$backend_pid" in
+    "" | *[!0-9]*) return 0 ;;
+  esac
+  [ -r "/proc/$backend_pid/cmdline" ] || return 0
+  cmdline=$(tr '\0' ' ' <"/proc/$backend_pid/cmdline")
+  case "$cmdline" in
+    *"/eww/scripts/backend bar"* | *" eww_backend bar"*) kill -USR1 "$backend_pid" 2>/dev/null || true ;;
+  esac
+}
+
+status() {
+  if is_inhibited; then
+    printf 'true\n'
+  else
+    rm -f "$PIDFILE"
+    printf 'false\n'
+  fi
+}
+
+case "${1:-toggle}" in
+  status)
+    status
+    exit 0
+    ;;
+  toggle) ;;
+  *) exit 0 ;;
+esac
+
+if is_inhibited; then
+  kill "$(cat "$PIDFILE")" 2>/dev/null
+  rm -f "$PIDFILE"
+  notify_backend
+else
+  systemd-inhibit --what=idle --who="eww-bar" --why="User toggled idle inhibitor" sleep infinity &
+  echo "$!" > "$PIDFILE"
+  notify_backend
+fi

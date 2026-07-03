@@ -4,7 +4,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.desktop.hyprland.enable {
+  config = lib.mkIf config.home.desktop.hyprland.dunst.enable {
     services.dunst = {
       enable = true;
       settings = {

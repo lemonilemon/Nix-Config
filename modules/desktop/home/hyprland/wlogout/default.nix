@@ -1,14 +1,21 @@
 {
   lib,
   config,
+  pkgs,
   ...
 }:
+let
+  hyprctl = "${pkgs.hyprland}/bin/hyprctl";
+  hyprlock = "${pkgs.hyprlock}/bin/hyprlock";
+  hyprshutdown = "${pkgs.hyprshutdown}/bin/hyprshutdown";
+  systemctl = "${pkgs.systemd}/bin/systemctl";
+in
 {
   imports = [
     ../hyprlock.nix
   ];
   # Icons
-  config = lib.mkIf config.home.desktop.hyprland.enable {
+  config = lib.mkIf config.home.desktop.hyprland.wlogout.enable {
     home.file.".config/wlogout/icons" = {
       enable = true;
       source = ./icons;
@@ -85,37 +92,37 @@
       layout = [
         {
           "label" = "lock";
-          "action" = "hyprlock -q";
+          "action" = "${hyprlock} -q";
           "text" = "Lock";
           "keybind" = "l";
         }
         {
           "label" = "hibernate";
-          "action" = "systemctl hibernate";
+          "action" = "${systemctl} hibernate";
           "text" = "Hibernate";
           "keybind" = "h";
         }
         {
           "label" = "logout";
-          "action" = "hyprshutdown && hyprctl dispatch exit";
+          "action" = "${hyprshutdown} && ${hyprctl} dispatch exit";
           "text" = "Logout";
           "keybind" = "e";
         }
         {
           "label" = "shutdown";
-          "action" = "systemctl poweroff";
+          "action" = "${systemctl} poweroff";
           "text" = "Shutdown";
           "keybind" = "s";
         }
         {
           "label" = "suspend";
-          "action" = "systemctl suspend";
+          "action" = "${systemctl} suspend";
           "text" = "Suspend";
           "keybind" = "u";
         }
         {
           "label" = "reboot";
-          "action" = "systemctl reboot";
+          "action" = "${systemctl} reboot";
           "text" = "Reboot";
           "keybind" = "r";
         }

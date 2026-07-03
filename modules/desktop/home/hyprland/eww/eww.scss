@@ -1,0 +1,322 @@
+$rosewater: #f5e0dc;
+$pink: #f5c2e7;
+$mauve: #cba6f7;
+$red: #f38ba8;
+$maroon: #eba0ac;
+$peach: #fab387;
+$yellow: #f9e2af;
+$green: #a6e3a1;
+$teal: #94e2d5;
+$sapphire: #74c7ec;
+$blue: #89b4fa;
+$lavender: #b4befe;
+$text: #cdd6f4;
+$subtext0: #a6adc8;
+$overlay1: #7f849c;
+$overlay0: #6c7086;
+$surface1: #45475a;
+$surface0: #313244;
+$mantle: #181825;
+$base: #1e1e2e;
+$crust: #11111b;
+
+* {
+  all: unset;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: "JetBrainsMono Nerd Font Propo", "JetBrains Mono Nerd Font", "Font Awesome 6 Free", sans-serif;
+  font-size: 13px;
+  min-height: 0;
+  text-shadow: none;
+}
+
+menu {
+  background: rgba(30, 30, 46, 0.98);
+  border: 1px solid rgba(205, 214, 244, 0.12);
+  border-radius: 8px;
+  padding: 4px 0;
+}
+
+menuitem {
+  color: $text;
+  padding: 4px 12px;
+}
+
+menuitem:hover {
+  background: rgba(49, 50, 68, 0.9);
+}
+
+separator {
+  background: rgba(205, 214, 244, 0.12);
+  margin: 4px 8px;
+  min-height: 1px;
+}
+
+tooltip {
+  background: rgba(17, 17, 27, 0.96);
+  border: 1px solid rgba(205, 214, 244, 0.12);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+tooltip label {
+  color: $text;
+}
+
+.bar-window {
+  background: transparent;
+  color: $text;
+  min-height: 34px;
+}
+
+.bar-root {
+  min-height: 34px;
+  padding: 0 8px;
+}
+
+.left,
+.center,
+.right {
+  margin: 0;
+}
+
+.left,
+.right {
+  padding: 0;
+}
+
+.right {
+  margin-left: 8px;
+}
+
+.bar-island {
+  background: rgba(24, 24, 37, 0.82);
+  border: 1px solid rgba(205, 214, 244, 0.10);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(7, 8, 17, 0.38);
+  margin: 0 3px;
+  min-height: 30px;
+  padding: 0 6px;
+}
+
+.bar-island:hover {
+  border-color: rgba(205, 214, 244, 0.16);
+  background: rgba(30, 30, 46, 0.88);
+}
+
+.left-island {
+  padding-left: 5px;
+  padding-right: 8px;
+}
+
+.clock-island {
+  background: rgba(24, 24, 37, 0.88);
+  padding: 0 13px;
+}
+
+.tray-island {
+  padding-left: 7px;
+}
+
+.sys-island,
+.session-island {
+  padding: 0 5px;
+}
+
+.clock,
+.module,
+.module-button,
+.media,
+.submap,
+.power-button,
+.idle-inhibitor {
+  border-radius: 8px;
+  min-height: 24px;
+  padding: 0 8px;
+}
+
+.clock {
+  color: $green;
+  font-weight: 800;
+  padding: 0 4px;
+}
+
+.clock:hover {
+  background: rgba(166, 227, 161, 0.10);
+}
+
+.workspaces {
+  padding: 0 1px;
+}
+
+.workspace {
+  background: transparent;
+  border-radius: 8px;
+  color: $overlay1;
+  min-height: 24px;
+  min-width: 22px;
+  padding: 0 4px;
+}
+
+.workspace.empty {
+  color: $overlay0;
+}
+
+.workspace.occupied {
+  color: $subtext0;
+}
+
+.workspace:hover {
+  background: rgba(49, 50, 68, 0.76);
+  color: $text;
+}
+
+.workspace.active {
+  background: rgba(49, 50, 68, 0.86);
+  color: $green;
+  box-shadow: inset 0 0 0 1px rgba(166, 227, 161, 0.24), 0 0 12px rgba(166, 227, 161, 0.12);
+}
+
+.workspace.urgent {
+  background: rgba(243, 139, 168, 0.16);
+  color: $red;
+  animation: blink 1s linear infinite alternate;
+}
+
+.workspace.active.urgent {
+  background: rgba(250, 179, 135, 0.14);
+  color: $peach;
+  box-shadow: inset 0 0 0 1px rgba(250, 179, 135, 0.26), 0 0 12px rgba(250, 179, 135, 0.10);
+}
+
+.media {
+  color: $teal;
+  margin-left: 3px;
+  padding-left: 9px;
+  padding-right: 10px;
+}
+
+.media:hover {
+  background: rgba(148, 226, 213, 0.09);
+}
+
+.submap {
+  background: rgba(249, 226, 175, 0.10);
+  color: $yellow;
+  font-style: italic;
+  margin-left: 4px;
+}
+
+.module,
+.module-button,
+.idle-inhibitor,
+.power-button {
+  color: $subtext0;
+}
+
+.module-button:hover,
+.idle-inhibitor:hover,
+.power-button:hover {
+  background: rgba(49, 50, 68, 0.78);
+}
+
+.tray {
+  padding: 0 3px;
+}
+
+.idle-inhibitor {
+  color: $overlay1;
+  min-width: 18px;
+  padding: 0 7px;
+}
+
+.idle-inhibitor.active {
+  background: rgba(249, 226, 175, 0.12);
+  color: $yellow;
+}
+
+.temperature {
+  color: $pink;
+}
+
+.cpu {
+  color: $mauve;
+}
+
+.memory {
+  color: $maroon;
+}
+
+.network {
+  color: $peach;
+}
+
+.network.disconnected {
+  background: rgba(243, 139, 168, 0.13);
+  color: $red;
+}
+
+.network.linked {
+  background: rgba(249, 226, 175, 0.10);
+  color: $yellow;
+}
+
+.volume {
+  color: $yellow;
+}
+
+.battery {
+  color: $blue;
+}
+
+.bluetooth {
+  color: $sapphire;
+}
+
+.bluetooth.off {
+  color: $overlay1;
+}
+
+.power-button {
+  color: $red;
+  min-width: 18px;
+  padding: 0 9px;
+}
+
+.power-button:hover {
+  background: rgba(243, 139, 168, 0.14);
+  color: $red;
+}
+
+.battery.warning {
+  background: rgba(249, 226, 175, 0.10);
+  color: $yellow;
+}
+
+.battery.critical {
+  background: rgba(243, 139, 168, 0.14);
+  color: $red;
+  animation: blink 1s linear infinite alternate;
+}
+
+.battery.charging {
+  background: rgba(166, 227, 161, 0.10);
+  color: $green;
+}
+
+.temperature.critical {
+  background: rgba(243, 139, 168, 0.14);
+  color: $red;
+}
+
+.memory.critical {
+  background: rgba(243, 139, 168, 0.14);
+  color: $red;
+}
+
+@keyframes blink {
+  to {
+    color: $overlay1;
+  }
+}

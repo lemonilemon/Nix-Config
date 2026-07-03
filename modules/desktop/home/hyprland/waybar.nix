@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.desktop.hyprland.enable {
+  config = lib.mkIf config.home.desktop.hyprland.waybar.enable {
     home.packages = with pkgs; [
       htop
       libnotify

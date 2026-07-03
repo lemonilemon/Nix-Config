@@ -6,6 +6,7 @@
 }:
 {
   imports = [
+    ./eww
     ./waybar.nix
     ./dunst.nix
     ./hyprlock.nix
@@ -126,9 +127,13 @@
             "match:tag (browser|file), opacity 0.8"
           ];
 
-          layerrule = [
-            "match:namespace waybar, blur on"
-          ];
+          layerrule =
+            lib.optionals config.home.desktop.hyprland.waybar.enable [
+              "match:namespace waybar, blur on"
+            ]
+            ++ lib.optionals config.home.desktop.hyprland.eww.enable [
+              "match:namespace eww-bar, blur on"
+            ];
 
           workspace = [
             "special:mainterm, on-created-empty: ${TERM}"

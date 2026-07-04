@@ -16,6 +16,7 @@ let
 
     installPhase = ''
       install -Dm755 ${./scripts/backend} $out/bin/eww-bar-backend
+      cp -R ${./scripts/eww_bar_backend} $out/bin/eww_bar_backend
       cp $out/bin/eww-bar-backend $out/bin/eww-barctl
       patchShebangs $out/bin
     '';

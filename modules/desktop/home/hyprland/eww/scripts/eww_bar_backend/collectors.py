@@ -1,10 +1,12 @@
 import re
 import time
+from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
 from .common import (
+    AI_USAGE_DEFAULT,
     BATTERY_DEFAULT,
     CCUSAGE_DEFAULT,
     MEDIA_DEFAULT,
@@ -185,6 +187,12 @@ def format_cost(value):
     return f"${value:.2f}"
 
 
+def format_burn_rate(value):
+    if value <= 0:
+        return "--"
+    return f"${value:.2f}/h"
+
+
 def format_remaining(seconds):
     if seconds <= 0:
         return "0m"
@@ -193,6 +201,12 @@ def format_remaining(seconds):
     if hours:
         return f"{hours}h {mins}m"
     return f"{mins}m"
+
+
+def percent_part(value, total):
+    if value <= 0 or total <= 0:
+        return 0
+    return max(0, min(100, int(round(value * 100 / total))))
 
 
 def parse_iso_epoch(value):
@@ -208,14 +222,9 @@ def parse_iso_epoch(value):
         return None
 
 
-def ccusage_state_from_json(daily_json, blocks_json, now_epoch=None):
-    daily_report = parse_json(daily_json, {})
-    blocks_report = parse_json(blocks_json, {})
-    if not daily_report and not blocks_report:
-        return CCUSAGE_DEFAULT.copy()
-
+def daily_row_from_report(daily_report, now_epoch=None):
     today_date = time.strftime("%F", time.localtime(now_epoch or time.time()))
-    daily_rows = list_value(daily_report, "daily", "data", "days")
+    daily_rows = list_value(daily_report, "daily", "data", "days", "rows")
     today_row = next(
         (
             row
@@ -226,8 +235,10 @@ def ccusage_state_from_json(daily_json, blocks_json, now_epoch=None):
     )
     if today_row is None and daily_rows:
         today_row = next((row for row in reversed(daily_rows) if isinstance(row, dict)), None)
-    today_row = today_row or {}
+    return today_row or {}
 
+
+def daily_token_values(today_row):
     input_tokens = number_value(today_row, "inputTokens", "input_tokens", "input")
     output_tokens = number_value(today_row, "outputTokens", "output_tokens", "output")
     cache_tokens = number_value(
@@ -235,16 +246,39 @@ def ccusage_state_from_json(daily_json, blocks_json, now_epoch=None):
         "cacheCreationTokens",
         "cacheCreationInputTokens",
         "cache_creation_input_tokens",
+        "cache_creation_tokens",
     ) + number_value(
         today_row,
         "cacheReadTokens",
         "cacheReadInputTokens",
         "cache_read_input_tokens",
+        "cache_read_tokens",
     )
     total_tokens = number_value(today_row, "totalTokens", "total_tokens", "tokens")
     if total_tokens <= 0:
         total_tokens = input_tokens + output_tokens + cache_tokens
     total_cost = number_value(today_row, "totalCost", "total_cost", "costUSD", "cost")
+    return {
+        "input": input_tokens,
+        "output": output_tokens,
+        "cache": cache_tokens,
+        "total": total_tokens,
+        "cost": total_cost,
+    }
+
+
+def ccusage_state_from_json(daily_json, blocks_json, now_epoch=None):
+    daily_report = parse_json(daily_json, {})
+    blocks_report = parse_json(blocks_json, {})
+    if not daily_report and not blocks_report:
+        return CCUSAGE_DEFAULT.copy()
+
+    token_values = daily_token_values(daily_row_from_report(daily_report, now_epoch=now_epoch))
+    input_tokens = token_values["input"]
+    output_tokens = token_values["output"]
+    cache_tokens = token_values["cache"]
+    total_tokens = token_values["total"]
+    total_cost = token_values["cost"]
 
     active_blocks = [
         row
@@ -351,6 +385,168 @@ def ccusage_state():
     )
     blocks = run_text(["ccusage", "blocks", "--json", "--offline"], timeout=15.0)
     return ccusage_state_from_json(daily, blocks)
+
+
+def agents_from_daily_json(daily_json, now_epoch=None):
+    daily_report = parse_json(daily_json, {})
+    today_row = daily_row_from_report(daily_report, now_epoch=now_epoch)
+    if not today_row:
+        return []
+
+    agents = []
+    metadata = today_row.get("metadata")
+    if isinstance(metadata, dict):
+        agents.extend(value for value in metadata.get("agents", []) if isinstance(value, str))
+    agent = today_row.get("agent")
+    if isinstance(agent, str) and agent != "all":
+        agents.append(agent)
+    return [agent.lower() for agent in agents]
+
+
+def provider_cards_from_agents(agents):
+    providers = deepcopy(AI_USAGE_DEFAULT["providers"])
+    aliases = {
+        "claude": ("claude", "Claude Code"),
+        "codex": ("codex", "Codex CLI"),
+        "gemini": ("gemini", "Gemini CLI"),
+    }
+    for token in agents:
+        for key, (_prefix, label) in aliases.items():
+            if key in token:
+                providers[key]["class"] = "active"
+                providers[key]["status"] = "Local usage"
+                providers[key]["detail"] = label
+    return providers
+
+
+def openusage_block_from_json(blocks_json, now_epoch=None):
+    report = parse_json(blocks_json, {})
+    rows = list_value(report, "rows", "blocks", "data")
+    active_row = next(
+        (row for row in rows if isinstance(row, dict) and row.get("active") is True),
+        None,
+    )
+    if active_row is None and rows:
+        active_row = next((row for row in reversed(rows) if isinstance(row, dict)), None)
+    if not active_row:
+        return None
+
+    tokens = number_value(active_row, "total_tokens", "totalTokens", "tokens")
+    cost = number_value(active_row, "cost_usd", "costUSD", "totalCost", "cost")
+    projected_cost = number_value(active_row, "projected_cost_usd", "projectedCostUSD")
+    burn_rate = number_value(active_row, "burn_rate_usd_per_hour", "burnRateUSDPerHour")
+    remaining_seconds = number_value(active_row, "time_remaining_seconds", "timeRemainingSeconds")
+
+    now = now_epoch or time.time()
+    start = parse_iso_epoch(active_row.get("start") or active_row.get("startTime"))
+    end = parse_iso_epoch(active_row.get("end") or active_row.get("endTime"))
+    if start is not None and end is not None and end > start:
+        percent = max(0, min(100, int(round((now - start) * 100 / (end - start)))))
+        remaining = format_remaining(remaining_seconds if remaining_seconds > 0 else end - now)
+    else:
+        percent = 0
+        remaining = format_remaining(remaining_seconds) if remaining_seconds > 0 else "--"
+
+    return {
+        "tokens": format_tokens(tokens),
+        "projected": "--",
+        "percent": percent,
+        "remaining": remaining,
+        "cost": format_cost(cost),
+        "projected_cost": format_cost(projected_cost),
+        "burn_rate": format_burn_rate(burn_rate),
+        "source": "OpenUsage",
+        "label": active_row.get("label") or "Active block",
+    }
+
+
+def ai_usage_state_from_json(daily_json, ccusage_blocks_json, openusage_blocks_json, now_epoch=None):
+    now = now_epoch or time.time()
+    ccusage_state_value = ccusage_state_from_json(daily_json, ccusage_blocks_json, now_epoch=now)
+    if ccusage_state_value == CCUSAGE_DEFAULT.copy() and not openusage_blocks_json:
+        return deepcopy(AI_USAGE_DEFAULT)
+
+    state = deepcopy(AI_USAGE_DEFAULT)
+    state["updated"] = time.strftime("%H:%M", time.localtime(now))
+    state["today"] = {
+        **state["today"],
+        **ccusage_state_value.get("today", {}),
+    }
+    state["text"] = f"󱃖 {state['today']['tokens']}"
+    state["providers"] = provider_cards_from_agents(agents_from_daily_json(daily_json, now_epoch=now))
+
+    daily_report = parse_json(daily_json, {})
+    token_values = daily_token_values(daily_row_from_report(daily_report, now_epoch=now))
+    raw_total = token_values["input"] + token_values["output"] + token_values["cache"]
+    if raw_total <= 0:
+        raw_total = token_values["total"]
+    state["today"]["input_percent"] = percent_part(token_values["input"], raw_total)
+    state["today"]["output_percent"] = percent_part(token_values["output"], raw_total)
+    state["today"]["cache_percent"] = percent_part(token_values["cache"], raw_total)
+
+    openusage_block = openusage_block_from_json(openusage_blocks_json, now_epoch=now)
+    if openusage_block:
+        state["block"] = openusage_block
+        state["source"] = "openusage"
+        state["meta"]["status"] = "OpenUsage"
+    else:
+        state["block"] = {
+            **state["block"],
+            **ccusage_state_value.get("block", {}),
+            "burn_rate": "--",
+            "source": "ccusage",
+            "label": "Active block",
+        }
+        state["source"] = "ccusage" if ccusage_state_value != CCUSAGE_DEFAULT.copy() else "missing"
+        state["meta"]["status"] = "ccusage fallback"
+
+    cls = "active" if state["source"] != "missing" else "missing"
+    today_cost = number_value({"cost": state["today"].get("cost", "--").lstrip("$")}, "cost")
+    if today_cost >= 20 or state["block"].get("percent", 0) >= 85:
+        cls = "warning"
+    state["class"] = cls
+    state["tooltip"] = (
+        f"AI usage via {state['block']['source']}\n"
+        f"Today: {state['today']['tokens']} / {state['today']['cost']}\n"
+        f"Block: {state['block']['tokens']} used, {state['block']['remaining']} left\n"
+        f"Projected: {state['block']['projected_cost']}"
+    )
+    return state
+
+
+_LAST_AI_USAGE = None
+
+
+def ai_usage_state():
+    global _LAST_AI_USAGE
+
+    today = time.strftime("%F")
+    daily = run_text(
+        [
+            "ccusage",
+            "daily",
+            "--json",
+            "--offline",
+            "--since",
+            today,
+            "--until",
+            today,
+        ],
+        timeout=15.0,
+    )
+    openusage_blocks = run_text(["openusage", "blocks", "--json", "--offline"], timeout=8.0)
+    ccusage_blocks = "" if openusage_blocks else run_text(["ccusage", "blocks", "--json", "--offline"], timeout=15.0)
+    value = ai_usage_state_from_json(daily, ccusage_blocks, openusage_blocks)
+    if value.get("source") == "missing" and _LAST_AI_USAGE is not None:
+        stale = deepcopy(_LAST_AI_USAGE)
+        stale["class"] = "stale"
+        stale["meta"]["stale"] = "true"
+        stale["meta"]["status"] = "stale"
+        stale["tooltip"] = "AI usage collector is stale\n" + stale.get("tooltip", "")
+        return stale
+    if value.get("source") != "missing":
+        _LAST_AI_USAGE = deepcopy(value)
+    return value
 
 
 def cpu_state():

@@ -115,7 +115,7 @@ tooltip label {
   padding-right: 8px;
 }
 
-.ccusage-island {
+.ai-usage-island {
   padding: 0 5px;
 }
 
@@ -268,21 +268,22 @@ tooltip label {
   color: $maroon;
 }
 
-.ccusage {
+.ai-usage {
   color: $sapphire;
 }
 
-.ccusage.active {
+.ai-usage.active {
   background: rgba(116, 199, 236, 0.10);
   color: $sapphire;
 }
 
-.ccusage.warning {
+.ai-usage.warning {
   background: rgba(249, 226, 175, 0.11);
   color: $yellow;
 }
 
-.ccusage.missing {
+.ai-usage.missing,
+.ai-usage.stale {
   color: $overlay1;
 }
 
@@ -359,81 +360,183 @@ tooltip label {
   }
 }
 
-.ccusage-popup {
-  background: rgba(17, 17, 27, 0.96);
-  border: 1px solid rgba(205, 214, 244, 0.12);
-  border-radius: 12px;
-  box-shadow: 0 18px 40px rgba(7, 8, 17, 0.48);
+.ai-usage-popup {
+  background: rgba(17, 17, 27, 0.97);
+  border: 1px solid rgba(205, 214, 244, 0.13);
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(7, 8, 17, 0.52);
   color: $text;
-  padding: 14px;
+  padding: 14px 15px;
 }
 
-.ccusage-header {
-  margin-bottom: 10px;
+.ai-usage-header {
+  margin-bottom: 12px;
 }
 
-.ccusage-title {
+.ai-usage-title {
   color: $sapphire;
+  font-size: 18px;
   font-weight: 800;
 }
 
-.ccusage-updated {
+.ai-usage-eyebrow,
+.ai-usage-updated,
+.ai-usage-footer {
   color: $overlay1;
   font-size: 11px;
+}
+
+.ai-usage-updated {
   margin-left: 12px;
 }
 
-.ccusage-kpis {
-  margin-bottom: 10px;
-}
-
-.ccusage-kpi {
-  background: rgba(49, 50, 68, 0.55);
-  border: 1px solid rgba(205, 214, 244, 0.08);
+.ai-usage-refresh {
   border-radius: 8px;
-  min-width: 140px;
-  padding: 9px 10px;
+  color: $subtext0;
+  margin-left: 8px;
+  min-height: 24px;
+  min-width: 26px;
 }
 
-.ccusage-kpi-name,
-.ccusage-row-name {
+.ai-usage-refresh:hover {
+  background: rgba(116, 199, 236, 0.10);
+  color: $sapphire;
+}
+
+.ai-usage-hero {
+  background: rgba(24, 24, 37, 0.78);
+  border: 1px solid rgba(116, 199, 236, 0.13);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  padding: 11px;
+}
+
+.ai-usage-hero.warning {
+  border-color: rgba(249, 226, 175, 0.24);
+}
+
+.ai-usage-hero-label,
+.ai-usage-summary-label {
+  color: $subtext0;
+  font-weight: 800;
+}
+
+.ai-usage-hero-percent {
+  color: $yellow;
+  font-weight: 900;
+}
+
+.ai-usage-progress {
+  margin: 9px 0 10px;
+}
+
+.ai-usage-progress trough,
+.ai-usage-meter-progress trough {
+  background: rgba(69, 71, 90, 0.50);
+  border-radius: 999px;
+  min-height: 7px;
+}
+
+.ai-usage-progress trough progress {
+  background: linear-gradient(90deg, $sapphire, $green);
+  border-radius: 999px;
+  min-height: 7px;
+}
+
+.ai-usage-progress.warning trough progress {
+  background: linear-gradient(90deg, $yellow, $peach);
+}
+
+.ai-usage-metric {
+  min-width: 82px;
+}
+
+.ai-usage-metric-name,
+.ai-usage-meter-name,
+.ai-provider-status,
+.ai-provider-detail {
   color: $overlay1;
   font-size: 11px;
 }
 
-.ccusage-kpi-value {
+.ai-usage-metric-value {
   color: $text;
-  font-size: 18px;
-  font-weight: 800;
-  margin-top: 2px;
-}
-
-.ccusage-kpi-meta {
-  color: $subtext0;
-  font-size: 12px;
-  margin-top: 2px;
-}
-
-.ccusage-section {
-  background: rgba(24, 24, 37, 0.64);
-  border-radius: 8px;
-  margin-top: 7px;
-  padding: 7px 9px;
-}
-
-.ccusage-section.block {
-  border: 1px solid rgba(116, 199, 236, 0.10);
-}
-
-.ccusage-row {
-  min-height: 22px;
-}
-
-.ccusage-row-name {
-  min-width: 100px;
-}
-
-.ccusage-row-value {
-  color: $text;
+  font-size: 13px;
   font-weight: 700;
+  margin-top: 2px;
+}
+
+.ai-usage-today {
+  background: rgba(30, 30, 46, 0.68);
+  border: 1px solid rgba(205, 214, 244, 0.08);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  padding: 9px 10px;
+}
+
+.ai-usage-summary-row {
+  margin-bottom: 5px;
+}
+
+.ai-usage-summary-value,
+.ai-usage-meter-value {
+  color: $text;
+  font-weight: 800;
+}
+
+.ai-usage-meter {
+  margin-top: 5px;
+}
+
+.ai-usage-meter-progress {
+  margin-top: 4px;
+}
+
+.ai-usage-meter-progress trough progress {
+  background: rgba(180, 190, 254, 0.82);
+  border-radius: 999px;
+  min-height: 7px;
+}
+
+.ai-provider-grid {
+  margin-bottom: 10px;
+}
+
+.ai-provider-card {
+  background: rgba(49, 50, 68, 0.46);
+  border: 1px solid rgba(205, 214, 244, 0.08);
+  border-radius: 10px;
+  min-width: 118px;
+  padding: 8px;
+}
+
+.ai-provider-card.active {
+  border-color: rgba(166, 227, 161, 0.18);
+}
+
+.ai-provider-card.missing {
+  opacity: 0.72;
+}
+
+.ai-provider-icon {
+  color: $sapphire;
+  margin-right: 6px;
+}
+
+.ai-provider-name {
+  color: $text;
+  font-weight: 800;
+}
+
+.ai-provider-status {
+  color: $green;
+  margin-top: 5px;
+}
+
+.ai-provider-card.missing .ai-provider-status {
+  color: $overlay1;
+}
+
+.ai-provider-detail {
+  margin-top: 2px;
 }

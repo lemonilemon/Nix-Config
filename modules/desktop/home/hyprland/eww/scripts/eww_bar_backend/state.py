@@ -2,7 +2,7 @@ import json
 import threading
 
 from .collectors import clock_state
-from .common import BATTERY_DEFAULT, CCUSAGE_DEFAULT, EMPTY_MODULE, MEDIA_DEFAULT, WORKSPACE_DEFAULT
+from .common import AI_USAGE_DEFAULT, BATTERY_DEFAULT, EMPTY_MODULE, MEDIA_DEFAULT, WORKSPACE_DEFAULT
 
 
 class BarState:
@@ -13,7 +13,7 @@ class BarState:
             "submap": "",
             "clock": clock_state(),
             "media": MEDIA_DEFAULT.copy(),
-            "ccusage": CCUSAGE_DEFAULT.copy(),
+            "ai_usage": AI_USAGE_DEFAULT.copy(),
             "cpu": " --%",
             "memory": EMPTY_MODULE.copy(),
             "temperature": {"text": " --°C", "class": ""},

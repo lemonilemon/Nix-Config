@@ -4,9 +4,9 @@ import threading
 from pathlib import Path
 
 from .collectors import (
+    ai_usage_state,
     battery_state,
     bluetooth_state,
-    ccusage_state,
     clock_state,
     cpu_state,
     idle_inhibited_state,
@@ -29,7 +29,7 @@ from .watchers import (
 )
 
 
-signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 
 
 def run_bar():
@@ -38,10 +38,11 @@ def run_bar():
     write_backend_pidfile()
 
     state = BarState()
+    threading.Thread(target=control_server, args=(state,), daemon=True).start()
+
     state.update(
         clock=clock_state(),
         media=media_state(),
-        ccusage=ccusage_state(),
         cpu=cpu_state(),
         memory=memory_state(),
         temperature=temperature_state(),
@@ -59,7 +60,7 @@ def run_bar():
         threading.Thread(
             target=periodic,
             args=(state, 300),
-            kwargs={"ccusage": ccusage_state},
+            kwargs={"ai_usage": ai_usage_state},
             daemon=True,
         ),
         threading.Thread(
@@ -81,7 +82,6 @@ def run_bar():
             daemon=True,
         ),
         threading.Thread(target=watch_idle_inhibitor, args=(state, idle_refresh), daemon=True),
-        threading.Thread(target=control_server, args=(state,), daemon=True),
         threading.Thread(
             target=periodic,
             args=(state, 60),

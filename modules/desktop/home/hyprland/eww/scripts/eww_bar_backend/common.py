@@ -28,6 +28,63 @@ CCUSAGE_DEFAULT = {
         "projected_cost": "--",
     },
 }
+AI_USAGE_DEFAULT = {
+    "text": "󱃖 --",
+    "tooltip": "AI usage data is not available yet",
+    "class": "missing",
+    "source": "missing",
+    "updated": "",
+    "today": {
+        "tokens": "--",
+        "cost": "--",
+        "input": "--",
+        "output": "--",
+        "cache": "--",
+        "input_percent": 0,
+        "output_percent": 0,
+        "cache_percent": 0,
+    },
+    "block": {
+        "tokens": "--",
+        "projected": "--",
+        "percent": 0,
+        "remaining": "--",
+        "cost": "--",
+        "projected_cost": "--",
+        "burn_rate": "--",
+        "source": "--",
+        "label": "No active block",
+    },
+    "providers": {
+        "claude": {
+            "name": "Claude",
+            "icon": "󰚩",
+            "class": "missing",
+            "status": "No data",
+            "detail": "--",
+        },
+        "codex": {
+            "name": "Codex",
+            "icon": "󰚩",
+            "class": "missing",
+            "status": "No data",
+            "detail": "--",
+        },
+        "gemini": {
+            "name": "Gemini",
+            "icon": "󰚩",
+            "class": "missing",
+            "status": "No data",
+            "detail": "--",
+        },
+    },
+    "meta": {
+        "pricing": "offline",
+        "refresh": "5m",
+        "status": "waiting",
+        "stale": "false",
+    },
+}
 WORKSPACE_DEFAULT = {
     "ws1_class": "empty",
     "ws1_text": "",

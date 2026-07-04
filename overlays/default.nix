@@ -5,6 +5,33 @@
     # pinned nixpkgs is used on purpose so builds hit cache.numtide.com.
     inputs.llm-agents.overlays.default
 
+    (final: prev: {
+      openusage = prev.buildGo125Module rec {
+        pname = "openusage";
+        version = "0.22.0";
+
+        src = prev.fetchFromGitHub {
+          owner = "janekbaraniewski";
+          repo = "openusage";
+          rev = "v${version}";
+          hash = "sha256-jB06xwK3egPoDIdvZq3LH5kAIRq8LAmZInzhCvEWJ24=";
+        };
+
+        vendorHash = "sha256-cBltKSILSp1tfie1dLoilu0jL/qDuHo2JUzMXb2DHno=";
+        subPackages = [ "cmd/openusage" ];
+        nativeBuildInputs = [ prev.go_1_25 ];
+        env.CGO_ENABLED = "1";
+        doCheck = false;
+
+        meta = with prev.lib; {
+          description = "Terminal-first local quota and usage tracking for AI coding tools";
+          homepage = "https://openusage.sh/";
+          license = licenses.mit;
+          mainProgram = "openusage";
+        };
+      };
+    })
+
     # Use no-remote as default (firefox)
     (final: prev: {
       firefox = prev.firefox.overrideAttrs (oldAttrs: {

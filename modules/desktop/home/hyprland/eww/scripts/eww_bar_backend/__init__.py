@@ -1,5 +1,7 @@
 from .app import main, run_bar
 from .collectors import (
+    ai_usage_state,
+    ai_usage_state_from_json,
     battery_state,
     bluetooth_state,
     bluetooth_state_from_text,
@@ -28,6 +30,7 @@ from .collectors import (
     workspace_state_from_json,
 )
 from .common import (
+    AI_USAGE_DEFAULT,
     BATTERY_DEFAULT,
     CCUSAGE_DEFAULT,
     EMPTY_MODULE,

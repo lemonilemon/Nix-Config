@@ -1,4 +1,4 @@
-(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ccusage":{"text":"󱃖 --","tooltip":"","class":"missing","updated":"","today":{"tokens":"--","cost":"--","input":"--","output":"--","cache":"--"},"block":{"tokens":"--","projected":"--","percent":0,"remaining":"--","cost":"--","projected_cost":"--"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󱃖 --","tooltip":"","class":"missing","source":"missing","updated":"","today":{"tokens":"--","cost":"--","input":"--","output":"--","cache":"--","input_percent":0,"output_percent":0,"cache_percent":0},"block":{"tokens":"--","projected":"--","percent":0,"remaining":"--","cost":"--","projected_cost":"--","burn_rate":"--","source":"--","label":"No active block"},"providers":{"claude":{"name":"Claude","icon":"󰚩","class":"missing","status":"No data","detail":"--"},"codex":{"name":"Codex","icon":"󰚩","class":"missing","status":"No data","detail":"--"},"gemini":{"name":"Gemini","icon":"󰚩","class":"missing","status":"No data","detail":"--"}},"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
 
 (defvar show_date false)
 (defvar show_battery_time false)
@@ -45,11 +45,11 @@
             (label :text {bar_state.idle_inhibited == "true" ? "" : ""}))
           (label :class "module network ${bar_state.network.class}" :tooltip {bar_state.network.tooltip} :text {bar_state.network.text})
           (label :class "module bluetooth ${bar_state.bluetooth.class}" :visible {bar_state.bluetooth.text != ""} :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text}))
-        (box :class "bar-island ccusage-island" :orientation "h" :space-evenly false
-          (button :class "module-button ccusage ${bar_state.ccusage.class}"
-            :onclick "eww open --toggle ccusage_popup"
-            :tooltip {bar_state.ccusage.tooltip}
-            (label :text {bar_state.ccusage.text})))
+        (box :class "bar-island ai-usage-island" :orientation "h" :space-evenly false
+          (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
+            :onclick "eww open --toggle ai_usage_popup"
+            :tooltip {bar_state.ai_usage.tooltip}
+            (label :text {bar_state.ai_usage.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
           (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
           (button :class "module-button cpu" :onclick "kitty -- htop"
@@ -84,43 +84,72 @@
     :onclick "hyprctl dispatch workspace ${id}"
     (label :text icon)))
 
-(defwindow ccusage_popup
+(defwindow ai_usage_popup
   :monitor 0
   :geometry (geometry
     :x "10px"
     :y "50px"
-    :width "360px"
-    :height "218px"
+    :width "420px"
+    :height "360px"
     :anchor "top right")
   :stacking "fg"
   :exclusive false
   :focusable false
-  :namespace "eww-ccusage"
-  (ccusage_panel))
+  :namespace "eww-ai-usage"
+  (ai_usage_panel))
 
-(defwidget ccusage_panel []
-  (box :class "ccusage-popup" :orientation "v" :space-evenly false
-    (box :class "ccusage-header" :orientation "h" :space-evenly false
-      (label :class "ccusage-title" :text "AI usage")
-      (label :class "ccusage-updated" :text {bar_state.ccusage.updated != "" ? "updated ${bar_state.ccusage.updated}" : "waiting for data"}))
-    (box :class "ccusage-kpis" :orientation "h" :space-evenly true
-      (ccusage_kpi :name "Today" :value {bar_state.ccusage.today.tokens} :meta {bar_state.ccusage.today.cost})
-      (ccusage_kpi :name "Block" :value {bar_state.ccusage.block.tokens} :meta {bar_state.ccusage.block.remaining}))
-    (box :class "ccusage-section" :orientation "v" :space-evenly false
-      (ccusage_row :name "Input" :value {bar_state.ccusage.today.input})
-      (ccusage_row :name "Output" :value {bar_state.ccusage.today.output})
-      (ccusage_row :name "Cache" :value {bar_state.ccusage.today.cache}))
-    (box :class "ccusage-section block" :orientation "v" :space-evenly false
-      (ccusage_row :name "5-hour block" :value {"${bar_state.ccusage.block.percent}% used"})
-      (ccusage_row :name "Projected" :value {"${bar_state.ccusage.block.projected} / ${bar_state.ccusage.block.projected_cost}"}))))
+(defwidget ai_usage_panel []
+  (box :class "ai-usage-popup" :orientation "v" :space-evenly false
+    (box :class "ai-usage-header" :orientation "h" :space-evenly false
+      (box :class "ai-usage-title-stack" :orientation "v" :space-evenly false
+        (label :class "ai-usage-eyebrow" :text {bar_state.ai_usage.block.source})
+        (label :class "ai-usage-title" :text "AI usage"))
+      (box :class "ai-usage-header-actions" :orientation "h" :space-evenly false :halign "end" :hexpand true
+        (label :class "ai-usage-updated" :text {bar_state.ai_usage.updated != "" ? "updated ${bar_state.ai_usage.updated}" : "waiting"})
+        (button :class "ai-usage-refresh"
+          :onclick "eww-barctl --quiet ai refresh"
+          (label :text ""))))
+    (box :class "ai-usage-hero ${bar_state.ai_usage.class}" :orientation "v" :space-evenly false
+      (box :class "ai-usage-hero-top" :orientation "h" :space-evenly false
+        (label :class "ai-usage-hero-label" :text "5-hour block")
+        (label :class "ai-usage-hero-percent" :halign "end" :hexpand true :text {"${bar_state.ai_usage.block.percent}%"}))
+      (progress :class "ai-usage-progress ${bar_state.ai_usage.class}" :value {bar_state.ai_usage.block.percent})
+      (box :class "ai-usage-hero-grid" :orientation "h" :space-evenly true
+        (ai_usage_metric :name "Used" :value {bar_state.ai_usage.block.tokens})
+        (ai_usage_metric :name "Left" :value {bar_state.ai_usage.block.remaining})
+        (ai_usage_metric :name "Burn" :value {bar_state.ai_usage.block.burn_rate})
+        (ai_usage_metric :name "Projected" :value {bar_state.ai_usage.block.projected_cost})))
+    (box :class "ai-usage-today" :orientation "v" :space-evenly false
+      (box :class "ai-usage-summary-row" :orientation "h" :space-evenly false
+        (label :class "ai-usage-summary-label" :text "Today")
+        (label :class "ai-usage-summary-value" :halign "end" :hexpand true :text {"${bar_state.ai_usage.today.tokens}  ${bar_state.ai_usage.today.cost}"}))
+      (ai_usage_meter :name "Input" :value {bar_state.ai_usage.today.input} :percent {bar_state.ai_usage.today.input_percent})
+      (ai_usage_meter :name "Output" :value {bar_state.ai_usage.today.output} :percent {bar_state.ai_usage.today.output_percent})
+      (ai_usage_meter :name "Cache" :value {bar_state.ai_usage.today.cache} :percent {bar_state.ai_usage.today.cache_percent}))
+    (box :class "ai-provider-grid" :orientation "h" :space-evenly true
+      (ai_provider_card :provider {bar_state.ai_usage.providers.claude})
+      (ai_provider_card :provider {bar_state.ai_usage.providers.codex})
+      (ai_provider_card :provider {bar_state.ai_usage.providers.gemini}))
+    (box :class "ai-usage-footer" :orientation "h" :space-evenly false
+      (label :text {bar_state.ai_usage.meta.status})
+      (label :halign "end" :hexpand true :text {"${bar_state.ai_usage.meta.pricing} · refresh ${bar_state.ai_usage.meta.refresh}"}))))
 
-(defwidget ccusage_kpi [name value meta]
-  (box :class "ccusage-kpi" :orientation "v" :space-evenly false
-    (label :class "ccusage-kpi-name" :text name)
-    (label :class "ccusage-kpi-value" :text value)
-    (label :class "ccusage-kpi-meta" :text meta)))
+(defwidget ai_usage_metric [name value]
+  (box :class "ai-usage-metric" :orientation "v" :space-evenly false
+    (label :class "ai-usage-metric-name" :text name)
+    (label :class "ai-usage-metric-value" :text value)))
 
-(defwidget ccusage_row [name value]
-  (box :class "ccusage-row" :orientation "h" :space-evenly false
-    (label :class "ccusage-row-name" :text name)
-    (label :class "ccusage-row-value" :text value)))
+(defwidget ai_usage_meter [name value percent]
+  (box :class "ai-usage-meter" :orientation "v" :space-evenly false
+    (box :class "ai-usage-meter-row" :orientation "h" :space-evenly false
+      (label :class "ai-usage-meter-name" :text name)
+      (label :class "ai-usage-meter-value" :halign "end" :hexpand true :text value))
+    (progress :class "ai-usage-meter-progress" :value percent)))
+
+(defwidget ai_provider_card [provider]
+  (box :class "ai-provider-card ${provider.class}" :orientation "v" :space-evenly false
+    (box :class "ai-provider-top" :orientation "h" :space-evenly false
+      (label :class "ai-provider-icon" :text {provider.icon})
+      (label :class "ai-provider-name" :text {provider.name}))
+    (label :class "ai-provider-status" :text {provider.status})
+    (label :class "ai-provider-detail" :text {provider.detail})))

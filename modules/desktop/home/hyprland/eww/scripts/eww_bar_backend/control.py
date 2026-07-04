@@ -4,16 +4,20 @@ import os
 import signal
 import socket
 import subprocess
+import sys
+import threading
 from pathlib import Path
 
-from .collectors import idle_inhibited_state, media_state, volume_state
+from .collectors import ai_usage_state, idle_inhibited_state, media_state, volume_state
 from .common import backend_pidfile_path, control_socket_path, idle_pidfile_path, parse_json
 
 
 CONTROL_USAGE = (
     "usage: eww-barctl ping | volume up|down | media play-pause|next|previous | "
-    "idle toggle|on|off|status"
+    "idle toggle|on|off|status | ai refresh"
 )
+
+_AI_REFRESH_LOCK = threading.Lock()
 
 
 def write_backend_pidfile():
@@ -119,6 +123,20 @@ def control_media(action):
     return media_state()
 
 
+def queue_ai_refresh(state):
+    if not _AI_REFRESH_LOCK.acquire(blocking=False):
+        return False
+
+    def refresh():
+        try:
+            state.update(ai_usage=ai_usage_state())
+        finally:
+            _AI_REFRESH_LOCK.release()
+
+    threading.Thread(target=refresh, daemon=True).start()
+    return True
+
+
 def handle_control_command(state, payload):
     command = payload.get("command")
     if command == "ping":
@@ -150,6 +168,13 @@ def handle_control_command(state, payload):
         state.update(idle_inhibited=value)
         return {"ok": True, "command": "idle", "idle_inhibited": value}
 
+    if command == "ai":
+        action = payload.get("action", "refresh")
+        if action != "refresh":
+            raise ValueError("ai action must be refresh")
+        status = "queued" if queue_ai_refresh(state) else "already-refreshing"
+        return {"ok": True, "command": "ai", "action": action, "status": status}
+
     raise ValueError("unknown control command")
 
 
@@ -169,7 +194,10 @@ def read_control_payload(conn):
 
 
 def write_control_response(conn, payload):
-    conn.sendall((json.dumps(payload, separators=(",", ":")) + "\n").encode("utf-8"))
+    try:
+        conn.sendall((json.dumps(payload, separators=(",", ":")) + "\n").encode("utf-8"))
+    except (BrokenPipeError, ConnectionResetError):
+        pass
 
 
 def control_server(state):
@@ -178,7 +206,8 @@ def control_server(state):
         socket_path.unlink()
     except FileNotFoundError:
         pass
-    except Exception:
+    except Exception as exc:
+        print(f"eww-bar control server: unable to unlink {socket_path}: {exc}", file=sys.stderr, flush=True)
         return
 
     socket_path.parent.mkdir(parents=True, exist_ok=True)
@@ -194,7 +223,8 @@ def control_server(state):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server:
         try:
             server.bind(str(socket_path))
-        except OSError:
+        except OSError as exc:
+            print(f"eww-bar control server: unable to bind {socket_path}: {exc}", file=sys.stderr, flush=True)
             return
         try:
             os.chmod(socket_path, 0o600)
@@ -223,6 +253,8 @@ def control_payload_from_args(args):
     if args[0] == "idle":
         action = args[1] if len(args) > 1 else "toggle"
         return {"command": "idle", "action": action}
+    if args[0] == "ai" and len(args) == 2:
+        return {"command": "ai", "action": args[1]}
     raise ValueError(CONTROL_USAGE)
 
 

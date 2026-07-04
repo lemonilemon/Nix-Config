@@ -1,4 +1,4 @@
-(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":"","cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
 
 (defvar show_date false)
 (defvar show_battery_time false)
@@ -21,10 +21,15 @@
   (box :class "bar-window" :orientation "h" :hexpand true
     (centerbox :class "bar-root" :hexpand true
       (box :class "left" :orientation "h" :space-evenly false :halign "start" :hexpand true
-        (box :class "bar-island left-island" :orientation "h" :space-evenly false
+        (box :class "bar-island workspace-island" :orientation "h" :space-evenly false
           (workspaces)
-          (label :class "submap" :visible {bar_state.submap != ""} :text {bar_state.submap})
-          (label :class "media" :visible {bar_state.media != ""} :text {bar_state.media != "" ? " ${bar_state.media}" : ""})))
+          (label :class "submap" :visible {bar_state.submap != ""} :text {bar_state.submap}))
+        (box :class "bar-island media-island" :orientation "h" :space-evenly false :visible {bar_state.media.text != ""}
+          (button :class "media ${bar_state.media.class}"
+            :onclick "eww-barctl --quiet media play-pause"
+            :onrightclick "eww-barctl --quiet media next"
+            :tooltip {bar_state.media.tooltip}
+            (label :text {bar_state.media.text != "" ? "${bar_state.media.icon} ${bar_state.media.text}" : ""}))))
       (box :class "center" :orientation "h" :space-evenly false :halign "center"
         (box :class "bar-island clock-island" :orientation "h" :space-evenly false
           (button :class "clock"
@@ -36,7 +41,7 @@
         (box :class "bar-island tray-island" :orientation "h" :space-evenly false
           (systray :class "tray" :icon-size 14 :spacing 8)
           (button :class "idle-inhibitor ${bar_state.idle_inhibited == 'true' ? 'active' : ''}"
-            :onclick "eww-barctl idle toggle"
+            :onclick "eww-barctl --quiet idle toggle"
             (label :text {bar_state.idle_inhibited == "true" ? "" : ""}))
           (label :class "module network ${bar_state.network.class}" :tooltip {bar_state.network.tooltip} :text {bar_state.network.text})
           (label :class "module bluetooth ${bar_state.bluetooth.class}" :visible {bar_state.bluetooth.text != ""} :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text}))
@@ -50,7 +55,7 @@
             (label :text {bar_state.memory.text})))
         (box :class "bar-island session-island" :orientation "h" :space-evenly false
           (eventbox
-            :onscroll "eww-barctl volume {}"
+            :onscroll "eww-barctl --quiet volume {}"
             (button :class "module-button volume"
               :onclick "kitty -- pulsemixer"
               (label :text {bar_state.volume})))

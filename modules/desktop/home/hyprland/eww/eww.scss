@@ -105,8 +105,13 @@ tooltip label {
   background: rgba(30, 30, 46, 0.88);
 }
 
-.left-island {
+.workspace-island {
   padding-left: 5px;
+  padding-right: 8px;
+}
+
+.media-island {
+  padding-left: 7px;
   padding-right: 8px;
 }
 
@@ -192,9 +197,20 @@ tooltip label {
 
 .media {
   color: $teal;
-  margin-left: 3px;
-  padding-left: 9px;
-  padding-right: 10px;
+  padding-left: 8px;
+  padding-right: 9px;
+}
+
+.media.playing {
+  color: $teal;
+}
+
+.media.paused {
+  color: $overlay1;
+}
+
+.media.stopped {
+  color: $overlay0;
 }
 
 .media:hover {

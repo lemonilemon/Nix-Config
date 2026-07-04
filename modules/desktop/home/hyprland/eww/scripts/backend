@@ -18,6 +18,7 @@ signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 EMPTY_MODULE = {"text": "", "tooltip": "", "class": ""}
 BATTERY_DEFAULT = {"text": "󰂄", "alt": "󰂄", "capacity": 100, "class": "charging"}
+MEDIA_DEFAULT = {"text": "", "status": "", "icon": "", "class": "", "tooltip": ""}
 WORKSPACE_DEFAULT = {
     "ws1_class": "empty",
     "ws1_text": "",
@@ -126,11 +127,45 @@ def submap_from_event(line):
     return value
 
 
+def media_state_from_text(status_text, metadata_text):
+    metadata = metadata_text.splitlines()
+    if not metadata or not metadata[0].strip():
+        return MEDIA_DEFAULT.copy()
+
+    status_lines = status_text.splitlines()
+    status = status_lines[0].strip() if status_lines else ""
+    normalized = status.lower()
+    if normalized == "playing":
+        icon = ""
+        cls = "playing"
+        display_status = "Playing"
+    elif normalized == "paused":
+        icon = ""
+        cls = "paused"
+        display_status = "Paused"
+    elif normalized == "stopped":
+        icon = ""
+        cls = "stopped"
+        display_status = "Stopped"
+    else:
+        icon = ""
+        cls = ""
+        display_status = status or "Media"
+
+    return {
+        "text": truncate_text(metadata[0].strip(), 52),
+        "status": display_status,
+        "icon": icon,
+        "class": cls,
+        "tooltip": f"{display_status}\nLeft click: play/pause\nRight click: next",
+    }
+
+
 def media_state():
-    text = run_text(["playerctl", "metadata", "--format", "{{artist}} - {{title}}"]).splitlines()
-    if not text:
-        return ""
-    return truncate_text(text[0], 52)
+    return media_state_from_text(
+        run_text(["playerctl", "status"], timeout=1.0),
+        run_text(["playerctl", "metadata", "--format", "{{artist}} - {{title}}"]),
+    )
 
 
 def cpu_state():
@@ -637,6 +672,20 @@ def adjust_volume(direction):
     return volume_state()
 
 
+def control_media(action):
+    allowed_actions = {"play-pause", "next", "previous"}
+    if action not in allowed_actions:
+        raise ValueError("media action must be play-pause, next, or previous")
+    subprocess.run(
+        ["playerctl", action],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return media_state()
+
+
 class BarState:
     def __init__(self):
         self.lock = threading.Lock()
@@ -644,7 +693,7 @@ class BarState:
             "workspace_state": WORKSPACE_DEFAULT.copy(),
             "submap": "",
             "clock": clock_state(),
-            "media": "",
+            "media": MEDIA_DEFAULT.copy(),
             "cpu": " --%",
             "memory": EMPTY_MODULE.copy(),
             "temperature": {"text": " --°C", "class": ""},
@@ -697,6 +746,12 @@ def handle_control_command(state, payload):
         value = adjust_volume(payload.get("direction", ""))
         state.update(volume=value)
         return {"ok": True, "command": "volume", "volume": value}
+
+    if command == "media":
+        action = payload.get("action", "")
+        value = control_media(action)
+        state.update(media=value)
+        return {"ok": True, "command": "media", "action": action, "media": value}
 
     if command == "idle":
         action = payload.get("action", "toggle")
@@ -939,6 +994,8 @@ def control_payload_from_args(args):
         return {"command": "ping"}
     if args[0] == "volume" and len(args) == 2:
         return {"command": "volume", "direction": args[1]}
+    if args[0] == "media" and len(args) == 2:
+        return {"command": "media", "action": args[1]}
     if args[0] == "idle":
         action = args[1] if len(args) > 1 else "toggle"
         return {"command": "idle", "action": action}
@@ -961,11 +1018,16 @@ def send_control_command(payload):
 
 
 def run_ctl(args):
+    quiet = False
+    if args and args[0] in ("-q", "--quiet"):
+        quiet = True
+        args = args[1:]
     try:
         response = send_control_command(control_payload_from_args(args))
     except Exception as exc:
         response = {"ok": False, "error": str(exc)}
-    print(json.dumps(response, separators=(",", ":")), flush=True)
+    if not quiet:
+        print(json.dumps(response, separators=(",", ":")), flush=True)
     return 0 if response.get("ok") else 1
 
 

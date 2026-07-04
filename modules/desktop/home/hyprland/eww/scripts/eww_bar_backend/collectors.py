@@ -1,10 +1,12 @@
 import re
 import time
+from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
 from .common import (
     BATTERY_DEFAULT,
+    CCUSAGE_DEFAULT,
     MEDIA_DEFAULT,
     WORKSPACE_DEFAULT,
     idle_pidfile_path,
@@ -122,6 +124,233 @@ def media_state():
         run_text(["playerctl", "status"], timeout=1.0),
         run_text(["playerctl", "metadata", "--format", "{{artist}} - {{title}}"]),
     )
+
+
+def number_value(data, *keys):
+    for key in keys:
+        value = data.get(key)
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, (int, float)):
+            return value
+        if isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                continue
+    return 0
+
+
+def nested_number(data, *paths):
+    for path in paths:
+        current = data
+        for key in path:
+            if not isinstance(current, dict):
+                current = None
+                break
+            current = current.get(key)
+        if isinstance(current, bool):
+            continue
+        if isinstance(current, (int, float)):
+            return current
+        if isinstance(current, str):
+            try:
+                return float(current)
+            except ValueError:
+                continue
+    return 0
+
+
+def list_value(data, *keys):
+    for key in keys:
+        value = data.get(key)
+        if isinstance(value, list):
+            return value
+    return []
+
+
+def format_tokens(value):
+    if value <= 0:
+        return "--"
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.1f}m"
+    if value >= 1_000:
+        return f"{value / 1_000:.1f}k"
+    return f"{int(value)}"
+
+
+def format_cost(value):
+    if value <= 0:
+        return "--"
+    return f"${value:.2f}"
+
+
+def format_remaining(seconds):
+    if seconds <= 0:
+        return "0m"
+    minutes = int(seconds // 60)
+    hours, mins = divmod(minutes, 60)
+    if hours:
+        return f"{hours}h {mins}m"
+    return f"{mins}m"
+
+
+def parse_iso_epoch(value):
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+    except Exception:
+        pass
+    try:
+        return time.mktime(time.strptime(value[:19], "%Y-%m-%dT%H:%M:%S"))
+    except Exception:
+        return None
+
+
+def ccusage_state_from_json(daily_json, blocks_json, now_epoch=None):
+    daily_report = parse_json(daily_json, {})
+    blocks_report = parse_json(blocks_json, {})
+    if not daily_report and not blocks_report:
+        return CCUSAGE_DEFAULT.copy()
+
+    today_date = time.strftime("%F", time.localtime(now_epoch or time.time()))
+    daily_rows = list_value(daily_report, "daily", "data", "days")
+    today_row = next(
+        (
+            row
+            for row in daily_rows
+            if isinstance(row, dict) and (row.get("date") or row.get("period")) == today_date
+        ),
+        None,
+    )
+    if today_row is None and daily_rows:
+        today_row = next((row for row in reversed(daily_rows) if isinstance(row, dict)), None)
+    today_row = today_row or {}
+
+    input_tokens = number_value(today_row, "inputTokens", "input_tokens", "input")
+    output_tokens = number_value(today_row, "outputTokens", "output_tokens", "output")
+    cache_tokens = number_value(
+        today_row,
+        "cacheCreationTokens",
+        "cacheCreationInputTokens",
+        "cache_creation_input_tokens",
+    ) + number_value(
+        today_row,
+        "cacheReadTokens",
+        "cacheReadInputTokens",
+        "cache_read_input_tokens",
+    )
+    total_tokens = number_value(today_row, "totalTokens", "total_tokens", "tokens")
+    if total_tokens <= 0:
+        total_tokens = input_tokens + output_tokens + cache_tokens
+    total_cost = number_value(today_row, "totalCost", "total_cost", "costUSD", "cost")
+
+    active_blocks = [
+        row
+        for row in list_value(blocks_report, "blocks", "data")
+        if isinstance(row, dict) and row.get("isActive") is True
+    ]
+    active_block = active_blocks[0] if active_blocks else {}
+    block_tokens = number_value(active_block, "totalTokens", "total_tokens", "tokens")
+    block_cost = number_value(active_block, "totalCost", "total_cost", "costUSD", "cost")
+    projected_tokens = nested_number(
+        active_block,
+        ("projection", "totalTokens"),
+        ("projection", "total_tokens"),
+        ("projected", "totalTokens"),
+    )
+    projected_cost = nested_number(
+        active_block,
+        ("projection", "totalCost"),
+        ("projection", "total_cost"),
+        ("projection", "costUSD"),
+    )
+    projected_remaining_minutes = nested_number(
+        active_block,
+        ("projection", "remainingMinutes"),
+        ("projection", "remaining_minutes"),
+    )
+
+    now = now_epoch or time.time()
+    start = parse_iso_epoch(active_block.get("startTime") or active_block.get("start_time"))
+    end = parse_iso_epoch(active_block.get("endTime") or active_block.get("end_time"))
+    if start is not None and end is not None and end > start:
+        percent = max(0, min(100, int(round((now - start) * 100 / (end - start)))))
+        if projected_remaining_minutes > 0:
+            remaining = format_remaining(projected_remaining_minutes * 60)
+        else:
+            remaining = format_remaining(end - now)
+    else:
+        percent = 0
+        remaining = (
+            format_remaining(projected_remaining_minutes * 60)
+            if projected_remaining_minutes > 0
+            else "--"
+        )
+
+    if total_tokens <= 0 and block_tokens <= 0:
+        return CCUSAGE_DEFAULT.copy()
+
+    cls = "active" if active_block else ""
+    if total_cost >= 20:
+        cls = "warning"
+    if percent >= 85:
+        cls = "warning"
+
+    today_tokens = format_tokens(total_tokens)
+    today_cost = format_cost(total_cost)
+    block_text = format_tokens(block_tokens)
+    projected_text = format_tokens(projected_tokens)
+    block_cost_text = format_cost(block_cost)
+    projected_cost_text = format_cost(projected_cost)
+    tooltip = (
+        f"Today: {today_tokens} tokens / {today_cost}\n"
+        f"Input: {format_tokens(input_tokens)}  Output: {format_tokens(output_tokens)}  Cache: {format_tokens(cache_tokens)}\n"
+        f"Active block: {block_text} used, {projected_text} projected\n"
+        f"Remaining: {remaining}"
+    )
+
+    return {
+        "text": f"󱃖 {today_tokens}",
+        "tooltip": tooltip,
+        "class": cls,
+        "updated": time.strftime("%H:%M", time.localtime(now)),
+        "today": {
+            "tokens": today_tokens,
+            "cost": today_cost,
+            "input": format_tokens(input_tokens),
+            "output": format_tokens(output_tokens),
+            "cache": format_tokens(cache_tokens),
+        },
+        "block": {
+            "tokens": block_text,
+            "projected": projected_text,
+            "percent": percent,
+            "remaining": remaining,
+            "cost": block_cost_text,
+            "projected_cost": projected_cost_text,
+        },
+    }
+
+
+def ccusage_state():
+    today = time.strftime("%F")
+    daily = run_text(
+        [
+            "ccusage",
+            "daily",
+            "--json",
+            "--offline",
+            "--since",
+            today,
+            "--until",
+            today,
+        ],
+        timeout=15.0,
+    )
+    blocks = run_text(["ccusage", "blocks", "--json", "--offline"], timeout=15.0)
+    return ccusage_state_from_json(daily, blocks)
 
 
 def cpu_state():

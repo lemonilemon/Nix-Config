@@ -6,6 +6,7 @@ from pathlib import Path
 from .collectors import (
     battery_state,
     bluetooth_state,
+    ccusage_state,
     clock_state,
     cpu_state,
     idle_inhibited_state,
@@ -40,6 +41,7 @@ def run_bar():
     state.update(
         clock=clock_state(),
         media=media_state(),
+        ccusage=ccusage_state(),
         cpu=cpu_state(),
         memory=memory_state(),
         temperature=temperature_state(),
@@ -54,6 +56,12 @@ def run_bar():
     threads = [
         threading.Thread(target=watch_hyprland, args=(state,), daemon=True),
         threading.Thread(target=periodic, args=(state, 60), kwargs={"clock": clock_state}, daemon=True),
+        threading.Thread(
+            target=periodic,
+            args=(state, 300),
+            kwargs={"ccusage": ccusage_state},
+            daemon=True,
+        ),
         threading.Thread(
             target=periodic,
             args=(state, 7),

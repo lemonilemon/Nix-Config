@@ -115,6 +115,10 @@ tooltip label {
   padding-right: 8px;
 }
 
+.ccusage-island {
+  padding: 0 5px;
+}
+
 .clock-island {
   background: rgba(24, 24, 37, 0.88);
   padding: 0 13px;
@@ -264,6 +268,24 @@ tooltip label {
   color: $maroon;
 }
 
+.ccusage {
+  color: $sapphire;
+}
+
+.ccusage.active {
+  background: rgba(116, 199, 236, 0.10);
+  color: $sapphire;
+}
+
+.ccusage.warning {
+  background: rgba(249, 226, 175, 0.11);
+  color: $yellow;
+}
+
+.ccusage.missing {
+  color: $overlay1;
+}
+
 .network {
   color: $peach;
 }
@@ -335,4 +357,83 @@ tooltip label {
   to {
     color: $overlay1;
   }
+}
+
+.ccusage-popup {
+  background: rgba(17, 17, 27, 0.96);
+  border: 1px solid rgba(205, 214, 244, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(7, 8, 17, 0.48);
+  color: $text;
+  padding: 14px;
+}
+
+.ccusage-header {
+  margin-bottom: 10px;
+}
+
+.ccusage-title {
+  color: $sapphire;
+  font-weight: 800;
+}
+
+.ccusage-updated {
+  color: $overlay1;
+  font-size: 11px;
+  margin-left: 12px;
+}
+
+.ccusage-kpis {
+  margin-bottom: 10px;
+}
+
+.ccusage-kpi {
+  background: rgba(49, 50, 68, 0.55);
+  border: 1px solid rgba(205, 214, 244, 0.08);
+  border-radius: 8px;
+  min-width: 140px;
+  padding: 9px 10px;
+}
+
+.ccusage-kpi-name,
+.ccusage-row-name {
+  color: $overlay1;
+  font-size: 11px;
+}
+
+.ccusage-kpi-value {
+  color: $text;
+  font-size: 18px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.ccusage-kpi-meta {
+  color: $subtext0;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.ccusage-section {
+  background: rgba(24, 24, 37, 0.64);
+  border-radius: 8px;
+  margin-top: 7px;
+  padding: 7px 9px;
+}
+
+.ccusage-section.block {
+  border: 1px solid rgba(116, 199, 236, 0.10);
+}
+
+.ccusage-row {
+  min-height: 22px;
+}
+
+.ccusage-row-name {
+  min-width: 100px;
+}
+
+.ccusage-row-value {
+  color: $text;
+  font-weight: 700;
 }

@@ -7,6 +7,27 @@ from pathlib import Path
 EMPTY_MODULE = {"text": "", "tooltip": "", "class": ""}
 BATTERY_DEFAULT = {"text": "󰂄", "alt": "󰂄", "capacity": 100, "class": "charging"}
 MEDIA_DEFAULT = {"text": "", "status": "", "icon": "", "class": "", "tooltip": ""}
+CCUSAGE_DEFAULT = {
+    "text": "󱃖 --",
+    "tooltip": "ccusage has no usage data yet",
+    "class": "missing",
+    "updated": "",
+    "today": {
+        "tokens": "--",
+        "cost": "--",
+        "input": "--",
+        "output": "--",
+        "cache": "--",
+    },
+    "block": {
+        "tokens": "--",
+        "projected": "--",
+        "percent": 0,
+        "remaining": "--",
+        "cost": "--",
+        "projected_cost": "--",
+    },
+}
 WORKSPACE_DEFAULT = {
     "ws1_class": "empty",
     "ws1_text": "",

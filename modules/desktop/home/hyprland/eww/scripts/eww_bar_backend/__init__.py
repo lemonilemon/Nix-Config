@@ -3,6 +3,8 @@ from .collectors import (
     battery_state,
     bluetooth_state,
     bluetooth_state_from_text,
+    ccusage_state,
+    ccusage_state_from_json,
     clock_state,
     connected_device,
     cpu_state,
@@ -27,6 +29,7 @@ from .collectors import (
 )
 from .common import (
     BATTERY_DEFAULT,
+    CCUSAGE_DEFAULT,
     EMPTY_MODULE,
     MEDIA_DEFAULT,
     WORKSPACE_DEFAULT,

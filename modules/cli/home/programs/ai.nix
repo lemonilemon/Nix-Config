@@ -1,19 +1,20 @@
+{ pkgs, ... }:
 {
-  pkgs,
-  ...
-}:
-{
-  home.packages = with pkgs; [
-    llm-agents.claude-code
-    llm-agents.gemini-cli
-    llm-agents.codex
-    llm-agents.antigravity-cli
-    llm-agents.skills
+  home.packages = (
+    with pkgs;
+    [
+      llm-agents.claude-code
+      llm-agents.gemini-cli
+      llm-agents.codex
+      llm-agents.antigravity-cli
+      llm-agents.skills
+      llm-agents.ccusage
 
-    # for sandbox
-    socat
-    bubblewrap
-  ];
+      # for sandbox
+      socat
+      bubblewrap
+    ]
+  );
   programs.opencode = {
     enable = true;
     package = pkgs.llm-agents.opencode;

@@ -47,6 +47,7 @@ let
       systemd
       wireplumber
       wlogout
+      llm-agents.ccusage
     ])
     ++ [ ewwBarTools ];
 

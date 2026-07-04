@@ -1,4 +1,4 @@
-(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ccusage":{"text":"󱃖 --","tooltip":"","class":"missing","updated":"","today":{"tokens":"--","cost":"--","input":"--","output":"--","cache":"--"},"block":{"tokens":"--","projected":"--","percent":0,"remaining":"--","cost":"--","projected_cost":"--"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
 
 (defvar show_date false)
 (defvar show_battery_time false)
@@ -45,6 +45,11 @@
             (label :text {bar_state.idle_inhibited == "true" ? "" : ""}))
           (label :class "module network ${bar_state.network.class}" :tooltip {bar_state.network.tooltip} :text {bar_state.network.text})
           (label :class "module bluetooth ${bar_state.bluetooth.class}" :visible {bar_state.bluetooth.text != ""} :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text}))
+        (box :class "bar-island ccusage-island" :orientation "h" :space-evenly false
+          (button :class "module-button ccusage ${bar_state.ccusage.class}"
+            :onclick "eww open --toggle ccusage_popup"
+            :tooltip {bar_state.ccusage.tooltip}
+            (label :text {bar_state.ccusage.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
           (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
           (button :class "module-button cpu" :onclick "kitty -- htop"
@@ -78,3 +83,44 @@
     :class "workspace ${state_class}"
     :onclick "hyprctl dispatch workspace ${id}"
     (label :text icon)))
+
+(defwindow ccusage_popup
+  :monitor 0
+  :geometry (geometry
+    :x "10px"
+    :y "50px"
+    :width "360px"
+    :height "218px"
+    :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-ccusage"
+  (ccusage_panel))
+
+(defwidget ccusage_panel []
+  (box :class "ccusage-popup" :orientation "v" :space-evenly false
+    (box :class "ccusage-header" :orientation "h" :space-evenly false
+      (label :class "ccusage-title" :text "AI usage")
+      (label :class "ccusage-updated" :text {bar_state.ccusage.updated != "" ? "updated ${bar_state.ccusage.updated}" : "waiting for data"}))
+    (box :class "ccusage-kpis" :orientation "h" :space-evenly true
+      (ccusage_kpi :name "Today" :value {bar_state.ccusage.today.tokens} :meta {bar_state.ccusage.today.cost})
+      (ccusage_kpi :name "Block" :value {bar_state.ccusage.block.tokens} :meta {bar_state.ccusage.block.remaining}))
+    (box :class "ccusage-section" :orientation "v" :space-evenly false
+      (ccusage_row :name "Input" :value {bar_state.ccusage.today.input})
+      (ccusage_row :name "Output" :value {bar_state.ccusage.today.output})
+      (ccusage_row :name "Cache" :value {bar_state.ccusage.today.cache}))
+    (box :class "ccusage-section block" :orientation "v" :space-evenly false
+      (ccusage_row :name "5-hour block" :value {"${bar_state.ccusage.block.percent}% used"})
+      (ccusage_row :name "Projected" :value {"${bar_state.ccusage.block.projected} / ${bar_state.ccusage.block.projected_cost}"}))))
+
+(defwidget ccusage_kpi [name value meta]
+  (box :class "ccusage-kpi" :orientation "v" :space-evenly false
+    (label :class "ccusage-kpi-name" :text name)
+    (label :class "ccusage-kpi-value" :text value)
+    (label :class "ccusage-kpi-meta" :text meta)))
+
+(defwidget ccusage_row [name value]
+  (box :class "ccusage-row" :orientation "h" :space-evenly false
+    (label :class "ccusage-row-name" :text name)
+    (label :class "ccusage-row-value" :text value)))

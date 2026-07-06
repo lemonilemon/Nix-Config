@@ -466,6 +466,80 @@ tooltip label {
   margin-top: 2px;
 }
 
+.ai-quota-card {
+  background: linear-gradient(135deg, rgba(49, 50, 68, 0.70), rgba(24, 24, 37, 0.82));
+  border: 1px solid rgba(166, 227, 161, 0.13);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  padding: 9px 10px 10px;
+}
+
+.ai-quota-card.warning {
+  border-color: rgba(249, 226, 175, 0.22);
+}
+
+.ai-quota-card.critical {
+  border-color: rgba(243, 139, 168, 0.24);
+}
+
+.ai-quota-card.missing {
+  border-color: rgba(205, 214, 244, 0.08);
+}
+
+.ai-quota-head {
+  margin-bottom: 4px;
+}
+
+.ai-quota-label {
+  color: $text;
+  font-weight: 800;
+}
+
+.ai-quota-plan,
+.ai-quota-meta-label {
+  color: $overlay1;
+  font-size: 11px;
+}
+
+.ai-quota-card .ai-usage-meter {
+  margin-top: 6px;
+}
+
+.ai-quota-card .ai-usage-meter-progress trough progress {
+  background: linear-gradient(90deg, $green, $sapphire);
+}
+
+.ai-quota-card.warning .ai-usage-meter-progress trough progress {
+  background: linear-gradient(90deg, $yellow, $peach);
+}
+
+.ai-quota-card.critical .ai-usage-meter-progress trough progress {
+  background: linear-gradient(90deg, $red, $peach);
+}
+
+.ai-quota-meta {
+  margin-top: 8px;
+}
+
+.ai-quota-meta-item {
+  min-width: 142px;
+}
+
+.ai-quota-meta-value {
+  color: $text;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 1px;
+}
+
+.ai-quota-meta-value.warning {
+  color: $yellow;
+}
+
+.ai-quota-meta-value.missing {
+  color: $overlay1;
+}
+
 .ai-usage-today {
   background: rgba(30, 30, 46, 0.68);
   border: 1px solid rgba(205, 214, 244, 0.08);

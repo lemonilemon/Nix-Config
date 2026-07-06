@@ -1,5 +1,11 @@
+import base64
+import json
+import os
 import re
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
@@ -193,6 +199,12 @@ def format_burn_rate(value):
     return f"${value:.2f}/h"
 
 
+def format_clock_time(epoch):
+    if epoch is None:
+        return "--"
+    return time.strftime("%F %H:%M", time.localtime(epoch))
+
+
 def format_remaining(seconds):
     if seconds <= 0:
         return "0m"
@@ -209,6 +221,10 @@ def percent_part(value, total):
     return max(0, min(100, int(round(value * 100 / total))))
 
 
+def clamp_percent(value):
+    return max(0, min(100, int(round(value))))
+
+
 def parse_iso_epoch(value):
     if not isinstance(value, str) or not value:
         return None
@@ -220,6 +236,22 @@ def parse_iso_epoch(value):
         return time.mktime(time.strptime(value[:19], "%Y-%m-%dT%H:%M:%S"))
     except Exception:
         return None
+
+
+def jwt_payload(token):
+    if not isinstance(token, str):
+        return {}
+    parts = token.split(".")
+    if len(parts) < 2:
+        return {}
+    payload = parts[1]
+    payload += "=" * (-len(payload) % 4)
+    try:
+        data = base64.urlsafe_b64decode(payload.encode("ascii"))
+        value = json.loads(data.decode("utf-8"))
+    except Exception:
+        return {}
+    return value if isinstance(value, dict) else {}
 
 
 def daily_row_from_report(daily_report, now_epoch=None):
@@ -460,10 +492,373 @@ def openusage_block_from_json(blocks_json, now_epoch=None):
     }
 
 
-def ai_usage_state_from_json(daily_json, ccusage_blocks_json, openusage_blocks_json, now_epoch=None):
+CODEX_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
+CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
+CODEX_REFRESH_URL = "https://auth.openai.com/oauth/token"
+CODEX_RESET_CREDITS_URL = "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits"
+
+
+def codex_subscription_default(status="waiting"):
+    state = deepcopy(AI_USAGE_DEFAULT["subscription"])
+    state["status"] = status
+    return state
+
+
+def codex_auth_paths():
+    codex_home = os.environ.get("CODEX_HOME", "").strip()
+    if codex_home:
+        return [Path(codex_home).expanduser() / "auth.json"]
+    return [
+        Path("~/.config/codex/auth.json").expanduser(),
+        Path("~/.codex/auth.json").expanduser(),
+    ]
+
+
+def codex_load_auth():
+    for path in codex_auth_paths():
+        try:
+            data = json.loads(path.read_text())
+        except Exception:
+            continue
+        if isinstance(data, dict) and isinstance(data.get("tokens"), dict):
+            return data, path
+    return None, None
+
+
+def codex_save_auth(auth, path):
+    if path is None:
+        return
+    try:
+        path.write_text(json.dumps(auth, indent=2, sort_keys=True) + "\n")
+    except Exception:
+        pass
+
+
+def codex_token_expires_at(access_token):
+    payload = jwt_payload(access_token)
+    exp = number_value(payload, "exp")
+    return exp if exp > 0 else None
+
+
+def codex_needs_refresh(auth, now_epoch=None):
+    tokens = auth.get("tokens") if isinstance(auth, dict) else {}
+    if not isinstance(tokens, dict):
+        return False
+    expires_at = codex_token_expires_at(tokens.get("access_token"))
+    if expires_at is None:
+        return False
+    return expires_at - (now_epoch or time.time()) <= 300
+
+
+def codex_refresh_auth(auth, path):
+    tokens = auth.get("tokens") if isinstance(auth, dict) else {}
+    if not isinstance(tokens, dict):
+        return auth
+    refresh_token = tokens.get("refresh_token")
+    if not refresh_token:
+        return auth
+
+    body = urllib.parse.urlencode(
+        {
+            "grant_type": "refresh_token",
+            "client_id": CODEX_CLIENT_ID,
+            "refresh_token": refresh_token,
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        CODEX_REFRESH_URL,
+        data=body,
+        method="POST",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    with urllib.request.urlopen(request, timeout=15) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    access_token = payload.get("access_token")
+    if not access_token:
+        return auth
+    tokens["access_token"] = access_token
+    if payload.get("refresh_token"):
+        tokens["refresh_token"] = payload["refresh_token"]
+    if payload.get("id_token"):
+        tokens["id_token"] = payload["id_token"]
+    auth["tokens"] = tokens
+    auth["last_refresh"] = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    codex_save_auth(auth, path)
+    return auth
+
+
+def codex_request_json(url, auth, timeout=10.0, extra_headers=None):
+    tokens = auth.get("tokens") if isinstance(auth, dict) else {}
+    if not isinstance(tokens, dict):
+        return ""
+    access_token = tokens.get("access_token")
+    if not access_token:
+        return ""
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json",
+        "User-Agent": "eww-bar",
+    }
+    account_id = tokens.get("account_id")
+    if account_id:
+        headers["ChatGPT-Account-Id"] = account_id
+    if extra_headers:
+        headers.update(extra_headers)
+    request = urllib.request.Request(url, method="GET", headers=headers)
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.read().decode("utf-8")
+
+
+def codex_fetch_usage_json(auth, path):
+    try:
+        return codex_request_json(CODEX_USAGE_URL, auth, timeout=10.0)
+    except urllib.error.HTTPError as exc:
+        if exc.code not in (401, 403):
+            raise
+    auth = codex_refresh_auth(auth, path)
+    return codex_request_json(CODEX_USAGE_URL, auth, timeout=10.0)
+
+
+def codex_fetch_reset_credits_json(auth):
+    return codex_request_json(
+        CODEX_RESET_CREDITS_URL,
+        auth,
+        timeout=6.0,
+        extra_headers={
+            "OpenAI-Beta": "codex-1",
+            "originator": "Codex Desktop",
+        },
+    )
+
+
+def format_codex_plan(value):
+    if not isinstance(value, str) or not value.strip():
+        return "--"
+    raw = value.strip()
+    lowered = raw.lower()
+    if lowered == "prolite":
+        return "Pro 5x"
+    if lowered == "pro":
+        return "Pro 20x"
+    return raw.replace("_", " ").title()
+
+
+def codex_window_state(label, window, now_epoch=None):
+    now = now_epoch or time.time()
+    if not isinstance(window, dict):
+        return {
+            "label": label,
+            "percent": 0,
+            "value": "--",
+            "remaining": "--",
+            "reset": "--",
+            "class": "missing",
+        }
+
+    percent = clamp_percent(number_value(window, "used_percent"))
+    reset_epoch = number_value(window, "reset_at")
+    if reset_epoch <= 0:
+        reset_after = number_value(window, "reset_after_seconds")
+        reset_epoch = now + reset_after if reset_after > 0 else 0
+    period_seconds = number_value(window, "limit_window_seconds")
+    if period_seconds > 0 and reset_epoch > 0:
+        remaining_to_reset = reset_epoch - now
+        if remaining_to_reset >= period_seconds - 30 and percent <= 1:
+            percent = 0
+
+    cls = "missing"
+    if percent >= 90:
+        cls = "critical"
+    elif percent >= 80:
+        cls = "warning"
+    elif percent > 0:
+        cls = "active"
+    elif reset_epoch > 0:
+        cls = "empty"
+
+    return {
+        "label": label,
+        "percent": percent,
+        "value": f"{percent}%",
+        "remaining": format_remaining(max(0, reset_epoch - now)) if reset_epoch > 0 else "--",
+        "reset": format_clock_time(reset_epoch) if reset_epoch > 0 else "--",
+        "class": cls,
+    }
+
+
+def codex_reset_credits_state(usage_body, reset_credits_body, now_epoch=None):
+    now = now_epoch or time.time()
+    source = (
+        reset_credits_body
+        if isinstance(reset_credits_body, dict) and "available_count" in reset_credits_body
+        else None
+    )
+    if source is None:
+        source = usage_body.get("rate_limit_reset_credits") if isinstance(usage_body, dict) else None
+    if not isinstance(source, dict):
+        return {"text": "--", "tooltip": "", "class": "missing"}
+
+    count = max(0, int(number_value(source, "available_count")))
+    expiries = []
+    credits = source.get("credits")
+    if isinstance(credits, list):
+        for credit in credits:
+            if not isinstance(credit, dict):
+                continue
+            status = credit.get("status")
+            if isinstance(status, str) and status != "available":
+                continue
+            expires = parse_iso_epoch(credit.get("expires_at"))
+            if expires is None:
+                expires = number_value(credit, "expires_at")
+            if expires > 0:
+                expiries.append(expires)
+    expiries.sort()
+
+    cls = "active" if count > 0 else "missing"
+    if expiries and expiries[0] - now <= 24 * 60 * 60:
+        cls = "warning"
+    tooltip = "\n".join(format_clock_time(expiry) for expiry in expiries)
+    return {
+        "text": f"{count} available",
+        "tooltip": tooltip,
+        "class": cls,
+    }
+
+
+def codex_credits_state(usage_body):
+    credits = usage_body.get("credits") if isinstance(usage_body, dict) else None
+    balance = number_value(credits, "balance") if isinstance(credits, dict) else 0
+    if balance <= 0:
+        return {"text": "--", "class": "missing"}
+    count = max(0, int(balance))
+    return {
+        "text": f"${count * 0.04:.2f} · {count} credits",
+        "class": "active",
+    }
+
+
+def codex_subscription_class(subscription):
+    classes = [
+        subscription.get("session", {}).get("class"),
+        subscription.get("weekly", {}).get("class"),
+        subscription.get("spark", {}).get("class"),
+        subscription.get("spark_weekly", {}).get("class"),
+        subscription.get("resets", {}).get("class"),
+    ]
+    for name in ("critical", "warning", "active", "empty"):
+        if name in classes:
+            return name
+    return "missing"
+
+
+def codex_subscription_state_from_json(
+    usage_json,
+    reset_credits_json="",
+    now_epoch=None,
+):
+    body = parse_json(usage_json, {})
+    if not isinstance(body, dict) or not body:
+        return codex_subscription_default("missing")
+    reset_body = parse_json(reset_credits_json, {})
+    if not isinstance(reset_body, dict):
+        reset_body = {}
+
+    now = now_epoch or time.time()
+    rate_limit = body.get("rate_limit") if isinstance(body.get("rate_limit"), dict) else {}
+    state = codex_subscription_default("live")
+    state["source"] = "codex"
+    state["updated"] = time.strftime("%H:%M", time.localtime(now))
+    state["plan"] = format_codex_plan(body.get("plan_type"))
+    state["session"] = codex_window_state("Session", rate_limit.get("primary_window"), now_epoch=now)
+    state["weekly"] = codex_window_state("Weekly", rate_limit.get("secondary_window"), now_epoch=now)
+
+    for entry in list_value(body, "additional_rate_limits"):
+        if not isinstance(entry, dict):
+            continue
+        names = [
+            entry.get("limit_name", ""),
+            entry.get("metered_feature", ""),
+        ]
+        if not any(isinstance(name, str) and "spark" in name.lower() for name in names):
+            continue
+        spark_limit = entry.get("rate_limit") if isinstance(entry.get("rate_limit"), dict) else {}
+        state["spark"] = codex_window_state("Spark", spark_limit.get("primary_window"), now_epoch=now)
+        state["spark_weekly"] = codex_window_state("Spark Weekly", spark_limit.get("secondary_window"), now_epoch=now)
+        break
+
+    state["resets"] = codex_reset_credits_state(body, reset_body, now_epoch=now)
+    state["credits"] = codex_credits_state(body)
+    state["class"] = codex_subscription_class(state)
+    return state
+
+
+def codex_subscription_state():
+    auth, path = codex_load_auth()
+    if not auth:
+        return codex_subscription_default("not logged in")
+    tokens = auth.get("tokens") if isinstance(auth, dict) else {}
+    if not isinstance(tokens, dict) or not tokens.get("access_token"):
+        return codex_subscription_default("api-key only")
+
+    try:
+        if codex_needs_refresh(auth):
+            auth = codex_refresh_auth(auth, path)
+        usage_json = codex_fetch_usage_json(auth, path)
+        try:
+            reset_credits_json = codex_fetch_reset_credits_json(auth)
+        except Exception:
+            reset_credits_json = ""
+        return codex_subscription_state_from_json(usage_json, reset_credits_json)
+    except Exception:
+        return codex_subscription_default("unavailable")
+
+
+def apply_codex_subscription(state, subscription):
+    state["subscription"] = subscription
+    if subscription.get("status") != "live":
+        return state
+
+    plan = subscription.get("plan") or "--"
+    session = subscription.get("session", {})
+    session_value = session.get("value", "--")
+    provider = state["providers"].get("codex", {})
+    provider["class"] = "active"
+    provider["status"] = "Subscription"
+    provider["detail"] = f"{plan} · Session {session_value}"
+    state["providers"]["codex"] = provider
+    if state.get("source") == "missing":
+        state["class"] = "active"
+        state["source"] = "codex"
+        state["meta"]["status"] = "Codex quota"
+    return state
+
+
+def add_codex_subscription_tooltip(state):
+    if state["subscription"].get("status") != "live":
+        return state
+    if "Codex:" in state.get("tooltip", ""):
+        return state
+    state["tooltip"] += (
+        f"\nCodex: {state['subscription']['plan']}"
+        f" · Session {state['subscription']['session']['value']}"
+        f" · Weekly {state['subscription']['weekly']['value']}"
+    )
+    return state
+
+
+def ai_usage_state_from_json(
+    daily_json,
+    ccusage_blocks_json,
+    openusage_blocks_json,
+    now_epoch=None,
+    codex_subscription_json="",
+    codex_reset_credits_json="",
+):
     now = now_epoch or time.time()
     ccusage_state_value = ccusage_state_from_json(daily_json, ccusage_blocks_json, now_epoch=now)
-    if ccusage_state_value == CCUSAGE_DEFAULT.copy() and not openusage_blocks_json:
+    if ccusage_state_value == CCUSAGE_DEFAULT.copy() and not openusage_blocks_json and not codex_subscription_json:
         return deepcopy(AI_USAGE_DEFAULT)
 
     state = deepcopy(AI_USAGE_DEFAULT)
@@ -474,6 +869,13 @@ def ai_usage_state_from_json(daily_json, ccusage_blocks_json, openusage_blocks_j
     }
     state["text"] = f"󱃖 {state['today']['tokens']}"
     state["providers"] = provider_cards_from_agents(agents_from_daily_json(daily_json, now_epoch=now))
+    if codex_subscription_json:
+        subscription = codex_subscription_state_from_json(
+            codex_subscription_json,
+            codex_reset_credits_json,
+            now_epoch=now,
+        )
+        apply_codex_subscription(state, subscription)
 
     daily_report = parse_json(daily_json, {})
     token_values = daily_token_values(daily_row_from_report(daily_report, now_epoch=now))
@@ -511,7 +913,7 @@ def ai_usage_state_from_json(daily_json, ccusage_blocks_json, openusage_blocks_j
         f"Block: {state['block']['tokens']} used, {state['block']['remaining']} left\n"
         f"Projected: {state['block']['projected_cost']}"
     )
-    return state
+    return add_codex_subscription_tooltip(state)
 
 
 _LAST_AI_USAGE = None
@@ -537,6 +939,8 @@ def ai_usage_state():
     openusage_blocks = run_text(["openusage", "blocks", "--json", "--offline"], timeout=8.0)
     ccusage_blocks = "" if openusage_blocks else run_text(["ccusage", "blocks", "--json", "--offline"], timeout=15.0)
     value = ai_usage_state_from_json(daily, ccusage_blocks, openusage_blocks)
+    apply_codex_subscription(value, codex_subscription_state())
+    add_codex_subscription_tooltip(value)
     if value.get("source") == "missing" and _LAST_AI_USAGE is not None:
         stale = deepcopy(_LAST_AI_USAGE)
         stale["class"] = "stale"

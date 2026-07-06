@@ -1,4 +1,4 @@
-(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󱃖 --","tooltip":"","class":"missing","source":"missing","updated":"","today":{"tokens":"--","cost":"--","input":"--","output":"--","cache":"--","input_percent":0,"output_percent":0,"cache_percent":0},"block":{"tokens":"--","projected":"--","percent":0,"remaining":"--","cost":"--","projected_cost":"--","burn_rate":"--","source":"--","label":"No active block"},"providers":{"claude":{"name":"Claude","icon":"󰚩","class":"missing","status":"No data","detail":"--"},"codex":{"name":"Codex","icon":"󰚩","class":"missing","status":"No data","detail":"--"},"gemini":{"name":"Gemini","icon":"󰚩","class":"missing","status":"No data","detail":"--"}},"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󱃖 --","tooltip":"","class":"missing","source":"missing","updated":"","today":{"tokens":"--","cost":"--","input":"--","output":"--","cache":"--","input_percent":0,"output_percent":0,"cache_percent":0},"block":{"tokens":"--","projected":"--","percent":0,"remaining":"--","cost":"--","projected_cost":"--","burn_rate":"--","source":"--","label":"No active block"},"providers":{"claude":{"name":"Claude","icon":"󰚩","class":"missing","status":"No data","detail":"--"},"codex":{"name":"Codex","icon":"󰚩","class":"missing","status":"No data","detail":"--"},"gemini":{"name":"Gemini","icon":"󰚩","class":"missing","status":"No data","detail":"--"}},"subscription":{"source":"missing","status":"waiting","class":"missing","plan":"--","updated":"","session":{"label":"Session","percent":0,"value":"--","remaining":"--","reset":"--","class":"missing"},"weekly":{"label":"Weekly","percent":0,"value":"--","remaining":"--","reset":"--","class":"missing"},"spark":{"label":"Spark","percent":0,"value":"--","remaining":"--","reset":"--","class":"missing"},"spark_weekly":{"label":"Spark Weekly","percent":0,"value":"--","remaining":"--","reset":"--","class":"missing"},"resets":{"text":"--","tooltip":"","class":"missing"},"credits":{"text":"--","class":"missing"}},"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
 
 (defvar show_date false)
 (defvar show_battery_time false)
@@ -90,7 +90,7 @@
     :x "10px"
     :y "50px"
     :width "420px"
-    :height "360px"
+    :height "462px"
     :anchor "top right")
   :stacking "fg"
   :exclusive false
@@ -119,6 +119,19 @@
         (ai_usage_metric :name "Left" :value {bar_state.ai_usage.block.remaining})
         (ai_usage_metric :name "Burn" :value {bar_state.ai_usage.block.burn_rate})
         (ai_usage_metric :name "Projected" :value {bar_state.ai_usage.block.projected_cost})))
+    (box :class "ai-quota-card ${bar_state.ai_usage.subscription.class}" :orientation "v" :space-evenly false
+      (box :class "ai-quota-head" :orientation "h" :space-evenly false
+        (label :class "ai-quota-label" :text "Codex quota")
+        (label :class "ai-quota-plan" :halign "end" :hexpand true :text {"${bar_state.ai_usage.subscription.plan} · ${bar_state.ai_usage.subscription.status}"}))
+      (ai_usage_meter :name "Session" :value {bar_state.ai_usage.subscription.session.value} :percent {bar_state.ai_usage.subscription.session.percent})
+      (ai_usage_meter :name "Weekly" :value {bar_state.ai_usage.subscription.weekly.value} :percent {bar_state.ai_usage.subscription.weekly.percent})
+      (box :class "ai-quota-meta" :orientation "h" :space-evenly false
+        (box :class "ai-quota-meta-item" :orientation "v" :space-evenly false
+          (label :class "ai-quota-meta-label" :text "Session reset")
+          (label :class "ai-quota-meta-value" :text {bar_state.ai_usage.subscription.session.reset}))
+        (box :class "ai-quota-meta-item" :orientation "v" :space-evenly false :halign "end" :hexpand true
+          (label :class "ai-quota-meta-label" :halign "end" :text "Reset credits")
+          (label :class "ai-quota-meta-value ${bar_state.ai_usage.subscription.resets.class}" :halign "end" :tooltip {bar_state.ai_usage.subscription.resets.tooltip} :text {bar_state.ai_usage.subscription.resets.text}))))
     (box :class "ai-usage-today" :orientation "v" :space-evenly false
       (box :class "ai-usage-summary-row" :orientation "h" :space-evenly false
         (label :class "ai-usage-summary-label" :text "Today")

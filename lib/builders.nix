@@ -103,6 +103,7 @@ in
     };
 
   # Standalone Home Manager configuration builder
+  # NOTE: currently unused — no flake output calls this, and ../home-manager does not exist yet
   mkHome =
     {
       system,

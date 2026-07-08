@@ -40,7 +40,6 @@ let
       playerctl
       pipewire
       procps
-      openusage
       pulseaudio
       pulsemixer
       python3
@@ -101,23 +100,6 @@ in
         MemoryAccounting = true;
         Restart = "on-failure";
         RestartSec = "1s";
-      };
-
-      Install.WantedBy = [ "hyprland-session.target" ];
-    };
-
-    systemd.user.services.openusage-telemetry = {
-      Unit = {
-        Description = "OpenUsage telemetry daemon";
-        After = [ "hyprland-session.target" ];
-        PartOf = [ "hyprland-session.target" ];
-      };
-
-      Service = {
-        Environment = [ "PATH=${runtimePath}" ];
-        ExecStart = "${pkgs.openusage}/bin/openusage telemetry daemon run --interval 60s --collect-interval 60s --poll-interval 300s";
-        Restart = "on-failure";
-        RestartSec = "5s";
       };
 
       Install.WantedBy = [ "hyprland-session.target" ];

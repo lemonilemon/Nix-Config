@@ -337,6 +337,11 @@ def ccusage_state_from_json(daily_json, blocks_json, now_epoch=None):
         ("projection", "remainingMinutes"),
         ("projection", "remaining_minutes"),
     )
+    burn_rate = nested_number(
+        active_block,
+        ("burnRate", "costPerHour"),
+        ("burn_rate", "cost_per_hour"),
+    )
 
     now = now_epoch or time.time()
     start = parse_iso_epoch(active_block.get("startTime") or active_block.get("start_time"))
@@ -396,6 +401,7 @@ def ccusage_state_from_json(daily_json, blocks_json, now_epoch=None):
             "remaining": remaining,
             "cost": block_cost_text,
             "projected_cost": projected_cost_text,
+            "burn_rate": format_burn_rate(burn_rate),
         },
     }
 
@@ -435,60 +441,48 @@ def agents_from_daily_json(daily_json, now_epoch=None):
     return [agent.lower() for agent in agents]
 
 
-def provider_cards_from_agents(agents):
-    providers = deepcopy(AI_USAGE_DEFAULT["providers"])
-    aliases = {
-        "claude": ("claude", "Claude Code"),
-        "codex": ("codex", "Codex CLI"),
-        "gemini": ("gemini", "Gemini CLI"),
-    }
-    for token in agents:
-        for key, (_prefix, label) in aliases.items():
-            if key in token:
-                providers[key]["class"] = "active"
-                providers[key]["status"] = "Local usage"
-                providers[key]["detail"] = label
-    return providers
+def agents_text(agents):
+    known = ("claude", "codex", "gemini")
+    seen = [name for name in known if any(name in token for token in agents)]
+    return " · ".join(seen) if seen else "--"
 
 
-def openusage_block_from_json(blocks_json, now_epoch=None):
-    report = parse_json(blocks_json, {})
-    rows = list_value(report, "rows", "blocks", "data")
-    active_row = next(
-        (row for row in rows if isinstance(row, dict) and row.get("active") is True),
-        None,
-    )
-    if active_row is None and rows:
-        active_row = next((row for row in reversed(rows) if isinstance(row, dict)), None)
-    if not active_row:
-        return None
+def quota_window_class(percent, has_reset):
+    if percent >= 90:
+        return "critical"
+    if percent >= 80:
+        return "warning"
+    if percent > 0:
+        return "active"
+    if has_reset:
+        return "empty"
+    return "missing"
 
-    tokens = number_value(active_row, "total_tokens", "totalTokens", "tokens")
-    cost = number_value(active_row, "cost_usd", "costUSD", "totalCost", "cost")
-    projected_cost = number_value(active_row, "projected_cost_usd", "projectedCostUSD")
-    burn_rate = number_value(active_row, "burn_rate_usd_per_hour", "burnRateUSDPerHour")
-    remaining_seconds = number_value(active_row, "time_remaining_seconds", "timeRemainingSeconds")
 
-    now = now_epoch or time.time()
-    start = parse_iso_epoch(active_row.get("start") or active_row.get("startTime"))
-    end = parse_iso_epoch(active_row.get("end") or active_row.get("endTime"))
-    if start is not None and end is not None and end > start:
-        percent = max(0, min(100, int(round((now - start) * 100 / (end - start)))))
-        remaining = format_remaining(remaining_seconds if remaining_seconds > 0 else end - now)
-    else:
-        percent = 0
-        remaining = format_remaining(remaining_seconds) if remaining_seconds > 0 else "--"
+def quota_card_class(quota):
+    classes = [window.get("class") for window in quota.get("windows", [])]
+    classes.extend(item.get("class") for item in quota.get("meta", []))
+    for name in ("critical", "warning", "active", "empty"):
+        if name in classes:
+            return name
+    return "missing"
 
+
+def quota_default(key, name, status="waiting"):
+    for card in AI_USAGE_DEFAULT["quotas"]:
+        if card["key"] == key:
+            card = deepcopy(card)
+            card["status"] = status
+            return card
     return {
-        "tokens": format_tokens(tokens),
-        "projected": "--",
-        "percent": percent,
-        "remaining": remaining,
-        "cost": format_cost(cost),
-        "projected_cost": format_cost(projected_cost),
-        "burn_rate": format_burn_rate(burn_rate),
-        "source": "OpenUsage",
-        "label": active_row.get("label") or "Active block",
+        "key": key,
+        "name": name,
+        "plan": "--",
+        "status": status,
+        "class": "missing",
+        "updated": "",
+        "windows": [],
+        "meta": [],
     }
 
 
@@ -498,10 +492,8 @@ CODEX_REFRESH_URL = "https://auth.openai.com/oauth/token"
 CODEX_RESET_CREDITS_URL = "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits"
 
 
-def codex_subscription_default(status="waiting"):
-    state = deepcopy(AI_USAGE_DEFAULT["subscription"])
-    state["status"] = status
-    return state
+def codex_quota_default(status="waiting"):
+    return quota_default("codex", "Codex", status)
 
 
 def codex_auth_paths():
@@ -667,15 +659,7 @@ def codex_window_state(label, window, now_epoch=None):
         if remaining_to_reset >= period_seconds - 30 and percent <= 1:
             percent = 0
 
-    cls = "missing"
-    if percent >= 90:
-        cls = "critical"
-    elif percent >= 80:
-        cls = "warning"
-    elif percent > 0:
-        cls = "active"
-    elif reset_epoch > 0:
-        cls = "empty"
+    cls = quota_window_class(percent, reset_epoch > 0)
 
     return {
         "label": label,
@@ -739,40 +723,27 @@ def codex_credits_state(usage_body):
     }
 
 
-def codex_subscription_class(subscription):
-    classes = [
-        subscription.get("session", {}).get("class"),
-        subscription.get("weekly", {}).get("class"),
-        subscription.get("spark", {}).get("class"),
-        subscription.get("spark_weekly", {}).get("class"),
-        subscription.get("resets", {}).get("class"),
-    ]
-    for name in ("critical", "warning", "active", "empty"):
-        if name in classes:
-            return name
-    return "missing"
-
-
-def codex_subscription_state_from_json(
+def codex_quota_state_from_json(
     usage_json,
     reset_credits_json="",
     now_epoch=None,
 ):
     body = parse_json(usage_json, {})
     if not isinstance(body, dict) or not body:
-        return codex_subscription_default("missing")
+        return codex_quota_default("missing")
     reset_body = parse_json(reset_credits_json, {})
     if not isinstance(reset_body, dict):
         reset_body = {}
 
     now = now_epoch or time.time()
     rate_limit = body.get("rate_limit") if isinstance(body.get("rate_limit"), dict) else {}
-    state = codex_subscription_default("live")
-    state["source"] = "codex"
-    state["updated"] = time.strftime("%H:%M", time.localtime(now))
-    state["plan"] = format_codex_plan(body.get("plan_type"))
-    state["session"] = codex_window_state("Session", rate_limit.get("primary_window"), now_epoch=now)
-    state["weekly"] = codex_window_state("Weekly", rate_limit.get("secondary_window"), now_epoch=now)
+    quota = codex_quota_default("live")
+    quota["updated"] = time.strftime("%H:%M", time.localtime(now))
+    quota["plan"] = format_codex_plan(body.get("plan_type"))
+    quota["windows"] = [
+        codex_window_state("Session", rate_limit.get("primary_window"), now_epoch=now),
+        codex_window_state("Weekly", rate_limit.get("secondary_window"), now_epoch=now),
+    ]
 
     for entry in list_value(body, "additional_rate_limits"):
         if not isinstance(entry, dict):
@@ -784,23 +755,43 @@ def codex_subscription_state_from_json(
         if not any(isinstance(name, str) and "spark" in name.lower() for name in names):
             continue
         spark_limit = entry.get("rate_limit") if isinstance(entry.get("rate_limit"), dict) else {}
-        state["spark"] = codex_window_state("Spark", spark_limit.get("primary_window"), now_epoch=now)
-        state["spark_weekly"] = codex_window_state("Spark Weekly", spark_limit.get("secondary_window"), now_epoch=now)
+        quota["windows"].append(codex_window_state("Spark", spark_limit.get("primary_window"), now_epoch=now))
+        quota["windows"].append(
+            codex_window_state("Spark Weekly", spark_limit.get("secondary_window"), now_epoch=now)
+        )
         break
 
-    state["resets"] = codex_reset_credits_state(body, reset_body, now_epoch=now)
-    state["credits"] = codex_credits_state(body)
-    state["class"] = codex_subscription_class(state)
-    return state
+    resets = codex_reset_credits_state(body, reset_body, now_epoch=now)
+    if resets.get("class") != "missing":
+        quota["meta"].append(
+            {
+                "label": "Reset credits",
+                "value": resets.get("text", "--"),
+                "tooltip": resets.get("tooltip", ""),
+                "class": resets.get("class", "missing"),
+            }
+        )
+    credits = codex_credits_state(body)
+    if credits.get("class") != "missing":
+        quota["meta"].append(
+            {
+                "label": "Credits",
+                "value": credits.get("text", "--"),
+                "tooltip": "",
+                "class": credits.get("class", "missing"),
+            }
+        )
+    quota["class"] = quota_card_class(quota)
+    return quota
 
 
-def codex_subscription_state():
+def codex_quota_state():
     auth, path = codex_load_auth()
     if not auth:
-        return codex_subscription_default("not logged in")
+        return codex_quota_default("not logged in")
     tokens = auth.get("tokens") if isinstance(auth, dict) else {}
     if not isinstance(tokens, dict) or not tokens.get("access_token"):
-        return codex_subscription_default("api-key only")
+        return codex_quota_default("api-key only")
 
     try:
         if codex_needs_refresh(auth):
@@ -810,55 +801,163 @@ def codex_subscription_state():
             reset_credits_json = codex_fetch_reset_credits_json(auth)
         except Exception:
             reset_credits_json = ""
-        return codex_subscription_state_from_json(usage_json, reset_credits_json)
+        return codex_quota_state_from_json(usage_json, reset_credits_json)
     except Exception:
-        return codex_subscription_default("unavailable")
+        return codex_quota_default("unavailable")
 
 
-def apply_codex_subscription(state, subscription):
-    state["subscription"] = subscription
-    if subscription.get("status") != "live":
-        return state
-
-    plan = subscription.get("plan") or "--"
-    session = subscription.get("session", {})
-    session_value = session.get("value", "--")
-    provider = state["providers"].get("codex", {})
-    provider["class"] = "active"
-    provider["status"] = "Subscription"
-    provider["detail"] = f"{plan} · Session {session_value}"
-    state["providers"]["codex"] = provider
-    if state.get("source") == "missing":
-        state["class"] = "active"
-        state["source"] = "codex"
-        state["meta"]["status"] = "Codex quota"
-    return state
+CLAUDE_USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
+CLAUDE_OAUTH_BETA = "oauth-2025-04-20"
 
 
-def add_codex_subscription_tooltip(state):
-    if state["subscription"].get("status") != "live":
-        return state
-    if "Codex:" in state.get("tooltip", ""):
-        return state
-    state["tooltip"] += (
-        f"\nCodex: {state['subscription']['plan']}"
-        f" · Session {state['subscription']['session']['value']}"
-        f" · Weekly {state['subscription']['weekly']['value']}"
+def claude_quota_default(status="waiting"):
+    return quota_default("claude", "Claude", status)
+
+
+def claude_credentials_paths():
+    config_dir = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
+    if config_dir:
+        return [Path(config_dir).expanduser() / ".credentials.json"]
+    return [
+        Path("~/.claude/.credentials.json").expanduser(),
+        Path("~/.config/claude/.credentials.json").expanduser(),
+    ]
+
+
+def claude_load_oauth():
+    for path in claude_credentials_paths():
+        try:
+            data = json.loads(path.read_text())
+        except Exception:
+            continue
+        oauth = data.get("claudeAiOauth") if isinstance(data, dict) else None
+        if isinstance(oauth, dict) and oauth.get("accessToken"):
+            return oauth
+    return None
+
+
+def format_claude_plan(value):
+    if not isinstance(value, str) or not value.strip():
+        return "--"
+    return value.strip().replace("_", " ").title()
+
+
+def claude_window_state(label, window, now_epoch=None):
+    now = now_epoch or time.time()
+    if not isinstance(window, dict):
+        return {
+            "label": label,
+            "percent": 0,
+            "value": "--",
+            "remaining": "--",
+            "reset": "--",
+            "class": "missing",
+        }
+
+    percent = clamp_percent(number_value(window, "utilization", "used_percent", "percent"))
+    reset_epoch = parse_iso_epoch(window.get("resets_at") or window.get("reset_at"))
+    if reset_epoch is None:
+        reset_epoch = number_value(window, "resets_at", "reset_at")
+
+    return {
+        "label": label,
+        "percent": percent,
+        "value": f"{percent}%",
+        "remaining": format_remaining(max(0, reset_epoch - now)) if reset_epoch > 0 else "--",
+        "reset": format_clock_time(reset_epoch) if reset_epoch > 0 else "--",
+        "class": quota_window_class(percent, reset_epoch > 0),
+    }
+
+
+def claude_quota_state_from_json(usage_json, plan="--", now_epoch=None):
+    body = parse_json(usage_json, {})
+    if not isinstance(body, dict) or not body:
+        return claude_quota_default("missing")
+
+    now = now_epoch or time.time()
+    windows = []
+    for label, keys in (
+        ("Session", ("five_hour", "fiveHour")),
+        ("Weekly", ("seven_day", "sevenDay")),
+        ("Opus weekly", ("seven_day_opus", "sevenDayOpus")),
+        ("Sonnet weekly", ("seven_day_sonnet", "sevenDaySonnet")),
+    ):
+        window = next((body[key] for key in keys if isinstance(body.get(key), dict)), None)
+        if window is not None:
+            windows.append(claude_window_state(label, window, now_epoch=now))
+
+    if not windows:
+        return claude_quota_default("unrecognized data")
+
+    quota = claude_quota_default("live")
+    quota["updated"] = time.strftime("%H:%M", time.localtime(now))
+    quota["plan"] = format_claude_plan(plan)
+    quota["windows"] = windows
+    quota["class"] = quota_card_class(quota)
+    return quota
+
+
+def claude_quota_state():
+    oauth = claude_load_oauth()
+    if not oauth:
+        return claude_quota_default("not logged in")
+
+    # Unlike the Codex collector, never refresh this token ourselves: Claude Code
+    # rotates it, and a second writer racing over the refresh token can invalidate
+    # the login. Re-read the file and report stale instead.
+    expires_at = number_value(oauth, "expiresAt")
+    if expires_at > 1e12:
+        expires_at /= 1000
+    if expires_at > 0 and expires_at < time.time():
+        return claude_quota_default("token expired — open Claude Code")
+
+    request = urllib.request.Request(
+        CLAUDE_USAGE_URL,
+        method="GET",
+        headers={
+            "Authorization": f"Bearer {oauth['accessToken']}",
+            "anthropic-beta": CLAUDE_OAUTH_BETA,
+            "Accept": "application/json",
+            "User-Agent": "eww-bar",
+        },
     )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            usage_json = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401, 403):
+            return claude_quota_default("unauthorized — open Claude Code")
+        return claude_quota_default("unavailable")
+    except Exception:
+        return claude_quota_default("unavailable")
+
+    return claude_quota_state_from_json(usage_json, plan=oauth.get("subscriptionType", "--"))
+
+
+def apply_quotas(state, quotas):
+    state["quotas"] = quotas
+    live = [quota for quota in quotas if quota.get("status") == "live"]
+    if live and state.get("source") == "missing":
+        state["class"] = "active"
+        state["source"] = "quota"
+        state["meta"]["status"] = "Quota only"
+    for quota in live:
+        line = f"{quota['name']}: {quota['plan']}"
+        for window in quota.get("windows", [])[:2]:
+            line += f" · {window['label']} {window['value']}"
+        if line not in state.get("tooltip", ""):
+            state["tooltip"] += f"\n{line}"
     return state
 
 
 def ai_usage_state_from_json(
     daily_json,
     ccusage_blocks_json,
-    openusage_blocks_json,
     now_epoch=None,
-    codex_subscription_json="",
-    codex_reset_credits_json="",
 ):
     now = now_epoch or time.time()
     ccusage_state_value = ccusage_state_from_json(daily_json, ccusage_blocks_json, now_epoch=now)
-    if ccusage_state_value == CCUSAGE_DEFAULT.copy() and not openusage_blocks_json and not codex_subscription_json:
+    if ccusage_state_value == CCUSAGE_DEFAULT.copy():
         return deepcopy(AI_USAGE_DEFAULT)
 
     state = deepcopy(AI_USAGE_DEFAULT)
@@ -868,14 +967,7 @@ def ai_usage_state_from_json(
         **ccusage_state_value.get("today", {}),
     }
     state["text"] = f"󱃖 {state['today']['tokens']}"
-    state["providers"] = provider_cards_from_agents(agents_from_daily_json(daily_json, now_epoch=now))
-    if codex_subscription_json:
-        subscription = codex_subscription_state_from_json(
-            codex_subscription_json,
-            codex_reset_credits_json,
-            now_epoch=now,
-        )
-        apply_codex_subscription(state, subscription)
+    state["agents"] = agents_text(agents_from_daily_json(daily_json, now_epoch=now))
 
     daily_report = parse_json(daily_json, {})
     token_values = daily_token_values(daily_row_from_report(daily_report, now_epoch=now))
@@ -886,23 +978,16 @@ def ai_usage_state_from_json(
     state["today"]["output_percent"] = percent_part(token_values["output"], raw_total)
     state["today"]["cache_percent"] = percent_part(token_values["cache"], raw_total)
 
-    openusage_block = openusage_block_from_json(openusage_blocks_json, now_epoch=now)
-    if openusage_block:
-        state["block"] = openusage_block
-        state["source"] = "openusage"
-        state["meta"]["status"] = "OpenUsage"
-    else:
-        state["block"] = {
-            **state["block"],
-            **ccusage_state_value.get("block", {}),
-            "burn_rate": "--",
-            "source": "ccusage",
-            "label": "Active block",
-        }
-        state["source"] = "ccusage" if ccusage_state_value != CCUSAGE_DEFAULT.copy() else "missing"
-        state["meta"]["status"] = "ccusage fallback"
+    state["block"] = {
+        **state["block"],
+        **ccusage_state_value.get("block", {}),
+        "source": "ccusage",
+        "label": "Active block",
+    }
+    state["source"] = "ccusage"
+    state["meta"]["status"] = "ccusage"
 
-    cls = "active" if state["source"] != "missing" else "missing"
+    cls = "active"
     today_cost = number_value({"cost": state["today"].get("cost", "--").lstrip("$")}, "cost")
     if today_cost >= 20 or state["block"].get("percent", 0) >= 85:
         cls = "warning"
@@ -913,7 +998,7 @@ def ai_usage_state_from_json(
         f"Block: {state['block']['tokens']} used, {state['block']['remaining']} left\n"
         f"Projected: {state['block']['projected_cost']}"
     )
-    return add_codex_subscription_tooltip(state)
+    return state
 
 
 _LAST_AI_USAGE = None
@@ -936,11 +1021,9 @@ def ai_usage_state():
         ],
         timeout=15.0,
     )
-    openusage_blocks = run_text(["openusage", "blocks", "--json", "--offline"], timeout=8.0)
-    ccusage_blocks = "" if openusage_blocks else run_text(["ccusage", "blocks", "--json", "--offline"], timeout=15.0)
-    value = ai_usage_state_from_json(daily, ccusage_blocks, openusage_blocks)
-    apply_codex_subscription(value, codex_subscription_state())
-    add_codex_subscription_tooltip(value)
+    ccusage_blocks = run_text(["ccusage", "blocks", "--json", "--offline"], timeout=15.0)
+    value = ai_usage_state_from_json(daily, ccusage_blocks)
+    apply_quotas(value, [claude_quota_state(), codex_quota_state()])
     if value.get("source") == "missing" and _LAST_AI_USAGE is not None:
         stale = deepcopy(_LAST_AI_USAGE)
         stale["class"] = "stale"

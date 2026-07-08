@@ -1,4 +1,4 @@
-(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󱃖 --","tooltip":"","class":"missing","source":"missing","updated":"","today":{"tokens":"--","cost":"--","input":"--","output":"--","cache":"--","input_percent":0,"output_percent":0,"cache_percent":0},"block":{"tokens":"--","projected":"--","percent":0,"remaining":"--","cost":"--","projected_cost":"--","burn_rate":"--","source":"--","label":"No active block"},"providers":{"claude":{"name":"Claude","icon":"󰚩","class":"missing","status":"No data","detail":"--"},"codex":{"name":"Codex","icon":"󰚩","class":"missing","status":"No data","detail":"--"},"gemini":{"name":"Gemini","icon":"󰚩","class":"missing","status":"No data","detail":"--"}},"subscription":{"source":"missing","status":"waiting","class":"missing","plan":"--","updated":"","session":{"label":"Session","percent":0,"value":"--","remaining":"--","reset":"--","class":"missing"},"weekly":{"label":"Weekly","percent":0,"value":"--","remaining":"--","reset":"--","class":"missing"},"spark":{"label":"Spark","percent":0,"value":"--","remaining":"--","reset":"--","class":"missing"},"spark_weekly":{"label":"Spark Weekly","percent":0,"value":"--","remaining":"--","reset":"--","class":"missing"},"resets":{"text":"--","tooltip":"","class":"missing"},"credits":{"text":"--","class":"missing"}},"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󱃖 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","today":{"tokens":"--","cost":"--","input":"--","output":"--","cache":"--","input_percent":0,"output_percent":0,"cache_percent":0},"block":{"tokens":"--","projected":"--","percent":0,"remaining":"--","cost":"--","projected_cost":"--","burn_rate":"--","source":"--","label":"No active block"},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
 
 (defvar show_date false)
 (defvar show_battery_time false)
@@ -90,7 +90,7 @@
     :x "10px"
     :y "50px"
     :width "420px"
-    :height "462px"
+    :height "660px"
     :anchor "top right")
   :stacking "fg"
   :exclusive false
@@ -102,16 +102,19 @@
   (box :class "ai-usage-popup" :orientation "v" :space-evenly false
     (box :class "ai-usage-header" :orientation "h" :space-evenly false
       (box :class "ai-usage-title-stack" :orientation "v" :space-evenly false
-        (label :class "ai-usage-eyebrow" :text {bar_state.ai_usage.block.source})
-        (label :class "ai-usage-title" :text "AI usage"))
+        (label :class "ai-usage-eyebrow" :halign "start" :text {bar_state.ai_usage.meta.status})
+        (label :class "ai-usage-title" :halign "start" :text "AI usage"))
       (box :class "ai-usage-header-actions" :orientation "h" :space-evenly false :halign "end" :hexpand true
         (label :class "ai-usage-updated" :text {bar_state.ai_usage.updated != "" ? "updated ${bar_state.ai_usage.updated}" : "waiting"})
         (button :class "ai-usage-refresh"
           :onclick "eww-barctl --quiet ai refresh"
           (label :text ""))))
+    (box :class "ai-quota-list" :orientation "v" :space-evenly false
+      (for quota in {bar_state.ai_usage.quotas}
+        (quota_card :quota quota)))
     (box :class "ai-usage-hero ${bar_state.ai_usage.class}" :orientation "v" :space-evenly false
       (box :class "ai-usage-hero-top" :orientation "h" :space-evenly false
-        (label :class "ai-usage-hero-label" :text "5-hour block")
+        (label :class "ai-usage-hero-label" :text "5-hour block · ccusage")
         (label :class "ai-usage-hero-percent" :halign "end" :hexpand true :text {"${bar_state.ai_usage.block.percent}%"}))
       (progress :class "ai-usage-progress ${bar_state.ai_usage.class}" :value {bar_state.ai_usage.block.percent})
       (box :class "ai-usage-hero-grid" :orientation "h" :space-evenly true
@@ -119,19 +122,6 @@
         (ai_usage_metric :name "Left" :value {bar_state.ai_usage.block.remaining})
         (ai_usage_metric :name "Burn" :value {bar_state.ai_usage.block.burn_rate})
         (ai_usage_metric :name "Projected" :value {bar_state.ai_usage.block.projected_cost})))
-    (box :class "ai-quota-card ${bar_state.ai_usage.subscription.class}" :orientation "v" :space-evenly false
-      (box :class "ai-quota-head" :orientation "h" :space-evenly false
-        (label :class "ai-quota-label" :text "Codex quota")
-        (label :class "ai-quota-plan" :halign "end" :hexpand true :text {"${bar_state.ai_usage.subscription.plan} · ${bar_state.ai_usage.subscription.status}"}))
-      (ai_usage_meter :name "Session" :value {bar_state.ai_usage.subscription.session.value} :percent {bar_state.ai_usage.subscription.session.percent})
-      (ai_usage_meter :name "Weekly" :value {bar_state.ai_usage.subscription.weekly.value} :percent {bar_state.ai_usage.subscription.weekly.percent})
-      (box :class "ai-quota-meta" :orientation "h" :space-evenly false
-        (box :class "ai-quota-meta-item" :orientation "v" :space-evenly false
-          (label :class "ai-quota-meta-label" :text "Session reset")
-          (label :class "ai-quota-meta-value" :text {bar_state.ai_usage.subscription.session.reset}))
-        (box :class "ai-quota-meta-item" :orientation "v" :space-evenly false :halign "end" :hexpand true
-          (label :class "ai-quota-meta-label" :halign "end" :text "Reset credits")
-          (label :class "ai-quota-meta-value ${bar_state.ai_usage.subscription.resets.class}" :halign "end" :tooltip {bar_state.ai_usage.subscription.resets.tooltip} :text {bar_state.ai_usage.subscription.resets.text}))))
     (box :class "ai-usage-today" :orientation "v" :space-evenly false
       (box :class "ai-usage-summary-row" :orientation "h" :space-evenly false
         (label :class "ai-usage-summary-label" :text "Today")
@@ -139,13 +129,33 @@
       (ai_usage_meter :name "Input" :value {bar_state.ai_usage.today.input} :percent {bar_state.ai_usage.today.input_percent})
       (ai_usage_meter :name "Output" :value {bar_state.ai_usage.today.output} :percent {bar_state.ai_usage.today.output_percent})
       (ai_usage_meter :name "Cache" :value {bar_state.ai_usage.today.cache} :percent {bar_state.ai_usage.today.cache_percent}))
-    (box :class "ai-provider-grid" :orientation "h" :space-evenly true
-      (ai_provider_card :provider {bar_state.ai_usage.providers.claude})
-      (ai_provider_card :provider {bar_state.ai_usage.providers.codex})
-      (ai_provider_card :provider {bar_state.ai_usage.providers.gemini}))
     (box :class "ai-usage-footer" :orientation "h" :space-evenly false
-      (label :text {bar_state.ai_usage.meta.status})
+      (label :text {"agents today: ${bar_state.ai_usage.agents}"})
       (label :halign "end" :hexpand true :text {"${bar_state.ai_usage.meta.pricing} · refresh ${bar_state.ai_usage.meta.refresh}"}))))
+
+(defwidget quota_card [quota]
+  (box :class "ai-quota-card ${quota.class}" :orientation "v" :space-evenly false
+    (box :class "ai-quota-head" :orientation "h" :space-evenly false
+      (label :class "ai-quota-provider" :text {quota.name})
+      (label :class "ai-quota-plan-chip" :visible {quota.plan != "--"} :text {quota.plan})
+      (label :class "ai-quota-status" :halign "end" :hexpand true
+        :text {quota.status == "live" ? "updated ${quota.updated}" : quota.status}))
+    (for window in {quota.windows}
+      (quota_meter :window window))
+    (for item in {quota.meta}
+      (box :class "ai-quota-meta-row" :orientation "h" :space-evenly false
+        (label :class "ai-quota-meta-label" :text {item.label})
+        (label :class "ai-quota-meta-value ${item.class}" :halign "end" :hexpand true
+          :tooltip {item.tooltip} :text {item.value})))))
+
+(defwidget quota_meter [window]
+  (box :class "ai-quota-window" :orientation "v" :space-evenly false
+    (box :orientation "h" :space-evenly false
+      (label :class "ai-usage-meter-name" :text {window.label})
+      (label :class "ai-quota-window-detail ${window.class}" :halign "end" :hexpand true
+        :tooltip {window.reset != "--" ? "resets at ${window.reset}" : ""}
+        :text {window.remaining != "--" ? "${window.value} · resets in ${window.remaining}" : window.value}))
+    (progress :class "ai-usage-meter-progress quota ${window.class}" :value {window.percent})))
 
 (defwidget ai_usage_metric [name value]
   (box :class "ai-usage-metric" :orientation "v" :space-evenly false
@@ -158,11 +168,3 @@
       (label :class "ai-usage-meter-name" :text name)
       (label :class "ai-usage-meter-value" :halign "end" :hexpand true :text value))
     (progress :class "ai-usage-meter-progress" :value percent)))
-
-(defwidget ai_provider_card [provider]
-  (box :class "ai-provider-card ${provider.class}" :orientation "v" :space-evenly false
-    (box :class "ai-provider-top" :orientation "h" :space-evenly false
-      (label :class "ai-provider-icon" :text {provider.icon})
-      (label :class "ai-provider-name" :text {provider.name}))
-    (label :class "ai-provider-status" :text {provider.status})
-    (label :class "ai-provider-detail" :text {provider.detail})))

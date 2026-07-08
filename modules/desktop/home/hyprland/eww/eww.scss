@@ -452,9 +452,7 @@ tooltip label {
 }
 
 .ai-usage-metric-name,
-.ai-usage-meter-name,
-.ai-provider-status,
-.ai-provider-detail {
+.ai-usage-meter-name {
   color: $overlay1;
   font-size: 11px;
 }
@@ -490,39 +488,79 @@ tooltip label {
   margin-bottom: 4px;
 }
 
-.ai-quota-label {
+.ai-quota-provider {
   color: $text;
+  font-size: 14px;
   font-weight: 800;
 }
 
-.ai-quota-plan,
+.ai-quota-plan-chip {
+  background: rgba(166, 227, 161, 0.12);
+  border-radius: 999px;
+  color: $green;
+  font-size: 10px;
+  font-weight: 800;
+  margin-left: 8px;
+  padding: 1px 8px;
+}
+
+.ai-quota-card.warning .ai-quota-plan-chip {
+  background: rgba(249, 226, 175, 0.12);
+  color: $yellow;
+}
+
+.ai-quota-card.critical .ai-quota-plan-chip {
+  background: rgba(243, 139, 168, 0.14);
+  color: $red;
+}
+
+.ai-quota-status,
 .ai-quota-meta-label {
   color: $overlay1;
   font-size: 11px;
 }
 
-.ai-quota-card .ai-usage-meter {
+.ai-quota-window {
   margin-top: 6px;
 }
 
-.ai-quota-card .ai-usage-meter-progress trough progress {
+.ai-quota-window-detail {
+  color: $subtext0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ai-quota-window-detail.warning {
+  color: $yellow;
+}
+
+.ai-quota-window-detail.critical {
+  color: $red;
+}
+
+.ai-quota-window-detail.missing,
+.ai-quota-window-detail.empty {
+  color: $overlay1;
+}
+
+.ai-usage-meter-progress.quota {
+  margin-top: 4px;
+}
+
+.ai-usage-meter-progress.quota trough progress {
   background: linear-gradient(90deg, $green, $sapphire);
 }
 
-.ai-quota-card.warning .ai-usage-meter-progress trough progress {
+.ai-usage-meter-progress.quota.warning trough progress {
   background: linear-gradient(90deg, $yellow, $peach);
 }
 
-.ai-quota-card.critical .ai-usage-meter-progress trough progress {
+.ai-usage-meter-progress.quota.critical trough progress {
   background: linear-gradient(90deg, $red, $peach);
 }
 
-.ai-quota-meta {
-  margin-top: 8px;
-}
-
-.ai-quota-meta-item {
-  min-width: 142px;
+.ai-quota-meta-row {
+  margin-top: 7px;
 }
 
 .ai-quota-meta-value {
@@ -572,45 +610,3 @@ tooltip label {
   min-height: 7px;
 }
 
-.ai-provider-grid {
-  margin-bottom: 10px;
-}
-
-.ai-provider-card {
-  background: rgba(49, 50, 68, 0.46);
-  border: 1px solid rgba(205, 214, 244, 0.08);
-  border-radius: 10px;
-  min-width: 118px;
-  padding: 8px;
-}
-
-.ai-provider-card.active {
-  border-color: rgba(166, 227, 161, 0.18);
-}
-
-.ai-provider-card.missing {
-  opacity: 0.72;
-}
-
-.ai-provider-icon {
-  color: $sapphire;
-  margin-right: 6px;
-}
-
-.ai-provider-name {
-  color: $text;
-  font-weight: 800;
-}
-
-.ai-provider-status {
-  color: $green;
-  margin-top: 5px;
-}
-
-.ai-provider-card.missing .ai-provider-status {
-  color: $overlay1;
-}
-
-.ai-provider-detail {
-  margin-top: 2px;
-}

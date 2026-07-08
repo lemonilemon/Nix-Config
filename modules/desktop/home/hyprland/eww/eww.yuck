@@ -109,6 +109,8 @@
         (button :class "ai-usage-refresh"
           :onclick "eww-barctl --quiet ai refresh"
           (label :text ""))))
+    ;; the wrapper box is required: eww re-appends regenerated `for`
+    ;; children to the end of the parent when the array updates
     (box :class "ai-quota-list" :orientation "v" :space-evenly false
       (for quota in {bar_state.ai_usage.quotas}
         (quota_card :quota quota)))

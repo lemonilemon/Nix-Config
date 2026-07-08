@@ -34,7 +34,7 @@
         (box :class "bar-island clock-island" :orientation "h" :space-evenly false
           (button :class "clock"
             :onclick "eww update show_date=${show_date == 'true' ? 'false' : 'true'}"
-            :onrightclick "gsimplecal"
+            :onrightclick "hyprctl dispatch exec gsimplecal"
             :tooltip {bar_state.clock.tooltip}
             (label :text {show_date == "true" ? bar_state.clock.date : bar_state.clock.time}))))
       (box :class "right" :orientation "h" :space-evenly false :halign "end" :hexpand true
@@ -52,22 +52,22 @@
             (label :text {bar_state.ai_usage.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
           (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
-          (button :class "module-button cpu" :onclick "kitty -- htop"
+          (button :class "module-button cpu" :onclick "hyprctl dispatch exec 'kitty -- htop'"
             (label :text {bar_state.cpu}))
           (button :class "module-button memory ${bar_state.memory.class}"
-            :onclick "kitty -- htop"
+            :onclick "hyprctl dispatch exec 'kitty -- htop'"
             :tooltip {bar_state.memory.tooltip}
             (label :text {bar_state.memory.text})))
         (box :class "bar-island session-island" :orientation "h" :space-evenly false
           (eventbox
             :onscroll "eww-barctl --quiet volume {}"
             (button :class "module-button volume"
-              :onclick "kitty -- pulsemixer"
+              :onclick "hyprctl dispatch exec 'kitty -- pulsemixer'"
               (label :text {bar_state.volume})))
           (button :class "module-button battery ${bar_state.battery.class}"
             :onclick "eww update show_battery_time=${show_battery_time == 'true' ? 'false' : 'true'}"
             (label :text {show_battery_time == "true" ? bar_state.battery.alt : bar_state.battery.text}))
-          (button :class "power-button" :onclick "wlogout"
+          (button :class "power-button" :onclick "hyprctl dispatch exec wlogout"
             (label :text "")))))))
 
 (defwidget workspaces []

@@ -64,7 +64,16 @@ let
     done
 
     eww close-all >/dev/null 2>&1 || true
-    eww open bar
+
+    monitors=$(hyprctl monitors -j | jq -r '.[].name')
+    if [ -z "$monitors" ]; then
+      eww open bar
+      exit 0
+    fi
+
+    for monitor in $monitors; do
+      eww open bar --id "bar-$monitor" --screen "$monitor"
+    done
   '';
 in
 {

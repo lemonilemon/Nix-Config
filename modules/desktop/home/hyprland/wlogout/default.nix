@@ -9,18 +9,21 @@ let
   hyprlock = "${pkgs.hyprlock}/bin/hyprlock";
   hyprshutdown = "${pkgs.hyprshutdown}/bin/hyprshutdown";
   systemctl = "${pkgs.systemd}/bin/systemctl";
+  # GTK loads CSS background images through gdk-pixbuf, which lacks the
+  # librsvg loader in wlogout's environment and silently drops SVGs, so
+  # pre-render them to PNG at build time.
+  icons = pkgs.runCommand "wlogout-icons" { nativeBuildInputs = [ pkgs.librsvg ]; } ''
+    mkdir -p $out
+    for icon in ${./icons}/*.svg; do
+      rsvg-convert -w 512 -h 512 "$icon" -o "$out/$(basename "$icon" .svg).png"
+    done
+  '';
 in
 {
   imports = [
     ../hyprlock.nix
   ];
-  # Icons
   config = lib.mkIf config.home.desktop.hyprland.wlogout.enable {
-    home.file.".config/wlogout/icons" = {
-      enable = true;
-      source = ./icons;
-      recursive = true;
-    };
     # Logout menu
     programs.wlogout = {
       enable = true;
@@ -51,6 +54,30 @@ in
 
         button:focus {
           outline: none;
+        }
+
+        #lock {
+          background-image: url("${icons}/lock.png");
+        }
+
+        #logout {
+          background-image: url("${icons}/logout.png");
+        }
+
+        #suspend {
+          background-image: url("${icons}/suspend.png");
+        }
+
+        #hibernate {
+          background-image: url("${icons}/hibernate.png");
+        }
+
+        #reboot {
+          background-image: url("${icons}/reboot.png");
+        }
+
+        #shutdown {
+          background-image: url("${icons}/shutdown.png");
         }
 
         #lock:hover {

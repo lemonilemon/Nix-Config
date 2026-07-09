@@ -25,7 +25,7 @@ mkSystem {
 ### What it wires in automatically
 
 - `modules/` — all custom NixOS + Home Manager modules
-- `overlays/` — Firefox, Spotify, 1Password Wayland patches
+- `overlays/` — repo overlays (see `overlays/` and `nixpkgs/overlays.nix` for the current list)
 - `catppuccin.nixosModules.catppuccin`
 - Home Manager with `useGlobalPkgs = true`, `useUserPackages = false`
   - HM user modules: `modules/home.nix`, catppuccin HM, nix-index-database, nixvim
@@ -41,7 +41,12 @@ mkSystem {
 
 ## `mkHome` — Standalone Home Manager Builder
 
-Used for non-NixOS systems where only Home Manager is needed.
+Intended for non-NixOS systems where only Home Manager is needed.
+
+> **Currently unused and non-functional**: nothing in `flake.nix` calls `mkHome`, and it
+> imports `../home-manager`, a directory that does not exist yet. Do not suggest it as a
+> working path; if the user wants standalone Home Manager, the `home-manager/` entry point
+> must be created first.
 
 ### Signature
 

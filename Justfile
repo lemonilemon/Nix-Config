@@ -64,7 +64,7 @@ changehost input:
 # Run eval tests
 [group('NixOS')]
 test:
-    nix eval .#{{ nixhost }} --show-trace --print-build-logs --verbose
+    nix eval .#nixosConfigurations.{{ nixhost }}.config.system.build.toplevel.drvPath --show-trace
 
 [group('NixOS')]
 gc:

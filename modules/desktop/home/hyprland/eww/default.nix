@@ -56,23 +56,31 @@ let
   openBar = pkgs.writeShellScript "eww-open-bar" ''
     export PATH=${runtimePath}
 
-    for _ in $(seq 1 20); do
+    daemon_ready=false
+    for _ in $(seq 1 100); do
       if eww active-windows >/dev/null 2>&1; then
+        daemon_ready=true
         break
       fi
       sleep 0.1
     done
 
+    # bail rather than let `eww open` fork a rogue daemon
+    if [ "$daemon_ready" != true ]; then
+      echo "eww daemon not reachable" >&2
+      exit 1
+    fi
+
     eww close-all >/dev/null 2>&1 || true
 
     monitors=$(hyprctl monitors -j | jq -r '.[].name')
     if [ -z "$monitors" ]; then
-      eww open bar
+      eww open bar --arg output=0
       exit 0
     fi
 
     for monitor in $monitors; do
-      eww open bar --id "bar-$monitor" --screen "$monitor"
+      eww open bar --id "bar-$monitor" --screen "$monitor" --arg "output=$monitor"
     done
   '';
 in
@@ -105,7 +113,6 @@ in
         Environment = [ "PATH=${runtimePath}" ];
         ExecStart = "${pkgs.eww}/bin/eww --force-wayland daemon --no-daemonize";
         ExecStartPost = openBar;
-        ExecStopPost = "${pkgs.eww}/bin/eww close-all";
         MemoryAccounting = true;
         Restart = "on-failure";
         RestartSec = "1s";

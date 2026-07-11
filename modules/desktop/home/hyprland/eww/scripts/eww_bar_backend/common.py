@@ -7,53 +7,16 @@ from pathlib import Path
 EMPTY_MODULE = {"text": "", "tooltip": "", "class": ""}
 BATTERY_DEFAULT = {"text": "󰂄", "alt": "󰂄", "capacity": 100, "class": "charging"}
 MEDIA_DEFAULT = {"text": "", "status": "", "icon": "", "class": "", "tooltip": ""}
-CCUSAGE_DEFAULT = {
-    "text": "󱃖 --",
-    "tooltip": "ccusage has no usage data yet",
-    "class": "missing",
-    "updated": "",
-    "today": {
-        "tokens": "--",
-        "cost": "--",
-        "input": "--",
-        "output": "--",
-        "cache": "--",
-    },
-    "block": {
-        "tokens": "--",
-        "projected": "--",
-        "percent": 0,
-        "remaining": "--",
-        "cost": "--",
-        "projected_cost": "--",
-    },
-}
 AI_USAGE_DEFAULT = {
-    "text": "󱃖 --",
+    "text": "󰙴 --",
     "tooltip": "AI usage data is not available yet",
     "class": "missing",
     "source": "missing",
     "updated": "",
-    "today": {
-        "tokens": "--",
-        "cost": "--",
-        "input": "--",
-        "output": "--",
-        "cache": "--",
-        "input_percent": 0,
-        "output_percent": 0,
-        "cache_percent": 0,
-    },
-    "block": {
-        "tokens": "--",
-        "projected": "--",
-        "percent": 0,
-        "remaining": "--",
-        "cost": "--",
-        "projected_cost": "--",
-        "burn_rate": "--",
-        "source": "--",
-        "label": "No active block",
+    "periods": {
+        "today": {"label": "Today", "range": "", "tokens": "--", "cost": "--", "agents": []},
+        "week": {"label": "This week", "range": "", "tokens": "--", "cost": "--", "agents": []},
+        "month": {"label": "This month", "range": "", "tokens": "--", "cost": "--", "agents": []},
     },
     "agents": "--",
     "quotas": [
@@ -77,12 +40,23 @@ AI_USAGE_DEFAULT = {
             "windows": [],
             "meta": [],
         },
+        {
+            "key": "antigravity",
+            "name": "Antigravity",
+            "plan": "--",
+            "status": "waiting",
+            "class": "missing",
+            "updated": "",
+            "windows": [],
+            "meta": [],
+        },
     ],
     "meta": {
         "pricing": "offline",
         "refresh": "5m",
         "status": "waiting",
         "stale": "false",
+        "refreshing": "false",
     },
 }
 WORKSPACE_DEFAULT = {

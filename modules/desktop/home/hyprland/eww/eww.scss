@@ -91,10 +91,10 @@ tooltip label {
 }
 
 .bar-island {
-  background: rgba(24, 24, 37, 0.82);
-  border: 1px solid rgba(205, 214, 244, 0.10);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(7, 8, 17, 0.38);
+  background: rgba(24, 24, 37, 0.88);
+  border: 1px solid rgba(205, 214, 244, 0.09);
+  border-radius: 9px;
+  box-shadow: 0 6px 18px rgba(7, 8, 17, 0.32);
   margin: 0 3px;
   min-height: 30px;
   padding: 0 6px;
@@ -113,10 +113,6 @@ tooltip label {
 .media-island {
   padding-left: 7px;
   padding-right: 8px;
-}
-
-.ai-usage-island {
-  padding: 0 5px;
 }
 
 .clock-island {
@@ -161,11 +157,11 @@ tooltip label {
 
 .workspace {
   background: transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   color: $overlay1;
   min-height: 24px;
-  min-width: 22px;
-  padding: 0 4px;
+  min-width: 24px;
+  padding: 0 3px;
 }
 
 .workspace.empty {
@@ -182,9 +178,9 @@ tooltip label {
 }
 
 .workspace.active {
-  background: rgba(49, 50, 68, 0.86);
+  background: rgba(49, 50, 68, 0.68);
   color: $green;
-  box-shadow: inset 0 0 0 1px rgba(166, 227, 161, 0.24), 0 0 12px rgba(166, 227, 161, 0.12);
+  box-shadow: inset 0 -2px 0 rgba(166, 227, 161, 0.86);
 }
 
 .workspace.urgent {
@@ -196,7 +192,7 @@ tooltip label {
 .workspace.active.urgent {
   background: rgba(250, 179, 135, 0.14);
   color: $peach;
-  box-shadow: inset 0 0 0 1px rgba(250, 179, 135, 0.26), 0 0 12px rgba(250, 179, 135, 0.10);
+  box-shadow: inset 0 -2px 0 rgba(250, 179, 135, 0.86);
 }
 
 .media {
@@ -269,17 +265,7 @@ tooltip label {
 }
 
 .ai-usage {
-  color: $sapphire;
-}
-
-.ai-usage.active {
-  background: rgba(116, 199, 236, 0.10);
-  color: $sapphire;
-}
-
-.ai-usage.warning {
-  background: rgba(249, 226, 175, 0.11);
-  color: $yellow;
+  color: $mauve;
 }
 
 .ai-usage.missing,
@@ -361,21 +347,32 @@ tooltip label {
 }
 
 .ai-usage-popup {
-  background: rgba(17, 17, 27, 0.97);
-  border: 1px solid rgba(205, 214, 244, 0.13);
-  border-radius: 14px;
-  box-shadow: 0 18px 44px rgba(7, 8, 17, 0.52);
+  background: rgba(17, 17, 27, 0.985);
+  border: 1px solid rgba(205, 214, 244, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 20px 48px rgba(7, 8, 17, 0.58);
   color: $text;
-  padding: 14px 15px;
 }
 
 .ai-usage-header {
-  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(205, 214, 244, 0.07);
+  padding: 14px 15px 13px;
+}
+
+.ai-usage-mark {
+  background: rgba(116, 199, 236, 0.11);
+  border: 1px solid rgba(116, 199, 236, 0.18);
+  border-radius: 8px;
+  color: $sapphire;
+  font-size: 15px;
+  margin-right: 9px;
+  min-height: 34px;
+  min-width: 34px;
 }
 
 .ai-usage-title {
-  color: $sapphire;
-  font-size: 18px;
+  color: $text;
+  font-size: 16px;
   font-weight: 800;
 }
 
@@ -383,19 +380,23 @@ tooltip label {
 .ai-usage-updated,
 .ai-usage-footer {
   color: $overlay1;
-  font-size: 11px;
+  font-size: 10px;
+}
+
+.ai-usage-eyebrow {
+  margin-top: 1px;
 }
 
 .ai-usage-updated {
-  margin-left: 12px;
+  margin-left: 8px;
 }
 
 .ai-usage-refresh {
-  border-radius: 8px;
+  border-radius: 6px;
   color: $subtext0;
   margin-left: 8px;
-  min-height: 24px;
-  min-width: 26px;
+  min-height: 28px;
+  min-width: 28px;
 }
 
 .ai-usage-refresh:hover {
@@ -403,113 +404,196 @@ tooltip label {
   color: $sapphire;
 }
 
-.ai-usage-hero {
-  background: rgba(24, 24, 37, 0.78);
-  border: 1px solid rgba(116, 199, 236, 0.13);
-  border-radius: 12px;
-  margin-bottom: 10px;
-  padding: 11px;
+.ai-usage-refresh.busy {
+  color: $sapphire;
+  animation: ai-usage-pulse 0.9s ease-in-out infinite alternate;
 }
 
-.ai-usage-hero.warning {
-  border-color: rgba(249, 226, 175, 0.24);
+.ai-usage-loading {
+  margin: 8px 14px 0;
 }
 
-.ai-usage-hero-label,
+.ai-usage-loading-bar {
+  background: $sapphire;
+  border-radius: 999px;
+  min-height: 3px;
+  animation: ai-usage-pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes ai-usage-pulse {
+  from {
+    opacity: 0.28;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ai-usage-tabs {
+  background: rgba(24, 24, 37, 0.72);
+  border-radius: 7px;
+  margin: 10px 14px 0;
+  padding: 3px;
+}
+
+.ai-usage-tab {
+  border-radius: 5px;
+  color: $overlay1;
+  font-size: 11px;
+  font-weight: 800;
+  min-height: 27px;
+}
+
+.ai-usage-tab:hover {
+  color: $text;
+}
+
+.ai-usage-tab.active {
+  background: rgba(69, 71, 90, 0.78);
+  box-shadow: 0 2px 7px rgba(7, 8, 17, 0.34);
+  color: $text;
+}
+
+.ai-usage-scroll {
+  margin-right: 3px;
+}
+
+.ai-usage-scroll scrollbar {
+  background: transparent;
+  min-width: 5px;
+}
+
+.ai-usage-scroll scrollbar slider {
+  background: rgba(127, 132, 156, 0.34);
+  border-radius: 999px;
+  min-width: 3px;
+}
+
+.ai-usage-content {
+  padding: 12px 10px 10px 14px;
+}
+
+.ai-section-heading {
+  margin: 2px 4px 8px;
+}
+
+.ai-section-title {
+  color: $text;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ai-section-note {
+  color: $overlay0;
+  font-size: 10px;
+}
+
+.ai-quota-list {
+  margin-bottom: 2px;
+}
+
 .ai-usage-summary-label {
   color: $subtext0;
   font-weight: 800;
 }
 
-.ai-usage-hero-percent {
-  color: $yellow;
-  font-weight: 900;
-}
-
-.ai-usage-progress {
-  margin: 9px 0 10px;
-}
-
-.ai-usage-progress trough,
 .ai-usage-meter-progress trough {
-  background: rgba(69, 71, 90, 0.50);
+  background: rgba(69, 71, 90, 0.46);
   border-radius: 999px;
-  min-height: 7px;
+  min-height: 6px;
 }
 
-.ai-usage-progress trough progress {
-  background: linear-gradient(90deg, $sapphire, $green);
-  border-radius: 999px;
-  min-height: 7px;
-}
-
-.ai-usage-progress.warning trough progress {
-  background: linear-gradient(90deg, $yellow, $peach);
-}
-
-.ai-usage-metric {
-  min-width: 82px;
-}
-
-.ai-usage-metric-name,
 .ai-usage-meter-name {
-  color: $overlay1;
-  font-size: 11px;
+  color: $text;
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.ai-usage-metric-value {
-  color: $text;
-  font-size: 13px;
-  font-weight: 700;
-  margin-top: 2px;
+.ai-provider-section {
+  margin-bottom: 14px;
 }
 
 .ai-quota-card {
-  background: linear-gradient(135deg, rgba(49, 50, 68, 0.70), rgba(24, 24, 37, 0.82));
-  border: 1px solid rgba(166, 227, 161, 0.13);
-  border-radius: 12px;
-  margin-bottom: 10px;
-  padding: 9px 10px 10px;
+  background: rgba(30, 30, 46, 0.74);
+  border-radius: 8px;
+  padding: 5px 13px 11px;
 }
 
 .ai-quota-card.warning {
-  border-color: rgba(249, 226, 175, 0.22);
+  background: rgba(30, 30, 46, 0.74);
 }
 
 .ai-quota-card.critical {
-  border-color: rgba(243, 139, 168, 0.24);
+  background: rgba(30, 30, 46, 0.74);
 }
 
 .ai-quota-card.missing {
-  border-color: rgba(205, 214, 244, 0.08);
+  opacity: 0.66;
+}
+
+.ai-quota-empty {
+  padding: 10px 4px;
+}
+
+.ai-quota-empty-text {
+  color: $overlay1;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .ai-quota-head {
-  margin-bottom: 4px;
+  margin: 0 8px 6px;
+  min-height: 20px;
+}
+
+.ai-provider-dot {
+  color: $overlay0;
+  font-size: 7px;
+  margin-right: 7px;
+}
+
+.ai-provider-section.claude .ai-provider-dot {
+  color: $mauve;
+}
+
+.ai-provider-section.codex .ai-provider-dot {
+  color: $green;
+}
+
+.ai-provider-section.antigravity .ai-provider-dot {
+  color: $blue;
+}
+
+.ai-provider-dot.warning {
+  color: $yellow;
+}
+
+.ai-provider-dot.critical {
+  color: $red;
 }
 
 .ai-quota-provider {
   color: $text;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .ai-quota-plan-chip {
-  background: rgba(166, 227, 161, 0.12);
-  border-radius: 999px;
-  color: $green;
-  font-size: 10px;
+  background: rgba(205, 214, 244, 0.08);
+  border-radius: 4px;
+  color: $subtext0;
+  font-size: 9px;
   font-weight: 800;
-  margin-left: 8px;
-  padding: 1px 8px;
+  margin-left: 6px;
+  padding: 1px 6px;
 }
 
-.ai-quota-card.warning .ai-quota-plan-chip {
-  background: rgba(249, 226, 175, 0.12);
+.ai-provider-section.warning .ai-quota-plan-chip {
+  background: rgba(249, 226, 175, 0.10);
   color: $yellow;
 }
 
-.ai-quota-card.critical .ai-quota-plan-chip {
+.ai-provider-section.critical .ai-quota-plan-chip {
   background: rgba(243, 139, 168, 0.14);
   color: $red;
 }
@@ -517,57 +601,79 @@ tooltip label {
 .ai-quota-status,
 .ai-quota-meta-label {
   color: $overlay1;
-  font-size: 11px;
+  font-size: 10px;
 }
 
-.ai-quota-window {
-  margin-top: 6px;
-}
-
-.ai-quota-window-detail {
-  color: $subtext0;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.ai-quota-window-detail.warning {
+.ai-quota-status.warning {
   color: $yellow;
 }
 
-.ai-quota-window-detail.critical {
+.ai-quota-status.critical {
   color: $red;
 }
 
-.ai-quota-window-detail.missing,
-.ai-quota-window-detail.empty {
-  color: $overlay1;
+.ai-quota-window {
+  margin-top: 9px;
 }
 
 .ai-usage-meter-progress.quota {
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .ai-usage-meter-progress.quota trough progress {
-  background: linear-gradient(90deg, $green, $sapphire);
+  background: $blue;
 }
 
 .ai-usage-meter-progress.quota.warning trough progress {
-  background: linear-gradient(90deg, $yellow, $peach);
+  background: $yellow;
 }
 
 .ai-usage-meter-progress.quota.critical trough progress {
-  background: linear-gradient(90deg, $red, $peach);
+  background: $red;
+}
+
+.ai-quota-window-warning {
+  color: $overlay1;
+  font-size: 10px;
+}
+
+.ai-quota-window-warning.warning {
+  color: $yellow;
+}
+
+.ai-quota-window-warning.critical {
+  color: $red;
+}
+
+.ai-quota-window-reading {
+  margin-top: 5px;
+}
+
+.ai-quota-value,
+.ai-quota-reset {
+  color: $overlay1;
+  font-size: 11px;
+}
+
+.ai-quota-value {
+  color: $text;
+}
+
+.ai-quota-value:hover,
+.ai-quota-reset:hover {
+  color: $sapphire;
 }
 
 .ai-quota-meta-row {
-  margin-top: 7px;
+  border-top: 1px solid rgba(205, 214, 244, 0.07);
+  margin-top: 10px;
+  padding-top: 9px;
 }
 
 .ai-quota-meta-value {
   color: $text;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 800;
-  margin-top: 1px;
 }
 
 .ai-quota-meta-value.warning {
@@ -578,16 +684,53 @@ tooltip label {
   color: $overlay1;
 }
 
-.ai-usage-today {
-  background: rgba(30, 30, 46, 0.68);
-  border: 1px solid rgba(205, 214, 244, 0.08);
-  border-radius: 10px;
-  margin-bottom: 10px;
-  padding: 9px 10px;
+.ai-usage-total {
+  margin: 14px 14px 0;
+}
+
+.ai-usage-period-tabs {
+  background: rgba(30, 30, 46, 0.55);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  padding: 3px;
+}
+
+.ai-usage-period-tab {
+  border-radius: 6px;
+  color: $overlay1;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 0;
+}
+
+.ai-usage-period-tab:hover {
+  color: $text;
+}
+
+.ai-usage-period-tab.active {
+  background: rgba(203, 166, 247, 0.16);
+  color: $mauve;
+}
+
+.ai-usage-period {
+  background: rgba(30, 30, 46, 0.74);
+  border-radius: 8px;
+  padding: 12px 13px 13px;
 }
 
 .ai-usage-summary-row {
-  margin-bottom: 5px;
+  margin-bottom: 7px;
+}
+
+.ai-usage-summary-label {
+  color: $text;
+  font-size: 13px;
+}
+
+.ai-usage-summary-source {
+  color: $overlay1;
+  font-size: 10px;
+  margin-top: 1px;
 }
 
 .ai-usage-summary-value,
@@ -596,17 +739,78 @@ tooltip label {
   font-weight: 800;
 }
 
-.ai-usage-meter {
-  margin-top: 5px;
+.ai-usage-summary-value {
+  color: $text;
+  font-size: 15px;
+  font-weight: 900;
 }
 
-.ai-usage-meter-progress {
+.ai-usage-summary-cost {
+  color: $green;
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+.ai-usage-agents {
   margin-top: 4px;
 }
 
-.ai-usage-meter-progress trough progress {
-  background: rgba(180, 190, 254, 0.82);
-  border-radius: 999px;
-  min-height: 7px;
+.ai-usage-agent {
+  margin-top: 9px;
 }
 
+.ai-usage-agent-row {
+  min-height: 18px;
+}
+
+.ai-usage-agent-dot {
+  color: $overlay0;
+  font-size: 7px;
+  margin-right: 7px;
+}
+
+.ai-usage-agent-name {
+  color: $text;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ai-usage-agent-tokens {
+  color: $text;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ai-usage-agent-cost {
+  color: $subtext0;
+  font-size: 10px;
+  margin-left: 8px;
+}
+
+.ai-usage-agent-bar {
+  margin-top: 5px;
+}
+
+.ai-usage-agent-bar trough {
+  background: rgba(69, 71, 90, 0.46);
+  border-radius: 999px;
+  min-height: 5px;
+}
+
+.ai-usage-agent-bar trough progress {
+  background: $overlay1;
+  border-radius: 999px;
+  min-height: 5px;
+}
+
+.ai-usage-agent.claude .ai-usage-agent-dot { color: $mauve; }
+.ai-usage-agent.claude .ai-usage-agent-bar trough progress { background: $mauve; }
+.ai-usage-agent.codex .ai-usage-agent-dot { color: $green; }
+.ai-usage-agent.codex .ai-usage-agent-bar trough progress { background: $green; }
+.ai-usage-agent.gemini .ai-usage-agent-dot { color: $blue; }
+.ai-usage-agent.gemini .ai-usage-agent-bar trough progress { background: $blue; }
+
+.ai-usage-footer {
+  border-top: 1px solid rgba(205, 214, 244, 0.07);
+  padding: 10px 15px 11px;
+}

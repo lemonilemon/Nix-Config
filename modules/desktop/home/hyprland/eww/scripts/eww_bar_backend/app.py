@@ -4,7 +4,6 @@ import threading
 from pathlib import Path
 
 from .collectors import (
-    ai_usage_state,
     battery_state,
     bluetooth_state,
     clock_state,
@@ -13,6 +12,7 @@ from .collectors import (
     media_state,
     memory_state,
     network_state,
+    refresh_ai_usage,
     temperature_state,
     volume_state,
     workspace_state,
@@ -22,6 +22,7 @@ from .state import BarState
 from .watchers import (
     emit_loop,
     periodic,
+    periodic_refresh,
     watch_bluetooth,
     watch_command,
     watch_hyprland,
@@ -58,9 +59,8 @@ def run_bar():
         threading.Thread(target=watch_hyprland, args=(state,), daemon=True),
         threading.Thread(target=periodic, args=(state, 60), kwargs={"clock": clock_state}, daemon=True),
         threading.Thread(
-            target=periodic,
-            args=(state, 300),
-            kwargs={"ai_usage": ai_usage_state},
+            target=periodic_refresh,
+            args=(state, 300, refresh_ai_usage),
             daemon=True,
         ),
         threading.Thread(

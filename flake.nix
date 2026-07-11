@@ -71,6 +71,14 @@
     llm-agents = {
       url = "github:numtide/llm-agents.nix";
     };
+    # AI subscription usage tracker (Tauri app + headless CLI). Pinned to a
+    # reviewed rev on purpose — its provider plugins read local CLI credentials,
+    # so bumps should be deliberate (review the plugins/ diff, then move the pin).
+    # The openusage-cli crate is not in any tagged release yet.
+    openusage-community = {
+      url = "github:openusage-community/openusage/eadcfe50dec5960dfff6afc0d32c8fa739c79376";
+      flake = false;
+    };
   };
   outputs =
     inputs@{

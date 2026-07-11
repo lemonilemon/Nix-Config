@@ -1,10 +1,8 @@
-import base64
 import json
 import os
 import re
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
 from copy import deepcopy
 from datetime import datetime
@@ -14,7 +12,6 @@ from pathlib import Path
 from .common import (
     AI_USAGE_DEFAULT,
     BATTERY_DEFAULT,
-    CCUSAGE_DEFAULT,
     MEDIA_DEFAULT,
     WORKSPACE_DEFAULT,
     idle_pidfile_path,
@@ -149,26 +146,6 @@ def number_value(data, *keys):
     return 0
 
 
-def nested_number(data, *paths):
-    for path in paths:
-        current = data
-        for key in path:
-            if not isinstance(current, dict):
-                current = None
-                break
-            current = current.get(key)
-        if isinstance(current, bool):
-            continue
-        if isinstance(current, (int, float)):
-            return current
-        if isinstance(current, str):
-            try:
-                return float(current)
-            except ValueError:
-                continue
-    return 0
-
-
 def list_value(data, *keys):
     for key in keys:
         value = data.get(key)
@@ -181,9 +158,9 @@ def format_tokens(value):
     if value <= 0:
         return "--"
     if value >= 1_000_000:
-        return f"{value / 1_000_000:.1f}m"
+        return f"{value / 1_000_000:.1f}M"
     if value >= 1_000:
-        return f"{value / 1_000:.1f}k"
+        return f"{value / 1_000:.1f}K"
     return f"{int(value)}"
 
 
@@ -191,12 +168,6 @@ def format_cost(value):
     if value <= 0:
         return "--"
     return f"${value:.2f}"
-
-
-def format_burn_rate(value):
-    if value <= 0:
-        return "--"
-    return f"${value:.2f}/h"
 
 
 def format_clock_time(epoch):
@@ -236,22 +207,6 @@ def parse_iso_epoch(value):
         return time.mktime(time.strptime(value[:19], "%Y-%m-%dT%H:%M:%S"))
     except Exception:
         return None
-
-
-def jwt_payload(token):
-    if not isinstance(token, str):
-        return {}
-    parts = token.split(".")
-    if len(parts) < 2:
-        return {}
-    payload = parts[1]
-    payload += "=" * (-len(payload) % 4)
-    try:
-        data = base64.urlsafe_b64decode(payload.encode("ascii"))
-        value = json.loads(data.decode("utf-8"))
-    except Exception:
-        return {}
-    return value if isinstance(value, dict) else {}
 
 
 def daily_row_from_report(daily_report, now_epoch=None):
@@ -297,132 +252,6 @@ def daily_token_values(today_row):
         "total": total_tokens,
         "cost": total_cost,
     }
-
-
-def ccusage_state_from_json(daily_json, blocks_json, now_epoch=None):
-    daily_report = parse_json(daily_json, {})
-    blocks_report = parse_json(blocks_json, {})
-    if not daily_report and not blocks_report:
-        return CCUSAGE_DEFAULT.copy()
-
-    token_values = daily_token_values(daily_row_from_report(daily_report, now_epoch=now_epoch))
-    input_tokens = token_values["input"]
-    output_tokens = token_values["output"]
-    cache_tokens = token_values["cache"]
-    total_tokens = token_values["total"]
-    total_cost = token_values["cost"]
-
-    active_blocks = [
-        row
-        for row in list_value(blocks_report, "blocks", "data")
-        if isinstance(row, dict) and row.get("isActive") is True
-    ]
-    active_block = active_blocks[0] if active_blocks else {}
-    block_tokens = number_value(active_block, "totalTokens", "total_tokens", "tokens")
-    block_cost = number_value(active_block, "totalCost", "total_cost", "costUSD", "cost")
-    projected_tokens = nested_number(
-        active_block,
-        ("projection", "totalTokens"),
-        ("projection", "total_tokens"),
-        ("projected", "totalTokens"),
-    )
-    projected_cost = nested_number(
-        active_block,
-        ("projection", "totalCost"),
-        ("projection", "total_cost"),
-        ("projection", "costUSD"),
-    )
-    projected_remaining_minutes = nested_number(
-        active_block,
-        ("projection", "remainingMinutes"),
-        ("projection", "remaining_minutes"),
-    )
-    burn_rate = nested_number(
-        active_block,
-        ("burnRate", "costPerHour"),
-        ("burn_rate", "cost_per_hour"),
-    )
-
-    now = now_epoch or time.time()
-    start = parse_iso_epoch(active_block.get("startTime") or active_block.get("start_time"))
-    end = parse_iso_epoch(active_block.get("endTime") or active_block.get("end_time"))
-    if start is not None and end is not None and end > start:
-        percent = max(0, min(100, int(round((now - start) * 100 / (end - start)))))
-        if projected_remaining_minutes > 0:
-            remaining = format_remaining(projected_remaining_minutes * 60)
-        else:
-            remaining = format_remaining(end - now)
-    else:
-        percent = 0
-        remaining = (
-            format_remaining(projected_remaining_minutes * 60)
-            if projected_remaining_minutes > 0
-            else "--"
-        )
-
-    if total_tokens <= 0 and block_tokens <= 0:
-        return CCUSAGE_DEFAULT.copy()
-
-    cls = "active" if active_block else ""
-    if total_cost >= 20:
-        cls = "warning"
-    if percent >= 85:
-        cls = "warning"
-
-    today_tokens = format_tokens(total_tokens)
-    today_cost = format_cost(total_cost)
-    block_text = format_tokens(block_tokens)
-    projected_text = format_tokens(projected_tokens)
-    block_cost_text = format_cost(block_cost)
-    projected_cost_text = format_cost(projected_cost)
-    tooltip = (
-        f"Today: {today_tokens} tokens / {today_cost}\n"
-        f"Input: {format_tokens(input_tokens)}  Output: {format_tokens(output_tokens)}  Cache: {format_tokens(cache_tokens)}\n"
-        f"Active block: {block_text} used, {projected_text} projected\n"
-        f"Remaining: {remaining}"
-    )
-
-    return {
-        "text": f"󱃖 {today_tokens}",
-        "tooltip": tooltip,
-        "class": cls,
-        "updated": time.strftime("%H:%M", time.localtime(now)),
-        "today": {
-            "tokens": today_tokens,
-            "cost": today_cost,
-            "input": format_tokens(input_tokens),
-            "output": format_tokens(output_tokens),
-            "cache": format_tokens(cache_tokens),
-        },
-        "block": {
-            "tokens": block_text,
-            "projected": projected_text,
-            "percent": percent,
-            "remaining": remaining,
-            "cost": block_cost_text,
-            "projected_cost": projected_cost_text,
-            "burn_rate": format_burn_rate(burn_rate),
-        },
-    }
-
-
-def ccusage_state():
-    today = time.strftime("%F")
-    daily = run_text(
-        [
-            "ccusage",
-            "daily",
-            "--json",
-            "--offline",
-            "--since",
-            today,
-            "--until",
-            today,
-        ],
-        timeout=15.0,
-    )
-    blocks = run_text(["ccusage", "blocks", "--json", "--offline"], timeout=15.0)
-    return ccusage_state_from_json(daily, blocks)
 
 
 def agents_from_daily_json(daily_json, now_epoch=None):
@@ -486,324 +315,113 @@ def quota_default(key, name, status="waiting"):
     }
 
 
-CODEX_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
-CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
-CODEX_REFRESH_URL = "https://auth.openai.com/oauth/token"
-CODEX_RESET_CREDITS_URL = "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits"
+# Codex and Antigravity quotas come from openusage-cli (OpenUsage Community).
+# Its plugins read the same CLI logins but ship their own client creds, so no
+# OAuth plumbing (or ai-usage.env) is needed here. Claude stays on the native
+# collector below: openusage's Claude plugin refreshes and rewrites the Claude
+# Code token, which the read-only rule there deliberately avoids.
+OPENUSAGE_PROVIDERS = (
+    ("codex", "Codex"),
+    ("antigravity", "Antigravity"),
+)
 
 
-def codex_quota_default(status="waiting"):
-    return quota_default("codex", "Codex", status)
-
-
-def codex_auth_paths():
-    codex_home = os.environ.get("CODEX_HOME", "").strip()
-    if codex_home:
-        return [Path(codex_home).expanduser() / "auth.json"]
-    return [
-        Path("~/.config/codex/auth.json").expanduser(),
-        Path("~/.codex/auth.json").expanduser(),
-    ]
-
-
-def codex_load_auth():
-    for path in codex_auth_paths():
-        try:
-            data = json.loads(path.read_text())
-        except Exception:
-            continue
-        if isinstance(data, dict) and isinstance(data.get("tokens"), dict):
-            return data, path
-    return None, None
-
-
-def codex_save_auth(auth, path):
-    if path is None:
-        return
-    try:
-        path.write_text(json.dumps(auth, indent=2, sort_keys=True) + "\n")
-    except Exception:
-        pass
-
-
-def codex_token_expires_at(access_token):
-    payload = jwt_payload(access_token)
-    exp = number_value(payload, "exp")
-    return exp if exp > 0 else None
-
-
-def codex_needs_refresh(auth, now_epoch=None):
-    tokens = auth.get("tokens") if isinstance(auth, dict) else {}
-    if not isinstance(tokens, dict):
-        return False
-    expires_at = codex_token_expires_at(tokens.get("access_token"))
-    if expires_at is None:
-        return False
-    return expires_at - (now_epoch or time.time()) <= 300
-
-
-def codex_refresh_auth(auth, path):
-    tokens = auth.get("tokens") if isinstance(auth, dict) else {}
-    if not isinstance(tokens, dict):
-        return auth
-    refresh_token = tokens.get("refresh_token")
-    if not refresh_token:
-        return auth
-
-    body = urllib.parse.urlencode(
-        {
-            "grant_type": "refresh_token",
-            "client_id": CODEX_CLIENT_ID,
-            "refresh_token": refresh_token,
-        }
-    ).encode("utf-8")
-    request = urllib.request.Request(
-        CODEX_REFRESH_URL,
-        data=body,
-        method="POST",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-    with urllib.request.urlopen(request, timeout=15) as response:
-        payload = json.loads(response.read().decode("utf-8"))
-
-    access_token = payload.get("access_token")
-    if not access_token:
-        return auth
-    tokens["access_token"] = access_token
-    if payload.get("refresh_token"):
-        tokens["refresh_token"] = payload["refresh_token"]
-    if payload.get("id_token"):
-        tokens["id_token"] = payload["id_token"]
-    auth["tokens"] = tokens
-    auth["last_refresh"] = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
-    codex_save_auth(auth, path)
-    return auth
-
-
-def codex_request_json(url, auth, timeout=10.0, extra_headers=None):
-    tokens = auth.get("tokens") if isinstance(auth, dict) else {}
-    if not isinstance(tokens, dict):
-        return ""
-    access_token = tokens.get("access_token")
-    if not access_token:
-        return ""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Accept": "application/json",
-        "User-Agent": "eww-bar",
-    }
-    account_id = tokens.get("account_id")
-    if account_id:
-        headers["ChatGPT-Account-Id"] = account_id
-    if extra_headers:
-        headers.update(extra_headers)
-    request = urllib.request.Request(url, method="GET", headers=headers)
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return response.read().decode("utf-8")
-
-
-def codex_fetch_usage_json(auth, path):
-    try:
-        return codex_request_json(CODEX_USAGE_URL, auth, timeout=10.0)
-    except urllib.error.HTTPError as exc:
-        if exc.code not in (401, 403):
-            raise
-    auth = codex_refresh_auth(auth, path)
-    return codex_request_json(CODEX_USAGE_URL, auth, timeout=10.0)
-
-
-def codex_fetch_reset_credits_json(auth):
-    return codex_request_json(
-        CODEX_RESET_CREDITS_URL,
-        auth,
-        timeout=6.0,
-        extra_headers={
-            "OpenAI-Beta": "codex-1",
-            "originator": "Codex Desktop",
-        },
-    )
-
-
-def format_codex_plan(value):
-    if not isinstance(value, str) or not value.strip():
-        return "--"
-    raw = value.strip()
-    lowered = raw.lower()
-    if lowered == "prolite":
-        return "Pro 5x"
-    if lowered == "pro":
-        return "Pro 20x"
-    return raw.replace("_", " ").title()
-
-
-def codex_window_state(label, window, now_epoch=None):
+def openusage_window(line, now_epoch=None):
     now = now_epoch or time.time()
-    if not isinstance(window, dict):
-        return {
-            "label": label,
-            "percent": 0,
-            "value": "--",
-            "remaining": "--",
-            "reset": "--",
-            "class": "missing",
-        }
-
-    percent = clamp_percent(number_value(window, "used_percent"))
-    reset_epoch = number_value(window, "reset_at")
-    if reset_epoch <= 0:
-        reset_after = number_value(window, "reset_after_seconds")
-        reset_epoch = now + reset_after if reset_after > 0 else 0
-    period_seconds = number_value(window, "limit_window_seconds")
-    if period_seconds > 0 and reset_epoch > 0:
-        remaining_to_reset = reset_epoch - now
-        if remaining_to_reset >= period_seconds - 30 and percent <= 1:
-            percent = 0
-
-    cls = quota_window_class(percent, reset_epoch > 0)
-
+    percent = percent_part(number_value(line, "used"), number_value(line, "limit"))
+    reset_epoch = parse_iso_epoch(line.get("resetsAt"))
+    has_reset = reset_epoch is not None and reset_epoch > 0
     return {
-        "label": label,
+        "label": truncate_text(str(line.get("label") or "?"), 22),
         "percent": percent,
         "value": f"{percent}%",
-        "remaining": format_remaining(max(0, reset_epoch - now)) if reset_epoch > 0 else "--",
-        "reset": format_clock_time(reset_epoch) if reset_epoch > 0 else "--",
-        "class": cls,
+        "remaining": format_remaining(max(0, reset_epoch - now)) if has_reset and reset_epoch > now else "--",
+        "reset": format_clock_time(reset_epoch) if has_reset else "--",
+        "class": quota_window_class(percent, has_reset),
     }
 
 
-def codex_reset_credits_state(usage_body, reset_credits_body, now_epoch=None):
-    now = now_epoch or time.time()
-    source = (
-        reset_credits_body
-        if isinstance(reset_credits_body, dict) and "available_count" in reset_credits_body
-        else None
-    )
-    if source is None:
-        source = usage_body.get("rate_limit_reset_credits") if isinstance(usage_body, dict) else None
-    if not isinstance(source, dict):
-        return {"text": "--", "tooltip": "", "class": "missing"}
-
-    count = max(0, int(number_value(source, "available_count")))
-    expiries = []
-    credits = source.get("credits")
-    if isinstance(credits, list):
-        for credit in credits:
-            if not isinstance(credit, dict):
-                continue
-            status = credit.get("status")
-            if isinstance(status, str) and status != "available":
-                continue
-            expires = parse_iso_epoch(credit.get("expires_at"))
-            if expires is None:
-                expires = number_value(credit, "expires_at")
-            if expires > 0:
-                expiries.append(expires)
-    expiries.sort()
-
-    cls = "active" if count > 0 else "missing"
-    if expiries and expiries[0] - now <= 24 * 60 * 60:
-        cls = "warning"
-    tooltip = "\n".join(format_clock_time(expiry) for expiry in expiries)
+def openusage_meta(line):
+    # Count lines are used/limit pairs; the number worth glancing at is what's
+    # left (e.g. the Codex credit balance). Hide empty balances like the old
+    # collector did rather than showing a "0 credits" row.
+    fmt = line.get("format") if isinstance(line.get("format"), dict) else {}
+    suffix = fmt.get("suffix")
+    remaining = int(number_value(line, "limit")) - int(number_value(line, "used"))
+    if remaining <= 0:
+        return None
+    value = f"{remaining} {suffix}" if isinstance(suffix, str) and suffix else f"{remaining}"
     return {
-        "text": f"{count} available",
-        "tooltip": tooltip,
-        "class": cls,
-    }
-
-
-def codex_credits_state(usage_body):
-    credits = usage_body.get("credits") if isinstance(usage_body, dict) else None
-    balance = number_value(credits, "balance") if isinstance(credits, dict) else 0
-    if balance <= 0:
-        return {"text": "--", "class": "missing"}
-    count = max(0, int(balance))
-    return {
-        "text": f"${count * 0.04:.2f} · {count} credits",
+        "label": str(line.get("label") or "?"),
+        "value": value,
+        "tooltip": "",
         "class": "active",
     }
 
 
-def codex_quota_state_from_json(
-    usage_json,
-    reset_credits_json="",
-    now_epoch=None,
-):
-    body = parse_json(usage_json, {})
-    if not isinstance(body, dict) or not body:
-        return codex_quota_default("missing")
-    reset_body = parse_json(reset_credits_json, {})
-    if not isinstance(reset_body, dict):
-        reset_body = {}
-
+def quota_from_openusage(snapshot, key, name, now_epoch=None):
     now = now_epoch or time.time()
-    rate_limit = body.get("rate_limit") if isinstance(body.get("rate_limit"), dict) else {}
-    quota = codex_quota_default("live")
+    if not isinstance(snapshot, dict):
+        return quota_default(key, name, "unavailable")
+
+    lines = [line for line in list_value(snapshot, "lines") if isinstance(line, dict)]
+    # Probe failures come back as a single text line labelled "Error".
+    error = next(
+        (line for line in lines if line.get("type") == "text" and line.get("label") == "Error"),
+        None,
+    )
+    if error is not None:
+        return quota_default(key, name, truncate_text(str(error.get("value") or "error"), 48))
+
+    windows = []
+    meta = []
+    for line in lines:
+        if line.get("type") != "progress":
+            continue
+        fmt = line.get("format") if isinstance(line.get("format"), dict) else {}
+        if fmt.get("kind") == "percent":
+            windows.append(openusage_window(line, now_epoch=now))
+        else:
+            entry = openusage_meta(line)
+            if entry is not None:
+                meta.append(entry)
+    if not windows and not meta:
+        return quota_default(key, name, "missing")
+
+    # Same cap as the old Antigravity collector: every window is a heavy widget,
+    # so surface the models closest to their limit and keep the card short.
+    if len(windows) > 4:
+        windows.sort(key=lambda window: (-window["percent"], window["label"].lower()))
+        windows = windows[:4]
+
+    quota = quota_default(key, name, "live")
     quota["updated"] = time.strftime("%H:%M", time.localtime(now))
-    quota["plan"] = format_codex_plan(body.get("plan_type"))
-    quota["windows"] = [
-        codex_window_state("Session", rate_limit.get("primary_window"), now_epoch=now),
-        codex_window_state("Weekly", rate_limit.get("secondary_window"), now_epoch=now),
-    ]
-
-    for entry in list_value(body, "additional_rate_limits"):
-        if not isinstance(entry, dict):
-            continue
-        names = [
-            entry.get("limit_name", ""),
-            entry.get("metered_feature", ""),
-        ]
-        if not any(isinstance(name, str) and "spark" in name.lower() for name in names):
-            continue
-        spark_limit = entry.get("rate_limit") if isinstance(entry.get("rate_limit"), dict) else {}
-        quota["windows"].append(codex_window_state("Spark", spark_limit.get("primary_window"), now_epoch=now))
-        quota["windows"].append(
-            codex_window_state("Spark Weekly", spark_limit.get("secondary_window"), now_epoch=now)
-        )
-        break
-
-    resets = codex_reset_credits_state(body, reset_body, now_epoch=now)
-    if resets.get("class") != "missing":
-        quota["meta"].append(
-            {
-                "label": "Reset credits",
-                "value": resets.get("text", "--"),
-                "tooltip": resets.get("tooltip", ""),
-                "class": resets.get("class", "missing"),
-            }
-        )
-    credits = codex_credits_state(body)
-    if credits.get("class") != "missing":
-        quota["meta"].append(
-            {
-                "label": "Credits",
-                "value": credits.get("text", "--"),
-                "tooltip": "",
-                "class": credits.get("class", "missing"),
-            }
-        )
+    plan = snapshot.get("plan")
+    if isinstance(plan, str) and plan.strip():
+        quota["plan"] = plan.strip()
+    quota["windows"] = windows
+    quota["meta"] = meta
     quota["class"] = quota_card_class(quota)
     return quota
 
 
-def codex_quota_state():
-    auth, path = codex_load_auth()
-    if not auth:
-        return codex_quota_default("not logged in")
-    tokens = auth.get("tokens") if isinstance(auth, dict) else {}
-    if not isinstance(tokens, dict) or not tokens.get("access_token"):
-        return codex_quota_default("api-key only")
-
-    try:
-        if codex_needs_refresh(auth):
-            auth = codex_refresh_auth(auth, path)
-        usage_json = codex_fetch_usage_json(auth, path)
-        try:
-            reset_credits_json = codex_fetch_reset_credits_json(auth)
-        except Exception:
-            reset_credits_json = ""
-        return codex_quota_state_from_json(usage_json, reset_credits_json)
-    except Exception:
-        return codex_quota_default("unavailable")
+def openusage_quota_states(now_epoch=None):
+    report = run_text(
+        ["openusage-cli", "probe"] + [key for key, _ in OPENUSAGE_PROVIDERS],
+        timeout=45.0,
+    )
+    snapshots = parse_json(report, [])
+    if not isinstance(snapshots, list):
+        snapshots = []
+    by_id = {
+        snapshot.get("providerId"): snapshot
+        for snapshot in snapshots
+        if isinstance(snapshot, dict)
+    }
+    return [
+        quota_from_openusage(by_id.get(key), key, name, now_epoch=now_epoch)
+        for key, name in OPENUSAGE_PROVIDERS
+    ]
 
 
 CLAUDE_USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
@@ -934,6 +552,130 @@ def claude_quota_state():
     return claude_quota_state_from_json(usage_json, plan=oauth.get("subscriptionType", "--"))
 
 
+AGENT_DISPLAY_NAMES = {
+    "claude": "Claude",
+    "codex": "Codex",
+    "gemini": "Gemini",
+    "opencode": "OpenCode",
+    "copilot": "Copilot",
+    "amp": "Amp",
+    "droid": "Droid",
+}
+
+
+def agent_display_name(key):
+    if not isinstance(key, str) or not key:
+        return "Unknown"
+    return AGENT_DISPLAY_NAMES.get(key, key.replace("_", " ").title())
+
+
+def period_agent_keys(row):
+    keys = []
+    metadata = row.get("metadata") if isinstance(row, dict) else None
+    if isinstance(metadata, dict):
+        keys.extend(value for value in metadata.get("agents", []) if isinstance(value, str))
+    for entry in list_value(row, "agents"):
+        if isinstance(entry, dict) and isinstance(entry.get("agent"), str) and entry["agent"] != "all":
+            keys.append(entry["agent"])
+    return [key.lower() for key in keys]
+
+
+def select_period_row(rows, kind, now_epoch=None):
+    now = now_epoch or time.time()
+    dict_rows = [row for row in rows if isinstance(row, dict)]
+    if not dict_rows:
+        return {}
+    if kind == "monthly":
+        current = time.strftime("%Y-%m", time.localtime(now))
+        for row in dict_rows:
+            if str(row.get("period") or "").startswith(current):
+                return row
+        return dict_rows[-1]
+    if kind == "weekly":
+        for row in dict_rows:
+            start = parse_iso_epoch(str(row.get("period") or "") + "T00:00:00")
+            if start is not None and start <= now < start + 7 * 86400:
+                return row
+        return dict_rows[-1]
+    today = time.strftime("%F", time.localtime(now))
+    for row in dict_rows:
+        if (row.get("period") or row.get("date")) == today:
+            return row
+    return dict_rows[-1]
+
+
+def period_range_label(kind, period, now_epoch=None):
+    if not period:
+        return ""
+    if kind == "monthly":
+        try:
+            return time.strftime("%B %Y", time.strptime(period, "%Y-%m"))
+        except Exception:
+            return period
+    start = parse_iso_epoch(str(period) + "T00:00:00")
+    if start is None:
+        return str(period)
+    if kind == "weekly":
+        end = start + 6 * 86400
+        return (
+            f"{time.strftime('%b %-d', time.localtime(start))}"
+            f" – {time.strftime('%b %-d', time.localtime(end))}"
+        )
+    return time.strftime("%a %b %-d", time.localtime(start))
+
+
+def period_agents(row):
+    total = number_value(row, "totalTokens", "total_tokens", "tokens")
+    entries = list_value(row, "agents")
+    if total <= 0:
+        total = sum(
+            number_value(entry, "totalTokens", "total_tokens", "tokens")
+            for entry in entries
+            if isinstance(entry, dict)
+        )
+    agents = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        key = entry.get("agent")
+        if not isinstance(key, str) or key == "all":
+            continue
+        tokens = number_value(entry, "totalTokens", "total_tokens", "tokens")
+        cost = number_value(entry, "totalCost", "total_cost", "cost")
+        if tokens <= 0 and cost <= 0:
+            continue
+        agents.append(
+            {
+                "key": key.lower(),
+                "name": agent_display_name(key.lower()),
+                "tokens": format_tokens(tokens),
+                "cost": format_cost(cost),
+                "percent": percent_part(tokens, total),
+                "sort": tokens,
+            }
+        )
+    agents.sort(key=lambda agent: -agent["sort"])
+    for agent in agents:
+        del agent["sort"]
+    return agents
+
+
+def period_state(rows, kind, label, now_epoch=None):
+    now = now_epoch or time.time()
+    row = select_period_row(rows, kind, now_epoch=now)
+    values = daily_token_values(row)
+    total = values["total"]
+    if total <= 0:
+        total = values["input"] + values["output"] + values["cache"]
+    return {
+        "label": label,
+        "range": period_range_label(kind, row.get("period") or row.get("date") or "", now_epoch=now),
+        "tokens": format_tokens(total),
+        "cost": format_cost(values["cost"]),
+        "agents": period_agents(row),
+    }
+
+
 def apply_quotas(state, quotas):
     state["quotas"] = quotas
     live = [quota for quota in quotas if quota.get("status") == "live"]
@@ -941,62 +683,65 @@ def apply_quotas(state, quotas):
         state["class"] = "active"
         state["source"] = "quota"
         state["meta"]["status"] = "Quota only"
+
+    # Tint the bar amber when any subscription is near its limit.
+    if state.get("source") != "missing" and any(
+        quota.get("class") in ("warning", "critical") for quota in live
+    ):
+        state["class"] = "warning"
+
+    # Rebuild the tooltip so hovering the bar leads with the glanceable thing:
+    # each live subscription's headroom, then today's local spend.
+    lines = ["AI usage"]
     for quota in live:
-        line = f"{quota['name']}: {quota['plan']}"
+        head = quota["name"]
+        if quota.get("plan") and quota["plan"] != "--":
+            head += f" · {quota['plan']}"
         for window in quota.get("windows", [])[:2]:
-            line += f" · {window['label']} {window['value']}"
-        if line not in state.get("tooltip", ""):
-            state["tooltip"] += f"\n{line}"
+            if window.get("value") not in (None, "--"):
+                head += f" · {window['label']} {window['value']}"
+        lines.append(head)
+    today = state.get("periods", {}).get("today", {})
+    if today.get("tokens", "--") != "--":
+        lines.append(f"Today · {today.get('tokens', '--')} / {today.get('cost', '--')}")
+    if len(lines) > 1:
+        state["tooltip"] = "\n".join(lines)
     return state
 
 
-def ai_usage_state_from_json(
-    daily_json,
-    ccusage_blocks_json,
-    now_epoch=None,
-):
+def ai_usage_state_from_json(report_json, now_epoch=None):
     now = now_epoch or time.time()
-    ccusage_state_value = ccusage_state_from_json(daily_json, ccusage_blocks_json, now_epoch=now)
-    if ccusage_state_value == CCUSAGE_DEFAULT.copy():
+    report = parse_json(report_json, {})
+    if not isinstance(report, dict):
+        report = {}
+
+    daily_rows = list_value(report, "daily")
+    weekly_rows = list_value(report, "weekly")
+    monthly_rows = list_value(report, "monthly")
+
+    today_row = select_period_row(daily_rows, "daily", now_epoch=now)
+    today_values = daily_token_values(today_row)
+    total_tokens = today_values["total"]
+    if total_tokens <= 0:
+        total_tokens = today_values["input"] + today_values["output"] + today_values["cache"]
+    if total_tokens <= 0:
         return deepcopy(AI_USAGE_DEFAULT)
 
     state = deepcopy(AI_USAGE_DEFAULT)
     state["updated"] = time.strftime("%H:%M", time.localtime(now))
-    state["today"] = {
-        **state["today"],
-        **ccusage_state_value.get("today", {}),
+    state["periods"] = {
+        "today": period_state(daily_rows, "daily", "Today", now_epoch=now),
+        "week": period_state(weekly_rows, "weekly", "This week", now_epoch=now),
+        "month": period_state(monthly_rows, "monthly", "This month", now_epoch=now),
     }
-    state["text"] = f"󱃖 {state['today']['tokens']}"
-    state["agents"] = agents_text(agents_from_daily_json(daily_json, now_epoch=now))
-
-    daily_report = parse_json(daily_json, {})
-    token_values = daily_token_values(daily_row_from_report(daily_report, now_epoch=now))
-    raw_total = token_values["input"] + token_values["output"] + token_values["cache"]
-    if raw_total <= 0:
-        raw_total = token_values["total"]
-    state["today"]["input_percent"] = percent_part(token_values["input"], raw_total)
-    state["today"]["output_percent"] = percent_part(token_values["output"], raw_total)
-    state["today"]["cache_percent"] = percent_part(token_values["cache"], raw_total)
-
-    state["block"] = {
-        **state["block"],
-        **ccusage_state_value.get("block", {}),
-        "source": "ccusage",
-        "label": "Active block",
-    }
+    state["text"] = f"󰙴 {state['periods']['today']['tokens']}"
+    state["agents"] = agents_text(period_agent_keys(today_row))
     state["source"] = "ccusage"
     state["meta"]["status"] = "ccusage"
-
-    cls = "active"
-    today_cost = number_value({"cost": state["today"].get("cost", "--").lstrip("$")}, "cost")
-    if today_cost >= 20 or state["block"].get("percent", 0) >= 85:
-        cls = "warning"
-    state["class"] = cls
+    state["class"] = "active"
     state["tooltip"] = (
-        f"AI usage via {state['block']['source']}\n"
-        f"Today: {state['today']['tokens']} / {state['today']['cost']}\n"
-        f"Block: {state['block']['tokens']} used, {state['block']['remaining']} left\n"
-        f"Projected: {state['block']['projected_cost']}"
+        "AI usage\n"
+        f"Today · {state['periods']['today']['tokens']} / {state['periods']['today']['cost']}"
     )
     return state
 
@@ -1007,23 +752,23 @@ _LAST_AI_USAGE = None
 def ai_usage_state():
     global _LAST_AI_USAGE
 
-    today = time.strftime("%F")
-    daily = run_text(
+    since = time.strftime("%Y%m%d", time.localtime(time.time() - 45 * 86400))
+    report = run_text(
         [
             "ccusage",
             "daily",
             "--json",
             "--offline",
+            "--sections",
+            "daily,weekly,monthly",
+            "--by-agent",
             "--since",
-            today,
-            "--until",
-            today,
+            since,
         ],
-        timeout=15.0,
+        timeout=20.0,
     )
-    ccusage_blocks = run_text(["ccusage", "blocks", "--json", "--offline"], timeout=15.0)
-    value = ai_usage_state_from_json(daily, ccusage_blocks)
-    apply_quotas(value, [claude_quota_state(), codex_quota_state()])
+    value = ai_usage_state_from_json(report)
+    apply_quotas(value, [claude_quota_state(), *openusage_quota_states()])
     if value.get("source") == "missing" and _LAST_AI_USAGE is not None:
         stale = deepcopy(_LAST_AI_USAGE)
         stale["class"] = "stale"
@@ -1034,6 +779,29 @@ def ai_usage_state():
     if value.get("source") != "missing":
         _LAST_AI_USAGE = deepcopy(value)
     return value
+
+
+def refresh_ai_usage(state):
+    # Flag the refresh immediately so the popup can show a loading indicator over
+    # the existing (still valid) data rather than blanking or sitting silent while
+    # the combined ccusage + quota fetch runs in the background.
+    current = state.get("ai_usage")
+    pending = deepcopy(current) if isinstance(current, dict) else deepcopy(AI_USAGE_DEFAULT)
+    meta = pending.get("meta") if isinstance(pending.get("meta"), dict) else {}
+    if meta.get("refreshing") != "true":
+        pending["meta"] = {**meta, "refreshing": "true"}
+        state.update(ai_usage=pending)
+
+    try:
+        fresh = ai_usage_state()
+        fresh["meta"]["refreshing"] = "false"
+    except Exception:
+        # Never leave the popup indicator pulsing on a transient failure; keep the
+        # data we already had and just clear the flag.
+        fresh = deepcopy(pending)
+        fresh["meta"] = {**fresh.get("meta", {}), "refreshing": "false"}
+    state.update(ai_usage=fresh)
+    return fresh
 
 
 def cpu_state():

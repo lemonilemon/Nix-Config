@@ -5,29 +5,45 @@
     # pinned nixpkgs is used on purpose so builds hit cache.numtide.com.
     inputs.llm-agents.overlays.default
 
+    # OpenUsage Community's headless CLI (`openusage-cli probe` emits usage JSON).
     (final: prev: {
-      openusage = prev.buildGo125Module rec {
-        pname = "openusage";
-        version = "0.22.0";
+      openusage-cli = final.rustPlatform.buildRustPackage {
+        pname = "openusage-cli";
+        version = "0.6.37-unstable-2026-07-12";
 
-        src = prev.fetchFromGitHub {
-          owner = "janekbaraniewski";
-          repo = "openusage";
-          rev = "v${version}";
-          hash = "sha256-jB06xwK3egPoDIdvZq3LH5kAIRq8LAmZInzhCvEWJ24=";
+        src = inputs.openusage-community;
+
+        cargoLock = {
+          lockFile = "${inputs.openusage-community}/Cargo.lock";
+          outputHashes = {
+            "tauri-nspanel-2.1.0" = "sha256-oqkQCTe4ohZYoTEPAJfsGC0RGVwaHrEik9iCOKbxPh0=";
+            "tauri-plugin-aptabase-1.0.0" = "sha256-j5nbJkSkn/ZE1UYNobUIzz38kdvgcILHrfcERMD16uA=";
+          };
         };
 
-        vendorHash = "sha256-cBltKSILSp1tfie1dLoilu0jL/qDuHo2JUzMXb2DHno=";
-        subPackages = [ "cmd/openusage" ];
-        nativeBuildInputs = [ prev.go_1_25 ];
-        env.CGO_ENABLED = "1";
+        cargoBuildFlags = [
+          "-p"
+          "openusage-cli"
+        ];
+
+        nativeBuildInputs = [
+          final.pkg-config
+          final.rustPlatform.bindgenHook
+        ];
+
+        buildInputs = [
+          final.openssl
+          final.dbus
+        ];
+
+        # Workspace tests cover the Tauri app too; the CLI is what we ship.
         doCheck = false;
 
         meta = with prev.lib; {
-          description = "Terminal-first local quota and usage tracking for AI coding tools";
-          homepage = "https://openusage.sh/";
+          description = "Headless CLI for OpenUsage Community's AI usage tracker";
+          homepage = "https://github.com/openusage-community/openusage";
           license = licenses.mit;
-          mainProgram = "openusage";
+          mainProgram = "openusage-cli";
         };
       };
     })

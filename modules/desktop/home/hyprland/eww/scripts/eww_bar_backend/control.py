@@ -8,7 +8,7 @@ import sys
 import threading
 from pathlib import Path
 
-from .collectors import ai_usage_state, idle_inhibited_state, media_state, volume_state
+from .collectors import idle_inhibited_state, media_state, refresh_ai_usage, volume_state
 from .common import backend_pidfile_path, control_socket_path, idle_pidfile_path, parse_json
 
 
@@ -129,7 +129,7 @@ def queue_ai_refresh(state):
 
     def refresh():
         try:
-            state.update(ai_usage=ai_usage_state())
+            refresh_ai_usage(state)
         finally:
             _AI_REFRESH_LOCK.release()
 

@@ -48,6 +48,9 @@ let
       wireplumber
       wlogout
       llm-agents.ccusage
+      # Codex/Antigravity quota collection (see collectors.py); Claude stays on
+      # the native read-only collector.
+      openusage-cli
     ])
     ++ [ ewwBarTools ];
 
@@ -99,6 +102,10 @@ in
 
     xdg.configFile."eww/eww.yuck".source = ./eww.yuck;
     xdg.configFile."eww/eww.scss".source = ./eww.scss;
+    xdg.configFile."eww/assets" = {
+      source = ./assets;
+      recursive = true;
+    };
     xdg.configFile."eww/scripts".source = ./scripts;
     xdg.configFile."eww/scripts".recursive = true;
 

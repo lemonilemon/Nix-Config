@@ -1,7 +1,11 @@
-(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󱃖 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","today":{"tokens":"--","cost":"--","input":"--","output":"--","cache":"--","input_percent":0,"output_percent":0,"cache_percent":0},"block":{"tokens":"--","projected":"--","percent":0,"remaining":"--","cost":"--","projected_cost":"--","burn_rate":"--","source":"--","label":"No active block"},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
 
 (defvar show_date false)
 (defvar show_battery_time false)
+(defvar show_quota_left false)
+(defvar show_reset_exact false)
+(defvar ai_usage_tab "total")
+(defvar ai_usage_period "today")
 
 (defwindow bar [output]
   :monitor 0
@@ -45,12 +49,11 @@
             (label :text {bar_state.idle_inhibited == "true" ? "" : ""}))
           (label :class "module network ${bar_state.network.class}" :tooltip {bar_state.network.tooltip} :text {bar_state.network.text})
           (label :class "module bluetooth ${bar_state.bluetooth.class}" :visible {bar_state.bluetooth.text != ""} :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text}))
-        (box :class "bar-island ai-usage-island" :orientation "h" :space-evenly false
-          (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
-            :onclick "eww open --toggle ai_usage_popup --screen ${output}"
-            :tooltip {bar_state.ai_usage.tooltip}
-            (label :text {bar_state.ai_usage.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
+          (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
+            :onclick "eww open --toggle ai_usage_popup --screen ${output} && eww-barctl --quiet ai refresh"
+            :tooltip {bar_state.ai_usage.tooltip}
+            (label :text {bar_state.ai_usage.text}))
           (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
           (button :class "module-button cpu" :onclick "hyprctl dispatch exec 'kitty -- htop'"
             (label :text {bar_state.cpu}))
@@ -87,10 +90,10 @@
 (defwindow ai_usage_popup
   :monitor 0
   :geometry (geometry
-    :x "10px"
+    :x "12px"
     :y "50px"
-    :width "420px"
-    :height "660px"
+    :width "380px"
+    :height "380px"
     :anchor "top right")
   :stacking "fg"
   :exclusive false
@@ -101,72 +104,137 @@
 (defwidget ai_usage_panel []
   (box :class "ai-usage-popup" :orientation "v" :space-evenly false
     (box :class "ai-usage-header" :orientation "h" :space-evenly false
+      (box :class "ai-usage-mark"
+        (label :text "󰙴"))
       (box :class "ai-usage-title-stack" :orientation "v" :space-evenly false
-        (label :class "ai-usage-eyebrow" :halign "start" :text {bar_state.ai_usage.meta.status})
-        (label :class "ai-usage-title" :halign "start" :text "AI usage"))
+        (label :class "ai-usage-title" :halign "start" :text "AI usage")
+        (label :class "ai-usage-eyebrow" :halign "start" :text "Subscriptions and local activity"))
       (box :class "ai-usage-header-actions" :orientation "h" :space-evenly false :halign "end" :hexpand true
-        (label :class "ai-usage-updated" :text {bar_state.ai_usage.updated != "" ? "updated ${bar_state.ai_usage.updated}" : "waiting"})
-        (button :class "ai-usage-refresh"
+        (label :class "ai-usage-updated" :text {bar_state.ai_usage.updated != "" ? "Updated ${bar_state.ai_usage.updated}" : "Waiting"})
+        (button :class "ai-usage-refresh ${bar_state.ai_usage.meta.refreshing == 'true' ? 'busy' : ''}"
           :onclick "eww-barctl --quiet ai refresh"
+          :tooltip {bar_state.ai_usage.meta.refreshing == "true" ? "Refreshing…" : "Refresh usage"}
           (label :text ""))))
-    ;; the wrapper box is required: eww re-appends regenerated `for`
-    ;; children to the end of the parent when the array updates
-    (box :class "ai-quota-list" :orientation "v" :space-evenly false
-      (for quota in {bar_state.ai_usage.quotas}
-        (quota_card :quota quota)))
-    (box :class "ai-usage-hero ${bar_state.ai_usage.class}" :orientation "v" :space-evenly false
-      (box :class "ai-usage-hero-top" :orientation "h" :space-evenly false
-        (label :class "ai-usage-hero-label" :text "5-hour block · ccusage")
-        (label :class "ai-usage-hero-percent" :halign "end" :hexpand true :text {"${bar_state.ai_usage.block.percent}%"}))
-      (progress :class "ai-usage-progress ${bar_state.ai_usage.class}" :value {bar_state.ai_usage.block.percent})
-      (box :class "ai-usage-hero-grid" :orientation "h" :space-evenly true
-        (ai_usage_metric :name "Used" :value {bar_state.ai_usage.block.tokens})
-        (ai_usage_metric :name "Left" :value {bar_state.ai_usage.block.remaining})
-        (ai_usage_metric :name "Burn" :value {bar_state.ai_usage.block.burn_rate})
-        (ai_usage_metric :name "Projected" :value {bar_state.ai_usage.block.projected_cost})))
-    (box :class "ai-usage-today" :orientation "v" :space-evenly false
-      (box :class "ai-usage-summary-row" :orientation "h" :space-evenly false
-        (label :class "ai-usage-summary-label" :text "Today")
-        (label :class "ai-usage-summary-value" :halign "end" :hexpand true :text {"${bar_state.ai_usage.today.tokens}  ${bar_state.ai_usage.today.cost}"}))
-      (ai_usage_meter :name "Input" :value {bar_state.ai_usage.today.input} :percent {bar_state.ai_usage.today.input_percent})
-      (ai_usage_meter :name "Output" :value {bar_state.ai_usage.today.output} :percent {bar_state.ai_usage.today.output_percent})
-      (ai_usage_meter :name "Cache" :value {bar_state.ai_usage.today.cache} :percent {bar_state.ai_usage.today.cache_percent}))
+    (box :class "ai-usage-tabs" :orientation "h" :space-evenly true
+      (button :class "ai-usage-tab ${ai_usage_tab == 'total' ? 'active' : ''}" :hexpand true
+        :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=total"
+        :tooltip "Total usage"
+        (image :path "${EWW_CONFIG_DIR}/assets/total.svg" :image-width 15 :image-height 15))
+      (button :class "ai-usage-tab ${ai_usage_tab == 'claude' ? 'active' : ''}" :hexpand true
+        :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=claude"
+        :tooltip "Claude subscription"
+        (image :path "${EWW_CONFIG_DIR}/assets/claude.svg" :image-width 15 :image-height 15))
+      (button :class "ai-usage-tab ${ai_usage_tab == 'codex' ? 'active' : ''}" :hexpand true
+        :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=codex"
+        :tooltip "Codex subscription"
+        (image :path "${EWW_CONFIG_DIR}/assets/codex.svg" :image-width 15 :image-height 15))
+      (button :class "ai-usage-tab ${ai_usage_tab == 'antigravity' ? 'active' : ''}" :hexpand true
+        :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=antigravity"
+        :tooltip "Antigravity subscription"
+        (image :path "${EWW_CONFIG_DIR}/assets/antigravity.svg" :image-width 15 :image-height 15)))
+    (box :class "ai-usage-loading" :orientation "h" :space-evenly false
+      :visible {bar_state.ai_usage.meta.refreshing == "true"}
+      (box :class "ai-usage-loading-bar" :hexpand true))
+    (box :class "ai-usage-total" :orientation "v" :space-evenly false :visible {ai_usage_tab == "total"}
+      (box :class "ai-usage-period-tabs" :orientation "h" :space-evenly true
+        (button :class "ai-usage-period-tab ${ai_usage_period == 'today' ? 'active' : ''}" :hexpand true
+          :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_period=today"
+          (label :text "Today"))
+        (button :class "ai-usage-period-tab ${ai_usage_period == 'week' ? 'active' : ''}" :hexpand true
+          :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_period=week"
+          (label :text "Week"))
+        (button :class "ai-usage-period-tab ${ai_usage_period == 'month' ? 'active' : ''}" :hexpand true
+          :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_period=month"
+          (label :text "Month")))
+      (period_panel :period {bar_state.ai_usage.periods.today} :key "today")
+      (period_panel :period {bar_state.ai_usage.periods.week} :key "week")
+      (period_panel :period {bar_state.ai_usage.periods.month} :key "month"))
+    (scroll :class "ai-usage-scroll" :vscroll true :hscroll false :vexpand true
+      (box :class "ai-usage-content" :orientation "v" :space-evenly false
+        (box :class "ai-section-heading" :orientation "h" :space-evenly false :visible {ai_usage_tab != "total"}
+          (label :class "ai-section-title" :text "Subscription")
+          (label :class "ai-section-note" :halign "end" :hexpand true
+            :text {show_quota_left == "true" ? "remaining" : "used"}))
+        ;; Static cards (one per provider) rather than a `for` over the quotas
+        ;; array: eww re-appends regenerated `for` children to the end of the
+        ;; parent on every array update, which can leave the active tab blank.
+        ;; The provider set is fixed, so index into the array directly.
+        (box :class "ai-quota-list" :orientation "v" :space-evenly false
+          (quota_card :quota {bar_state.ai_usage.quotas[0]})
+          (quota_card :quota {bar_state.ai_usage.quotas[1]})
+          (quota_card :quota {bar_state.ai_usage.quotas[2]}))))
     (box :class "ai-usage-footer" :orientation "h" :space-evenly false
-      (label :text {"agents today: ${bar_state.ai_usage.agents}"})
-      (label :halign "end" :hexpand true :text {"${bar_state.ai_usage.meta.pricing} · refresh ${bar_state.ai_usage.meta.refresh}"}))))
+      (label :text {bar_state.ai_usage.agents != "--" ? "Active · ${bar_state.ai_usage.agents}" : "No local activity"})
+      (label :halign "end" :hexpand true :text {"Refresh ${bar_state.ai_usage.meta.refresh}"}))))
 
 (defwidget quota_card [quota]
-  (box :class "ai-quota-card ${quota.class}" :orientation "v" :space-evenly false
+  (box :class "ai-provider-section ${quota.key} ${quota.class}" :orientation "v" :space-evenly false
+    :visible {ai_usage_tab == quota.key}
     (box :class "ai-quota-head" :orientation "h" :space-evenly false
+      (label :class "ai-provider-dot ${quota.class}" :text "●")
       (label :class "ai-quota-provider" :text {quota.name})
       (label :class "ai-quota-plan-chip" :visible {quota.plan != "--"} :text {quota.plan})
-      (label :class "ai-quota-status" :halign "end" :hexpand true
-        :text {quota.status == "live" ? "updated ${quota.updated}" : quota.status}))
-    (for window in {quota.windows}
-      (quota_meter :window window))
-    (for item in {quota.meta}
-      (box :class "ai-quota-meta-row" :orientation "h" :space-evenly false
-        (label :class "ai-quota-meta-label" :text {item.label})
-        (label :class "ai-quota-meta-value ${item.class}" :halign "end" :hexpand true
-          :tooltip {item.tooltip} :text {item.value})))))
+      (label :class "ai-quota-status ${quota.class}" :halign "end" :hexpand true
+        :text {quota.status == "live" ? quota.updated : quota.status}))
+    (box :class "ai-quota-card ${quota.class}" :orientation "v" :space-evenly false
+      (box :class "ai-quota-empty" :orientation "v" :space-evenly false
+        :visible {arraylength(quota.windows) == 0 && arraylength(quota.meta) == 0}
+        (label :class "ai-quota-empty-text"
+          :text {bar_state.ai_usage.meta.refreshing == "true" ? "Loading…"
+                  : quota.status == "waiting" ? "Waiting for first update…"
+                  : quota.status == "live" ? "No usage in the current window"
+                  : quota.status}))
+      (for window in {quota.windows}
+        (quota_meter :window window))
+      (for item in {quota.meta}
+        (box :class "ai-quota-meta-row" :orientation "h" :space-evenly false
+          (label :class "ai-quota-meta-label" :text {item.label})
+          (label :class "ai-quota-meta-value ${item.class}" :halign "end" :hexpand true
+            :tooltip {item.tooltip} :text {item.value}))))))
 
 (defwidget quota_meter [window]
   (box :class "ai-quota-window" :orientation "v" :space-evenly false
     (box :orientation "h" :space-evenly false
       (label :class "ai-usage-meter-name" :text {window.label})
-      (label :class "ai-quota-window-detail ${window.class}" :halign "end" :hexpand true
-        :tooltip {window.reset != "--" ? "resets at ${window.reset}" : ""}
-        :text {window.remaining != "--" ? "${window.value} · resets in ${window.remaining}" : window.value}))
-    (progress :class "ai-usage-meter-progress quota ${window.class}" :value {window.percent})))
+      (label :class "ai-quota-window-warning ${window.class}" :halign "end" :hexpand true
+        :visible {window.class == "critical" || window.class == "warning"}
+        :text {window.class == "critical" ? " limit near" : "usage high"}))
+    (progress :class "ai-usage-meter-progress quota ${window.class}" :value {window.percent})
+    (box :class "ai-quota-window-reading" :orientation "h" :space-evenly false
+      (button :class "ai-quota-value ${window.class}"
+        :onclick "eww --config '${EWW_CONFIG_DIR}' update show_quota_left=${show_quota_left == 'true' ? 'false' : 'true'}"
+        :tooltip {show_quota_left == "true" ? "Show used" : "Show remaining"}
+        (label :text {show_quota_left == "true" ? "${100 - window.percent}% left" : "${window.percent}% used"}))
+      (button :class "ai-quota-reset" :halign "end" :hexpand true
+        :visible {window.remaining != "--"}
+        :onclick "eww --config '${EWW_CONFIG_DIR}' update show_reset_exact=${show_reset_exact == 'true' ? 'false' : 'true'}"
+        :tooltip {show_reset_exact == "true" ? "Show countdown" : window.reset}
+        (label :text {show_reset_exact == "true" ? window.reset : "Resets in ${window.remaining}"})))))
 
-(defwidget ai_usage_metric [name value]
-  (box :class "ai-usage-metric" :orientation "v" :space-evenly false
-    (label :class "ai-usage-metric-name" :text name)
-    (label :class "ai-usage-metric-value" :text value)))
+(defwidget period_panel [period key]
+  (box :class "ai-usage-period" :orientation "v" :space-evenly false
+    :visible {ai_usage_period == key}
+    (box :class "ai-usage-summary-row" :orientation "h" :space-evenly false
+      (box :class "ai-usage-summary-title" :orientation "v" :space-evenly false
+        (label :class "ai-usage-summary-label" :halign "start" :text {period.label})
+        (label :class "ai-usage-summary-source" :halign "start"
+          :text {period.range != "" ? period.range : "Local token activity"}))
+      (box :class "ai-usage-summary-total" :orientation "v" :space-evenly false :halign "end" :hexpand true
+        (label :class "ai-usage-summary-value" :halign "end" :text {period.tokens})
+        (label :class "ai-usage-summary-cost" :halign "end" :text {period.cost})))
+    (box :class "ai-usage-agents" :orientation "v" :space-evenly false
+      (box :class "ai-usage-agent-empty" :orientation "v" :space-evenly false
+        :visible {arraylength(period.agents) == 0}
+        (label :class "ai-quota-empty-text"
+          :text {bar_state.ai_usage.meta.refreshing == "true" ? "Loading…" : "No local activity"}))
+      (for agent in {period.agents}
+        (agent_row :agent agent)))))
 
-(defwidget ai_usage_meter [name value percent]
-  (box :class "ai-usage-meter" :orientation "v" :space-evenly false
-    (box :class "ai-usage-meter-row" :orientation "h" :space-evenly false
-      (label :class "ai-usage-meter-name" :text name)
-      (label :class "ai-usage-meter-value" :halign "end" :hexpand true :text value))
-    (progress :class "ai-usage-meter-progress" :value percent)))
+(defwidget agent_row [agent]
+  (box :class "ai-usage-agent ${agent.key}" :orientation "v" :space-evenly false
+    (box :class "ai-usage-agent-row" :orientation "h" :space-evenly false
+      (label :class "ai-usage-agent-dot ${agent.key}" :text "●")
+      (label :class "ai-usage-agent-name" :text {agent.name})
+      (label :class "ai-usage-agent-tokens" :halign "end" :hexpand true :text {agent.tokens})
+      (label :class "ai-usage-agent-cost" :text {agent.cost}))
+    (progress :class "ai-usage-agent-bar ${agent.key}" :value {agent.percent})))

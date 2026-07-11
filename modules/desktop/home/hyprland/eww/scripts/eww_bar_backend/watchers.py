@@ -24,6 +24,17 @@ def periodic(state, interval, **collectors):
         time.sleep(interval)
 
 
+def periodic_refresh(state, interval, refresh):
+    # Like `periodic`, but the collector owns emitting to `state` (so it can flag
+    # progress and update incrementally). Runs once immediately, then every interval.
+    while True:
+        try:
+            refresh(state)
+        except Exception:
+            pass
+        time.sleep(interval)
+
+
 def watch_idle_inhibitor(state, refresh_event):
     state.update(idle_inhibited=idle_inhibited_state())
     while True:

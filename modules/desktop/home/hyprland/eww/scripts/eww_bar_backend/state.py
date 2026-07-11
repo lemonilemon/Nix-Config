@@ -25,6 +25,10 @@ class BarState:
         }
         self.changed = threading.Event()
 
+    def get(self, key, default=None):
+        with self.lock:
+            return self.state.get(key, default)
+
     def update(self, **items):
         with self.lock:
             changed = False

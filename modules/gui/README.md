@@ -27,6 +27,8 @@ gui/
 │   │   └── zen.nix            # Zen Browser configuration
 │   ├── development/    # Development tool configurations
 │   │   ├── default.nix        # Development module entry
+│   │   ├── ai.nix             # AI coding tools
+│   │   ├── vscode.nix         # VS Code editor
 │   │   └── web.nix            # Web development tools
 │   ├── apps/           # General GUI applications
 │   │   └── default.nix        # Apps module entry
@@ -56,6 +58,7 @@ home.gui.browsers.zen.enable       # Enable Zen Browser (default: follows browse
 
 # Development
 home.gui.development.enable        # Enable dev tools (default: follows gui.enable)
+home.gui.development.vscode.enable # Enable VS Code editor (default: follows development.enable)
 home.gui.development.web.enable    # Enable web dev tools (default: follows development.enable)
 
 # Applications

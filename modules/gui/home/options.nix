@@ -21,12 +21,12 @@
           default = config.home.gui.enable;
           description = "Enable development tools";
         };
-        cursor = {
+        vscode = {
           enable = helpers.mkHomeOpt {
             inherit osConfig;
-            path = "home.gui.development.cursor.enable";
+            path = "home.gui.development.vscode.enable";
             default = config.home.gui.development.enable;
-            description = "Enable Cursor editor";
+            description = "Enable VS Code editor";
           };
         };
         web = {

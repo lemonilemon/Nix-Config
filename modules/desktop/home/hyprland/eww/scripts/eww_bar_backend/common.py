@@ -7,6 +7,7 @@ from pathlib import Path
 EMPTY_MODULE = {"text": "", "tooltip": "", "class": ""}
 BATTERY_DEFAULT = {"text": "󰂄", "alt": "󰂄", "capacity": 100, "class": "charging"}
 MEDIA_DEFAULT = {"text": "", "status": "", "icon": "", "class": "", "tooltip": ""}
+ACTIVE_WINDOW_DEFAULT = {"text": "", "tooltip": "", "class": ""}
 AI_USAGE_DEFAULT = {
     "text": "󰙴 --",
     "tooltip": "AI usage data is not available yet",

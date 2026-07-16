@@ -10,6 +10,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
 from .common import (
+    ACTIVE_WINDOW_DEFAULT,
     AI_USAGE_DEFAULT,
     BATTERY_DEFAULT,
     MEDIA_DEFAULT,
@@ -88,6 +89,35 @@ def submap_from_event(line):
     if value in ("default", "reset"):
         return ""
     return value
+
+
+APP_ICONS = {
+    "kitty": " ",
+    "zen-beta": "󰈹 ",
+    "zen": "󰈹 ",
+    "firefox": " ",
+    "webcord": "󰙯 ",
+    "spotify": " ",
+    "org.remmina.Remmina": "󰢹 ",
+    "thunar": " ",
+    "code": "󰨞 ",
+    "code-url-handler": "󰨞 ",
+}
+
+
+def active_window_state():
+    data = parse_json(run_text(["hyprctl", "activewindow", "-j"]), {})
+    cls = data.get("class", "")
+    title = data.get("title", "")
+    if not cls and not title:
+        return ACTIVE_WINDOW_DEFAULT.copy()
+    icon = APP_ICONS.get(cls, " ")
+    display = f"{icon}{cls} · {truncate_text(title, 40)}" if title else f"{icon}{cls}"
+    return {
+        "text": display,
+        "tooltip": f"{cls}\n{title}",
+        "class": cls,
+    }
 
 
 def media_state_from_text(status_text, metadata_text):

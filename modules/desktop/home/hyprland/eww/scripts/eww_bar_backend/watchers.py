@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from .collectors import (
+    active_window_state,
     bluetooth_state,
     idle_inhibited_state,
     network_state,
@@ -81,6 +82,14 @@ def watch_hyprland(state):
                         )
                     ):
                         state.update(workspace_state=workspace_state())
+                    if line.startswith(
+                        (
+                            "activewindow>>",
+                            "activewindowv2>>",
+                            "closewindow>>",
+                        )
+                    ):
+                        state.update(active_window=active_window_state())
         except Exception:
             time.sleep(2)
 

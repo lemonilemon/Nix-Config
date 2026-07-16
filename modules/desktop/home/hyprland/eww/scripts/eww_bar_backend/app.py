@@ -4,6 +4,7 @@ import threading
 from pathlib import Path
 
 from .collectors import (
+    active_window_state,
     battery_state,
     bluetooth_state,
     clock_state,
@@ -42,6 +43,7 @@ def run_bar():
     threading.Thread(target=control_server, args=(state,), daemon=True).start()
 
     state.update(
+        active_window=active_window_state(),
         clock=clock_state(),
         media=media_state(),
         cpu=cpu_state(),

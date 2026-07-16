@@ -3,7 +3,7 @@
   nixpkgs.overlays = [
     # AI coding agents — packages live under `pkgs.llm-agents.*`. The flake's
     # pinned nixpkgs is used on purpose so builds hit cache.numtide.com.
-    inputs.llm-agents.overlays.default
+    inputs.llm-agents.overlays.shared-nixpkgs
 
     # OpenUsage Community's headless CLI (`openusage-cli probe` emits usage JSON).
     (final: prev: {

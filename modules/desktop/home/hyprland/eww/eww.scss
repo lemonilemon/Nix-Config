@@ -115,6 +115,15 @@ tooltip label {
   padding-right: 8px;
 }
 
+.window-island {
+  padding: 0 9px;
+}
+
+.active-window {
+  color: $lavender;
+  font-size: 12px;
+}
+
 .clock-island {
   background: rgba(24, 24, 37, 0.88);
   padding: 0 13px;

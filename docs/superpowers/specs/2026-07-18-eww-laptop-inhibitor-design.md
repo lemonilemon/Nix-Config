@@ -43,12 +43,13 @@ Right click:
 Popup actions:
 
 - `Pause Hypridle`: toggles the same Hypridle-only pause as left click.
-- `Normal`: restore normal monitor behavior and clear laptop-specific display mode.
+- `Exit mode`: restore normal monitor behavior and clear laptop-specific display mode.
 - `External only`: keep the system running with the lid closed, keep external monitors
   active, and disable the internal laptop panel.
 - `Headless server`: keep the system running with the lid closed and turn displays off
   temporarily.
-- `Restore displays`: turn displays back on and reload/apply normal monitor behavior.
+- `Turn screens on`: turn displays back on without clearing the current display mode or
+  inhibitors.
 
 The `External only` and `Headless server` presets should also pause Hypridle. Otherwise
 the existing lock, DPMS, or suspend listeners could still fire while the machine is
@@ -115,14 +116,19 @@ Internal panel detection:
 - Use `hyprctl dispatch dpms off` to power off displays temporarily.
 - Prefer DPMS over permanently rewriting monitor layout, because recovery is simpler.
 
-`Restore displays`:
+`Turn screens on`:
+
+- Run `hyprctl dispatch dpms on`.
+- Keep the current display mode.
+- Keep the current Hypridle and lid-switch inhibitor states.
+
+`Exit mode`:
 
 - Run `hyprctl dispatch dpms on`.
 - Reload/apply normal monitor configuration.
 - Stop the lid-switch inhibitor.
-- Keep or clear the Hypridle inhibitor according to the selected action:
-  - `restore` restores displays only.
-  - `normal` restores displays and clears display mode, lid inhibit, and Hypridle pause.
+- Stop the Hypridle inhibitor.
+- Clear display mode back to `normal`.
 
 ## Recovery
 
@@ -131,7 +137,7 @@ only on the popup.
 
 Add recovery paths:
 
-- Eww popup `Restore displays` action.
+- Eww popup `Turn screens on` action.
 - CLI fallback: `eww-barctl display restore`.
 - Laptop-only Hyprland keybind, for example `SUPER+SHIFT+O`, that runs the restore
   command even when all displays are off.
@@ -181,4 +187,6 @@ Manual checks after rebuild:
 - Right-click popup appears on laptop.
 - `External only` refuses to run without an external monitor.
 - `Headless server` can be recovered with the keybind or CLI restore command.
+- `Turn screens on` restores visibility without leaving the current mode.
+- `Exit mode` restores visibility and clears the display-mode inhibitors.
 - Desktop does not show laptop-only popup controls.

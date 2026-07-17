@@ -1,9 +1,11 @@
 { inputs, ... }:
 {
   nixpkgs.overlays = [
-    # AI coding agents — packages live under `pkgs.llm-agents.*`. The flake's
-    # pinned nixpkgs is used on purpose so builds hit cache.numtide.com.
-    inputs.llm-agents.overlays.shared-nixpkgs
+    # AI coding agents — packages live under `pkgs.llm-agents.*`. Use the
+    # flake package set directly so store paths match cache.numtide.com.
+    (final: _prev: {
+      llm-agents = inputs.llm-agents.packages.${final.stdenv.hostPlatform.system};
+    })
 
     # OpenUsage Community's headless CLI (`openusage-cli probe` emits usage JSON).
     (final: prev: {

@@ -29,6 +29,13 @@
         description = "Enable Eww bar for Hyprland";
       };
 
+      hyprland.eww.laptopControls.enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.eww.laptopControls.enable";
+        default = false;
+        description = "Enable laptop-only Eww controls for clamshell and headless display modes";
+      };
+
       hyprland.waybar.enable = helpers.mkHomeOpt {
         inherit osConfig;
         path = "home.desktop.hyprland.waybar.enable";

@@ -9,7 +9,6 @@ from .collectors import (
     bluetooth_state,
     clock_state,
     cpu_state,
-    idle_inhibited_state,
     media_state,
     memory_state,
     network_state,
@@ -19,6 +18,8 @@ from .collectors import (
     workspace_state,
 )
 from .control import control_server, run_ctl, write_backend_pidfile
+from .display import display_state
+from .inhibitors import idle_inhibited_state
 from .state import BarState
 from .watchers import (
     emit_loop,
@@ -54,6 +55,7 @@ def run_bar():
         battery=battery_state(),
         bluetooth=bluetooth_state(),
         idle_inhibited=idle_inhibited_state(),
+        display=display_state(),
         workspace_state=workspace_state(),
     )
 

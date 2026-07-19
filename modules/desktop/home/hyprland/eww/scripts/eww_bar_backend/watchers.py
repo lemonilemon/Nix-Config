@@ -8,12 +8,13 @@ from pathlib import Path
 from .collectors import (
     active_window_state,
     bluetooth_state,
-    idle_inhibited_state,
     network_state,
     submap_from_event,
     volume_state,
     workspace_state,
 )
+from .display import display_state
+from .inhibitors import idle_inhibited_state
 
 
 def periodic(state, interval, **collectors):
@@ -37,11 +38,11 @@ def periodic_refresh(state, interval, refresh):
 
 
 def watch_idle_inhibitor(state, refresh_event):
-    state.update(idle_inhibited=idle_inhibited_state())
+    state.update(idle_inhibited=idle_inhibited_state(), display=display_state())
     while True:
         refresh_event.wait(timeout=30)
         refresh_event.clear()
-        state.update(idle_inhibited=idle_inhibited_state())
+        state.update(idle_inhibited=idle_inhibited_state(), display=display_state())
 
 
 def hyprland_socket_path():

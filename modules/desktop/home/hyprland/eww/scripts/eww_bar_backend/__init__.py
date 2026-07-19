@@ -11,7 +11,6 @@ from .collectors import (
     connected_device,
     cpu_state,
     first_ip,
-    idle_inhibited_state,
     media_state,
     media_state_from_text,
     memory_state,
@@ -40,6 +39,7 @@ from .common import (
     WORKSPACE_DEFAULT,
     backend_pidfile_path,
     control_socket_path,
+    display_mode_path,
     idle_pidfile_path,
     parse_json,
     run_text,
@@ -52,14 +52,31 @@ from .control import (
     control_payload_from_args,
     control_server,
     handle_control_command,
-    live_pid_from_file,
     read_control_payload,
     run_ctl,
     send_control_command,
-    set_idle_inhibited,
-    toggle_idle_inhibited,
     write_backend_pidfile,
     write_control_response,
+)
+from .display import (
+    display_state,
+    is_internal_monitor,
+    monitor_state,
+    read_display_mode,
+    run_hyprctl,
+    set_display_mode,
+    split_monitors,
+    write_display_mode,
+)
+from .inhibitors import (
+    HYPRIDLE_INHIBIT_SERVICE,
+    LID_INHIBIT_SERVICE,
+    idle_inhibited_state,
+    lid_inhibited_state,
+    service_active,
+    set_idle_inhibited,
+    set_lid_inhibited,
+    toggle_idle_inhibited,
 )
 from .state import BarState
 from .watchers import (

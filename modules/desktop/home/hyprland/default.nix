@@ -72,6 +72,12 @@
             ", Print, exec, grim -g \"$(slurp)\" - | wl-copy"
             "${MOD1}+SHIFT, s, exec, grim -g \"$(slurp)\" - | wl-copy"
           ]
+          ++
+            lib.optionals
+              (config.home.desktop.hyprland.eww.enable && config.home.desktop.hyprland.eww.laptopControls.enable)
+              [
+                "${MOD1}+SHIFT, o, exec, eww-barctl display toggle"
+              ]
           ++ (
             # workspaces
             # binds $mod + [shift +] {1..5} to [move to] workspace {1..5}

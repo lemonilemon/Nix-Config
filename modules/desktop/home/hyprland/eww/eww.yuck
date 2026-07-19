@@ -1,4 +1,6 @@
-(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false"}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":""},"volume":"","battery":{"text":"","alt":"","capacity":100,"class":""},"bluetooth":{"text":"","tooltip":"","class":""},"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
+
+(defvar laptop_controls "@laptopControls@")
 
 (defvar show_date false)
 (defvar show_battery_time false)
@@ -49,9 +51,11 @@
       (box :class "right" :orientation "h" :space-evenly false :halign "end" :hexpand true
         (box :class "bar-island tray-island" :orientation "h" :space-evenly false
           (systray :class "tray" :icon-size 14 :spacing 8)
-          (button :class "idle-inhibitor ${bar_state.idle_inhibited == 'true' ? 'active' : ''}"
+          (button :class "idle-inhibitor ${bar_state.idle_inhibited == 'true' ? 'active' : (bar_state.display.mode != 'normal' ? 'active' : '')} ${bar_state.display.class}"
             :onclick "eww-barctl --quiet idle toggle"
-            (label :text {bar_state.idle_inhibited == "true" ? "" : ""}))
+            :onrightclick {laptop_controls == "true" ? "eww open --toggle display_mode_popup --screen ${output}" : "true"}
+            :tooltip {bar_state.display.mode == "normal" ? (bar_state.idle_inhibited == "true" ? "Hypridle paused" : "Hypridle active") : bar_state.display.status}
+            (label :text {bar_state.display.mode == "headless" ? "󰒲" : (bar_state.display.mode == "external" ? "󰍹" : (bar_state.idle_inhibited == "true" ? "" : ""))}))
           (label :class "module network ${bar_state.network.class}" :tooltip {bar_state.network.tooltip} :text {bar_state.network.text})
           (label :class "module bluetooth ${bar_state.bluetooth.class}" :visible {bar_state.bluetooth.text != ""} :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text}))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
@@ -91,6 +95,55 @@
     :class "workspace ${state_class}"
     :onclick "hyprctl dispatch workspace ${id}"
     (label :text icon)))
+
+(defwindow display_mode_popup
+  :monitor 0
+  :geometry (geometry
+    :x "12px"
+    :y "50px"
+    :width "300px"
+    :height "252px"
+    :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-display-mode"
+  (display_mode_panel))
+
+(defwidget display_mode_panel []
+  (box :class "display-mode-popup" :orientation "v" :space-evenly false
+    (box :class "display-mode-header" :orientation "h" :space-evenly false
+      (box :class "display-mode-mark ${bar_state.display.class}"
+        (label :text {bar_state.display.mode == "headless" ? "󰒲" : (bar_state.display.mode == "external" ? "󰍹" : "")}))
+      (box :class "display-mode-title-stack" :orientation "v" :space-evenly false
+        (label :class "display-mode-title" :halign "start" :text {bar_state.display.mode == "headless" ? "Headless server" : (bar_state.display.mode == "external" ? "External only" : "Stay awake")})
+        (label :class "display-mode-eyebrow" :halign "start" :text {bar_state.display.status})))
+    (box :class "display-mode-status" :orientation "h" :space-evenly false
+      (label :class "display-mode-chip ${bar_state.idle_inhibited == 'true' ? 'active' : ''}" :text {bar_state.idle_inhibited == "true" ? "Hypridle paused" : "Hypridle active"})
+      (label :class "display-mode-chip ${bar_state.display.lid_inhibited == 'true' ? 'active' : ''}" :text {bar_state.display.lid_inhibited == "true" ? "Lid ignored" : "Lid normal"}))
+    (box :class "display-mode-actions" :orientation "v" :space-evenly false
+      (button :class "display-mode-action ${bar_state.idle_inhibited == 'true' ? 'active' : ''}"
+        :onclick "eww-barctl --quiet idle toggle"
+        (box :orientation "h" :space-evenly false
+          (label :class "display-mode-action-icon" :text "")
+          (label :class "display-mode-action-label" :halign "start" :text "Pause Hypridle")))
+      (button :class "display-mode-action ${bar_state.display.mode == 'external' ? 'active' : ''}"
+        :onclick "eww-barctl --quiet display external"
+        (box :orientation "h" :space-evenly false
+          (label :class "display-mode-action-icon" :text "󰍹")
+          (label :class "display-mode-action-label" :halign "start" :text "External only")))
+      (button :class "display-mode-action ${bar_state.display.mode == 'headless' ? 'active' : ''}"
+        :onclick "eww-barctl --quiet display headless"
+        (box :orientation "h" :space-evenly false
+          (label :class "display-mode-action-icon" :text "󰒲")
+          (label :class "display-mode-action-label" :halign "start" :text "Headless server"))))
+    (box :class "display-mode-footer" :orientation "h" :space-evenly false
+      (button :class "display-mode-footer-action"
+        :onclick "eww-barctl --quiet display restore"
+        (label :text "Turn screens on"))
+      (button :class "display-mode-footer-action danger"
+        :onclick "eww-barctl --quiet display normal && eww close display_mode_popup"
+        (label :text "Exit mode")))))
 
 (defwindow ai_usage_popup
   :monitor 0

@@ -24,6 +24,12 @@
         description = "Enable Eww bar for Hyprland";
       };
 
+      hyprland.eww.laptopControls.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enable laptop-only Eww controls for clamshell and headless display modes";
+      };
+
       hyprland.waybar.enable = lib.mkOption {
         type = lib.types.bool;
         default = config.home.desktop.hyprland.enable && !config.home.desktop.hyprland.eww.enable;

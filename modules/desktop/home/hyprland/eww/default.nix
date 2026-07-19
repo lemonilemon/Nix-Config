@@ -56,6 +56,10 @@ let
 
   runtimePath = lib.makeBinPath runtimePackages;
 
+  ewwYuck = pkgs.replaceVars ./eww.yuck {
+    laptopControls = if cfg.laptopControls.enable then "true" else "false";
+  };
+
   openBar = pkgs.writeShellScript "eww-open-bar" ''
     export PATH=${runtimePath}
 
@@ -100,7 +104,7 @@ in
       socat
     ];
 
-    xdg.configFile."eww/eww.yuck".source = ./eww.yuck;
+    xdg.configFile."eww/eww.yuck".source = ewwYuck;
     xdg.configFile."eww/eww.scss".source = ./eww.scss;
     xdg.configFile."eww/assets" = {
       source = ./assets;
@@ -109,23 +113,44 @@ in
     xdg.configFile."eww/scripts".source = ./scripts;
     xdg.configFile."eww/scripts".recursive = true;
 
-    systemd.user.services.eww-bar = {
-      Unit = {
-        Description = "Eww Hyprland bar";
-        After = [ "hyprland-session.target" ];
-        PartOf = [ "hyprland-session.target" ];
+    systemd.user.services = {
+      eww-bar = {
+        Unit = {
+          Description = "Eww Hyprland bar";
+          After = [ "hyprland-session.target" ];
+          PartOf = [ "hyprland-session.target" ];
+        };
+
+        Service = {
+          Environment = [ "PATH=${runtimePath}" ];
+          ExecStart = "${pkgs.eww}/bin/eww --force-wayland daemon --no-daemonize";
+          ExecStartPost = openBar;
+          MemoryAccounting = true;
+          Restart = "on-failure";
+          RestartSec = "1s";
+        };
+
+        Install.WantedBy = [ "hyprland-session.target" ];
       };
 
-      Service = {
-        Environment = [ "PATH=${runtimePath}" ];
-        ExecStart = "${pkgs.eww}/bin/eww --force-wayland daemon --no-daemonize";
-        ExecStartPost = openBar;
-        MemoryAccounting = true;
-        Restart = "on-failure";
-        RestartSec = "1s";
+      eww-hypridle-inhibit = {
+        Unit.Description = "Eww Hypridle inhibitor";
+        Service = {
+          Type = "simple";
+          Environment = [ "PATH=${runtimePath}" ];
+          ExecStart = "${pkgs.systemd}/bin/systemd-inhibit --what=idle --who=eww-bar --why=\"Hypridle paused from Eww\" ${pkgs.coreutils}/bin/sleep infinity";
+        };
       };
-
-      Install.WantedBy = [ "hyprland-session.target" ];
+    }
+    // lib.optionalAttrs cfg.laptopControls.enable {
+      eww-lid-inhibit = {
+        Unit.Description = "Eww laptop lid inhibitor";
+        Service = {
+          Type = "simple";
+          Environment = [ "PATH=${runtimePath}" ];
+          ExecStart = "${pkgs.systemd}/bin/systemd-inhibit --what=handle-lid-switch --who=eww-bar --why=\"Eww laptop display mode keeps lid close ignored\" ${pkgs.coreutils}/bin/sleep infinity";
+        };
+      };
     };
   };
 }

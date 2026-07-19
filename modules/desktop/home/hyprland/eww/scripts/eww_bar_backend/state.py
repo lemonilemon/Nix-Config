@@ -22,6 +22,12 @@ class BarState:
             "battery": BATTERY_DEFAULT.copy(),
             "bluetooth": EMPTY_MODULE.copy(),
             "idle_inhibited": "false",
+            "display": {
+                "mode": "normal",
+                "lid_inhibited": "false",
+                "status": "Normal desktop mode",
+                "class": "normal",
+            },
         }
         self.changed = threading.Event()
 

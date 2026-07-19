@@ -59,6 +59,9 @@ nixos.desktop.displayManager      # Display manager choice: "sddm" or "gdm" (def
 ```nix
 home.desktop.enable              # Enable desktop home configuration (default: true if home and desktop enabled)
 home.desktop.hyprland.enable     # Enable Hyprland user config (default: follows desktop.enable)
+home.desktop.hyprland.eww.enable                    # Enable Eww bar for Hyprland
+home.desktop.hyprland.eww.laptopControls.enable     # Enable laptop clamshell/headless controls
+home.desktop.hyprland.waybar.enable                 # Enable Waybar when Eww is disabled
 ```
 
 ## Desktop Environments
@@ -87,6 +90,12 @@ A dynamic tiling Wayland compositor with modern features.
 - Network status
 - Battery indicator (for laptops)
 - Custom modules
+
+**Eww** (`eww/`):
+- Top status bar replacement for Waybar
+- Workspace, media, system, AI usage, and session controls
+- Hypridle pause backed by a systemd user inhibitor
+- Optional laptop controls for external-only and headless/server display modes
 
 **Hyprlock** (`hyprlock.nix`):
 - Screen locking utility

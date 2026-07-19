@@ -1,20 +1,20 @@
 import atexit
 import json
 import os
-import signal
 import socket
 import subprocess
 import sys
 import threading
-from pathlib import Path
 
-from .collectors import idle_inhibited_state, media_state, refresh_ai_usage, volume_state
-from .common import backend_pidfile_path, control_socket_path, idle_pidfile_path, parse_json
+from .collectors import media_state, refresh_ai_usage, volume_state
+from .common import backend_pidfile_path, control_socket_path, parse_json
+from .display import display_state, set_display_mode
+from .inhibitors import idle_inhibited_state, set_idle_inhibited, toggle_idle_inhibited
 
 
 CONTROL_USAGE = (
     "usage: eww-barctl ping | volume up|down | media play-pause|next|previous | "
-    "idle toggle|on|off|status | ai refresh"
+    "idle toggle|on|off|status | display normal|external|headless|restore|toggle|status | ai refresh"
 )
 
 _AI_REFRESH_LOCK = threading.Lock()
@@ -37,59 +37,6 @@ def write_backend_pidfile():
             pass
 
     atexit.register(cleanup)
-
-
-def live_pid_from_file(pidfile):
-    try:
-        pid = int(pidfile.read_text().strip())
-    except Exception:
-        return None
-    if Path(f"/proc/{pid}").exists():
-        return pid
-    try:
-        pidfile.unlink()
-    except Exception:
-        pass
-    return None
-
-
-def set_idle_inhibited(enabled):
-    pidfile = idle_pidfile_path()
-    pid = live_pid_from_file(pidfile)
-    if enabled:
-        if pid is None:
-            proc = subprocess.Popen(
-                [
-                    "systemd-inhibit",
-                    "--what=idle",
-                    "--who=eww-bar",
-                    "--why=User toggled idle inhibitor",
-                    "sleep",
-                    "infinity",
-                ],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-            pidfile.parent.mkdir(parents=True, exist_ok=True)
-            pidfile.write_text(str(proc.pid))
-        return idle_inhibited_state()
-
-    if pid is not None:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-    try:
-        pidfile.unlink()
-    except Exception:
-        pass
-    return idle_inhibited_state()
-
-
-def toggle_idle_inhibited():
-    return set_idle_inhibited(idle_inhibited_state() != "true")
 
 
 def adjust_volume(direction):
@@ -165,8 +112,14 @@ def handle_control_command(state, payload):
             value = idle_inhibited_state()
         else:
             raise ValueError("idle action must be toggle, on, off, or status")
-        state.update(idle_inhibited=value)
+        state.update(idle_inhibited=value, display=display_state())
         return {"ok": True, "command": "idle", "idle_inhibited": value}
+
+    if command == "display":
+        action = payload.get("action", "status")
+        value = set_display_mode(action)
+        state.update(idle_inhibited=idle_inhibited_state(), display=value)
+        return {"ok": True, "command": "display", "action": action, "display": value}
 
     if command == "ai":
         action = payload.get("action", "refresh")
@@ -253,6 +206,9 @@ def control_payload_from_args(args):
     if args[0] == "idle":
         action = args[1] if len(args) > 1 else "toggle"
         return {"command": "idle", "action": action}
+    if args[0] == "display":
+        action = args[1] if len(args) > 1 else "status"
+        return {"command": "display", "action": action}
     if args[0] == "ai" and len(args) == 2:
         return {"command": "ai", "action": args[1]}
     raise ValueError(CONTROL_USAGE)

@@ -355,6 +355,132 @@ tooltip label {
   }
 }
 
+.display-mode-popup {
+  background: rgba(17, 17, 27, 0.985);
+  border: 1px solid rgba(205, 214, 244, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 20px 48px rgba(7, 8, 17, 0.58);
+  color: $text;
+}
+
+.display-mode-header {
+  border-bottom: 1px solid rgba(205, 214, 244, 0.07);
+  padding: 14px 15px 13px;
+}
+
+.display-mode-mark {
+  background: rgba(249, 226, 175, 0.11);
+  border: 1px solid rgba(249, 226, 175, 0.18);
+  border-radius: 8px;
+  color: $yellow;
+  font-size: 15px;
+  margin-right: 9px;
+  min-height: 34px;
+  min-width: 34px;
+}
+
+.display-mode-mark.external {
+  background: rgba(137, 180, 250, 0.11);
+  border-color: rgba(137, 180, 250, 0.18);
+  color: $blue;
+}
+
+.display-mode-mark.headless {
+  background: rgba(148, 226, 213, 0.11);
+  border-color: rgba(148, 226, 213, 0.18);
+  color: $teal;
+}
+
+.display-mode-title {
+  color: $text;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.display-mode-eyebrow {
+  color: $overlay1;
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+.display-mode-status {
+  margin: 10px 14px 0;
+}
+
+.display-mode-chip {
+  background: rgba(49, 50, 68, 0.54);
+  border-radius: 6px;
+  color: $overlay1;
+  font-size: 10px;
+  margin-right: 6px;
+  padding: 5px 8px;
+}
+
+.display-mode-chip.active {
+  background: rgba(166, 227, 161, 0.10);
+  color: $green;
+}
+
+.display-mode-actions {
+  margin: 10px 14px 0;
+}
+
+.display-mode-action {
+  border-radius: 7px;
+  color: $subtext0;
+  margin-bottom: 5px;
+  min-height: 31px;
+  padding: 0 9px;
+}
+
+.display-mode-action:hover,
+.display-mode-footer-action:hover {
+  background: rgba(49, 50, 68, 0.78);
+  color: $text;
+}
+
+.display-mode-action.active {
+  background: rgba(249, 226, 175, 0.10);
+  color: $yellow;
+}
+
+.display-mode-action-icon {
+  margin-right: 9px;
+  min-width: 18px;
+}
+
+.display-mode-action-label {
+  font-weight: 700;
+}
+
+.display-mode-footer {
+  border-top: 1px solid rgba(205, 214, 244, 0.07);
+  margin-top: 9px;
+  padding: 10px 14px 12px;
+}
+
+.display-mode-footer-action {
+  border-radius: 7px;
+  color: $sapphire;
+  font-size: 11px;
+  font-weight: 800;
+  margin-right: 7px;
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.display-mode-footer-action.danger {
+  color: $red;
+}
+
+.idle-inhibitor.external {
+  color: $blue;
+}
+
+.idle-inhibitor.headless {
+  color: $teal;
+}
+
 .ai-usage-popup {
   background: rgba(17, 17, 27, 0.985);
   border: 1px solid rgba(205, 214, 244, 0.14);

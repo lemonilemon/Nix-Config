@@ -610,6 +610,33 @@ def period_agent_keys(row):
     return [key.lower() for key in keys]
 
 
+def current_period_key(kind, dict_rows, now):
+    if kind == "monthly":
+        return time.strftime("%Y-%m", time.localtime(now))
+    if kind == "weekly":
+        # Align to ccusage's own week boundaries: step forward from the most
+        # recent known week start in 7-day increments until we cover `now`,
+        # rather than guessing which weekday the week starts on.
+        starts = [
+            parse_iso_epoch(str(row.get("period") or "") + "T00:00:00")
+            for row in dict_rows
+        ]
+        starts = [start for start in starts if start is not None]
+        if starts:
+            start = max(starts)
+            while start + 7 * 86400 <= now:
+                start += 7 * 86400
+            return time.strftime("%F", time.localtime(start))
+    return time.strftime("%F", time.localtime(now))
+
+
+def synthetic_period_row(kind, dict_rows, now):
+    # A zero-usage row keyed to the *current* period, so an idle day/week/month
+    # renders as itself with no usage instead of borrowing the last active row.
+    field = "period" if kind in ("weekly", "monthly") else "date"
+    return {field: current_period_key(kind, dict_rows, now)}
+
+
 def select_period_row(rows, kind, now_epoch=None):
     now = now_epoch or time.time()
     dict_rows = [row for row in rows if isinstance(row, dict)]
@@ -620,18 +647,18 @@ def select_period_row(rows, kind, now_epoch=None):
         for row in dict_rows:
             if str(row.get("period") or "").startswith(current):
                 return row
-        return dict_rows[-1]
+        return synthetic_period_row(kind, dict_rows, now)
     if kind == "weekly":
         for row in dict_rows:
             start = parse_iso_epoch(str(row.get("period") or "") + "T00:00:00")
             if start is not None and start <= now < start + 7 * 86400:
                 return row
-        return dict_rows[-1]
+        return synthetic_period_row(kind, dict_rows, now)
     today = time.strftime("%F", time.localtime(now))
     for row in dict_rows:
         if (row.get("period") or row.get("date")) == today:
             return row
-    return dict_rows[-1]
+    return synthetic_period_row(kind, dict_rows, now)
 
 
 def period_range_label(kind, period, now_epoch=None):
@@ -749,13 +776,13 @@ def ai_usage_state_from_json(report_json, now_epoch=None):
     weekly_rows = list_value(report, "weekly")
     monthly_rows = list_value(report, "monthly")
 
-    today_row = select_period_row(daily_rows, "daily", now_epoch=now)
-    today_values = daily_token_values(today_row)
-    total_tokens = today_values["total"]
-    if total_tokens <= 0:
-        total_tokens = today_values["input"] + today_values["output"] + today_values["cache"]
-    if total_tokens <= 0:
+    # A report is usable when ccusage returned any rows at all. A current day
+    # with no recorded usage is valid data (Today = 0), not a missing collector,
+    # so it must not fall through to the empty/stale placeholder.
+    if not (daily_rows or weekly_rows or monthly_rows):
         return deepcopy(AI_USAGE_DEFAULT)
+
+    today_row = select_period_row(daily_rows, "daily", now_epoch=now)
 
     state = deepcopy(AI_USAGE_DEFAULT)
     state["updated"] = time.strftime("%H:%M", time.localtime(now))

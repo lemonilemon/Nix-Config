@@ -10,6 +10,7 @@
 
 (defvar tray_force_expanded false)
 (defvar tray_fold_threshold 6)
+(defvar metrics_expanded true)
 
 (defwindow bar [output]
   :monitor 0
@@ -27,7 +28,8 @@
 
 (defwidget bar [output]
   (box :class "bar-window" :orientation "h" :hexpand true
-    (centerbox :class "bar-root" :hexpand true
+    (overlay
+      (centerbox :class "bar-root" :hexpand true
       (box :class "left" :orientation "h" :space-evenly false :halign "start" :hexpand true
         (box :class "bar-island workspace-island" :orientation "h" :space-evenly false
           (workspaces)
@@ -43,13 +45,7 @@
           (label :class "active-window"
             :tooltip {bar_state.active_window.tooltip}
             :text {bar_state.active_window.text})))
-      (box :class "center" :orientation "h" :space-evenly false :halign "center"
-        (box :class "bar-island clock-island" :orientation "h" :space-evenly false
-          (button :class "clock"
-            :onclick "eww update show_date=${show_date == 'true' ? 'false' : 'true'}"
-            :onrightclick "hyprctl dispatch exec gsimplecal"
-            :tooltip {bar_state.clock.tooltip}
-            (label :text {show_date == "true" ? bar_state.clock.date : bar_state.clock.time}))))
+      (box :class "center")
       (box :class "right" :orientation "h" :space-evenly false :halign "end" :hexpand true
         (box :class "bar-island tray-island" :orientation "h" :space-evenly false
           (button :class "tray-toggle"
@@ -72,17 +68,22 @@
             :timeout "5s" :onclick "eww-popup toggle bluetooth_popup ${output}"
             (label :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
-          (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
-            :timeout "5s" :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
-            :tooltip {bar_state.ai_usage.tooltip}
-            (label :text {bar_state.ai_usage.text}))
-          (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
-          (button :class "module-button cpu" :onclick "hyprctl dispatch exec 'kitty -- htop'"
-            (label :text {bar_state.cpu}))
-          (button :class "module-button memory ${bar_state.memory.class}"
-            :onclick "hyprctl dispatch exec 'kitty -- htop'"
-            :tooltip {bar_state.memory.tooltip}
-            (label :text {bar_state.memory.text})))
+          (button :class "metrics-toggle"
+            :onclick "eww update metrics_expanded=${metrics_expanded ? false : true}"
+            (label :text {metrics_expanded ? "‹" : "⋯"}))
+          (revealer :transition "slideright" :duration "250ms" :reveal metrics_expanded
+            (box :orientation "h" :space-evenly false
+              (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
+                :timeout "5s" :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
+                :tooltip {bar_state.ai_usage.tooltip}
+                (label :text {bar_state.ai_usage.text}))
+              (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
+              (button :class "module-button cpu" :onclick "hyprctl dispatch exec 'kitty -- htop'"
+                (label :text {bar_state.cpu}))
+              (button :class "module-button memory ${bar_state.memory.class}"
+                :onclick "hyprctl dispatch exec 'kitty -- htop'"
+                :tooltip {bar_state.memory.tooltip}
+                (label :text {bar_state.memory.text})))))
         (box :class "bar-island session-island" :orientation "h" :space-evenly false
           (eventbox
             :onscroll "eww-barctl --quiet volume {}"
@@ -93,7 +94,14 @@
             :timeout "5s" :onclick "eww-popup toggle battery_popup ${output}"
             (label :text {bar_state.battery.text}))
           (button :class "power-button" :onclick "hyprctl dispatch exec wlogout"
-            (label :text "")))))))
+            (label :text "")))))
+      (box :class "bar-clock-center" :halign "center" :valign "center"
+        (box :class "bar-island clock-island" :orientation "h" :space-evenly false
+          (button :class "clock"
+            :onclick "eww update show_date=${show_date == 'true' ? 'false' : 'true'}"
+            :onrightclick "hyprctl dispatch exec gsimplecal"
+            :tooltip {bar_state.clock.tooltip}
+            (label :text {show_date == "true" ? bar_state.clock.date : bar_state.clock.time})))))))
 
 (defwidget workspaces []
   (box :class "workspaces" :orientation "h" :space-evenly false

@@ -250,7 +250,8 @@ tooltip label {
   padding: 0 3px;
 }
 
-.tray-toggle {
+.tray-toggle,
+.metrics-toggle {
   border-radius: 6px;
   color: $overlay1;
   min-height: 24px;
@@ -258,7 +259,8 @@ tooltip label {
   padding: 0 5px;
 }
 
-.tray-toggle:hover {
+.tray-toggle:hover,
+.metrics-toggle:hover {
   background: rgba(49, 50, 68, 0.78);
   color: $text;
 }

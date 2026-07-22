@@ -3,7 +3,6 @@
 (defvar laptop_controls "@laptopControls@")
 
 (defvar show_date false)
-(defvar show_battery_time false)
 (defvar show_quota_left false)
 (defvar show_reset_exact false)
 (defvar ai_usage_tab "total")
@@ -53,19 +52,19 @@
           (systray :class "tray" :icon-size 14 :spacing 8)
           (button :class "idle-inhibitor ${bar_state.idle_inhibited == 'true' ? 'active' : (bar_state.display.mode != 'normal' ? 'active' : '')} ${bar_state.display.class}"
             :onclick "eww-barctl --quiet idle toggle"
-            :onrightclick {laptop_controls == "true" ? "eww-popup toggle display_mode_popup ${output}" : "true"}
+            :timeout "5s" :onrightclick {laptop_controls == "true" ? "eww-popup toggle display_mode_popup ${output}" : "true"}
             :tooltip {bar_state.display.mode == "normal" ? (bar_state.idle_inhibited == "true" ? "Hypridle paused" : "Hypridle active") : bar_state.display.status}
             (label :text {bar_state.display.mode == "headless" ? "󰒲" : (bar_state.display.mode == "external" ? "󰍹" : (bar_state.idle_inhibited == "true" ? "" : ""))}))
           (button :class "module-button network ${bar_state.network.class}"
-            :onclick "eww-popup toggle network_popup ${output}"
+            :timeout "5s" :onclick "eww-popup toggle network_popup ${output}"
             (label :tooltip {bar_state.network.tooltip} :text {bar_state.network.text}))
           (button :class "module-button bluetooth ${bar_state.bluetooth.class}"
             :visible {bar_state.bluetooth.text != ""}
-            :onclick "eww-popup toggle bluetooth_popup ${output}"
+            :timeout "5s" :onclick "eww-popup toggle bluetooth_popup ${output}"
             (label :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
           (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
-            :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
+            :timeout "5s" :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
             :tooltip {bar_state.ai_usage.tooltip}
             (label :text {bar_state.ai_usage.text}))
           (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
@@ -79,11 +78,11 @@
           (eventbox
             :onscroll "eww-barctl --quiet volume {}"
             (button :class "module-button volume"
-              :onclick "eww-popup toggle volume_popup ${output}"
+              :timeout "5s" :onclick "eww-popup toggle volume_popup ${output}"
               (label :text {bar_state.volume.text})))
           (button :class "module-button battery ${bar_state.battery.class}"
-            :onclick "eww-popup toggle battery_popup ${output}"
-            (label :text {show_battery_time == "true" ? bar_state.battery.alt : bar_state.battery.text}))
+            :timeout "5s" :onclick "eww-popup toggle battery_popup ${output}"
+            (label :text {bar_state.battery.text}))
           (button :class "power-button" :onclick "hyprctl dispatch exec wlogout"
             (label :text "")))))))
 
@@ -113,7 +112,7 @@
   :exclusive false
   :focusable false
   :namespace "eww-popup-backdrop"
-  (eventbox :class "popup-backdrop" :onclick "eww-popup close"
+  (eventbox :class "popup-backdrop" :timeout "5s" :onclick "eww-popup close"
     (box :hexpand true :vexpand true)))
 
 (defwidget popup_header [icon title subtitle]
@@ -134,7 +133,7 @@
 
 (defwidget volume_panel []
   (box :class "popup accent-volume" :orientation "v" :space-evenly false
-    (popup_header :icon "" :title "Volume" :subtitle "Output level & device")
+    (popup_header :icon "" :title "Volume" :subtitle "Output level & device")
     (box :class "popup-body" :orientation "v" :space-evenly false
       (label :class "volume-value" :halign "start"
         :text {bar_state.volume.muted == "true" ? "Muted" : "${bar_state.volume.percent}%"})
@@ -154,7 +153,7 @@
           (button :class "popup-row volume-sink ${sink.active == 'true' ? 'active' : ''}"
             :onclick "eww-barctl --quiet volume sink ${sink.name}"
             (box :orientation "h" :space-evenly false
-              (label :class "volume-sink-dot" :text {sink.active == "true" ? "" : ""})
+              (label :class "volume-sink-dot" :text {sink.active == "true" ? "●" : "○"})
               (label :class "volume-sink-name" :halign "start" :text {sink.description}))))))))
 
 (defwindow display_mode_popup
@@ -245,7 +244,7 @@
 
 (defwidget network_panel []
   (box :class "popup accent-network" :orientation "v" :space-evenly false
-    (popup_header :icon "" :title "Network"
+    (popup_header :icon "" :title "Network"
       :subtitle {bar_state.network.class == "disconnected" ? "Disconnected" : "Connected"})
     (box :class "popup-body" :orientation "v" :space-evenly false
       (box :class "network-card" :orientation "v" :space-evenly false

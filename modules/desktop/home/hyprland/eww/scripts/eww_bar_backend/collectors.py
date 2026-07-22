@@ -1123,7 +1123,9 @@ def sinks_from_pactl_json(json_text, default_name):
             sinks.append(
                 {
                     "name": name,
-                    "description": description if isinstance(description, str) and description else name,
+                    "description": truncate_text(
+                        description if isinstance(description, str) and description else name, 30
+                    ),
                     "active": "true" if name == default_name else "false",
                 }
             )
@@ -1138,7 +1140,11 @@ def sinks_from_pactl_short(short_text, default_name):
             continue
         name = fields[1]
         sinks.append(
-            {"name": name, "description": name, "active": "true" if name == default_name else "false"}
+            {
+                "name": name,
+                "description": truncate_text(name, 30),
+                "active": "true" if name == default_name else "false",
+            }
         )
     return sinks
 

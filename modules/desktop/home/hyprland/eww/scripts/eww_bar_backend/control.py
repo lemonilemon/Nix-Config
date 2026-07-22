@@ -13,7 +13,8 @@ from .inhibitors import idle_inhibited_state, set_idle_inhibited, toggle_idle_in
 
 
 CONTROL_USAGE = (
-    "usage: eww-barctl ping | volume up|down | media play-pause|next|previous | "
+    "usage: eww-barctl ping | volume up|down|set <0-100>|mute|sink <name> | "
+    "media play-pause|next|previous | "
     "idle toggle|on|off|status | display normal|external|headless|restore|toggle|status | ai refresh"
 )
 
@@ -56,6 +57,36 @@ def adjust_volume(direction):
     return volume_state()
 
 
+def set_volume(value):
+    try:
+        level = max(0, min(100, int(round(float(value)))))
+    except (TypeError, ValueError):
+        raise ValueError("volume set requires a number 0-100")
+    subprocess.run(
+        ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{level}%"],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+    )
+    return volume_state()
+
+
+def toggle_mute():
+    subprocess.run(
+        ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+    )
+    return volume_state()
+
+
+def set_sink(name):
+    if not name:
+        raise ValueError("volume sink requires a sink name")
+    subprocess.run(
+        ["pactl", "set-default-sink", name],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+    )
+    return volume_state()
+
+
 def control_media(action):
     allowed_actions = {"play-pause", "next", "previous"}
     if action not in allowed_actions:
@@ -90,9 +121,19 @@ def handle_control_command(state, payload):
         return {"ok": True, "command": "ping"}
 
     if command == "volume":
-        value = adjust_volume(payload.get("direction", ""))
+        action = payload.get("action", "")
+        if action in ("up", "down"):
+            value = adjust_volume(action)
+        elif action == "set":
+            value = set_volume(payload.get("value"))
+        elif action == "mute":
+            value = toggle_mute()
+        elif action == "sink":
+            value = set_sink(payload.get("sink", ""))
+        else:
+            raise ValueError("volume action must be up, down, set, mute, or sink")
         state.update(volume=value)
-        return {"ok": True, "command": "volume", "volume": value}
+        return {"ok": True, "command": "volume", "action": action, "volume": value}
 
     if command == "media":
         action = payload.get("action", "")
@@ -199,8 +240,13 @@ def control_payload_from_args(args):
         raise ValueError(CONTROL_USAGE)
     if args[0] == "ping":
         return {"command": "ping"}
-    if args[0] == "volume" and len(args) == 2:
-        return {"command": "volume", "direction": args[1]}
+    if args[0] == "volume" and len(args) >= 2:
+        payload = {"command": "volume", "action": args[1]}
+        if args[1] == "set" and len(args) >= 3:
+            payload["value"] = args[2]
+        elif args[1] == "sink" and len(args) >= 3:
+            payload["sink"] = args[2]
+        return payload
     if args[0] == "media" and len(args) == 2:
         return {"command": "media", "action": args[1]}
     if args[0] == "idle":

@@ -2,7 +2,14 @@ import json
 import threading
 
 from .collectors import clock_state
-from .common import AI_USAGE_DEFAULT, BATTERY_DEFAULT, EMPTY_MODULE, MEDIA_DEFAULT, WORKSPACE_DEFAULT
+from .common import (
+    AI_USAGE_DEFAULT,
+    BATTERY_DEFAULT,
+    EMPTY_MODULE,
+    MEDIA_DEFAULT,
+    VOLUME_DEFAULT,
+    WORKSPACE_DEFAULT,
+)
 
 
 class BarState:
@@ -18,7 +25,7 @@ class BarState:
             "memory": EMPTY_MODULE.copy(),
             "temperature": {"text": " --°C", "class": ""},
             "network": EMPTY_MODULE.copy(),
-            "volume": "",
+            "volume": VOLUME_DEFAULT.copy(),
             "battery": BATTERY_DEFAULT.copy(),
             "bluetooth": EMPTY_MODULE.copy(),
             "idle_inhibited": "false",

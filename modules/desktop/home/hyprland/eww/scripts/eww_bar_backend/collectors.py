@@ -14,6 +14,7 @@ from .common import (
     AI_USAGE_DEFAULT,
     BATTERY_DEFAULT,
     MEDIA_DEFAULT,
+    VOLUME_DEFAULT,
     WORKSPACE_DEFAULT,
     idle_pidfile_path,
     parse_json,
@@ -1082,7 +1083,9 @@ def network_state():
     }
 
 
-def volume_state_from_text(text):
+def volume_label_from_text(text):
+    # The bar label string. Kept byte-for-byte compatible with the previous
+    # behavior (same speaker glyphs and thresholds).
     match = re.search(r"Volume:\s+([0-9.]+)", text)
     if not match:
         return ""
@@ -1096,8 +1099,70 @@ def volume_state_from_text(text):
     return f" {volume}%"
 
 
+def sinks_from_pactl_json(json_text, default_name):
+    data = parse_json(json_text, [])
+    sinks = []
+    if isinstance(data, list):
+        for entry in data:
+            if not isinstance(entry, dict):
+                continue
+            name = entry.get("name")
+            if not isinstance(name, str) or not name:
+                continue
+            description = entry.get("description")
+            sinks.append(
+                {
+                    "name": name,
+                    "description": description if isinstance(description, str) and description else name,
+                    "active": "true" if name == default_name else "false",
+                }
+            )
+    return sinks
+
+
+def sinks_from_pactl_short(short_text, default_name):
+    sinks = []
+    for line in short_text.splitlines():
+        fields = line.split("\t")
+        if len(fields) < 2 or not fields[1]:
+            continue
+        name = fields[1]
+        sinks.append(
+            {"name": name, "description": name, "active": "true" if name == default_name else "false"}
+        )
+    return sinks
+
+
+def volume_sinks():
+    default_name = run_text(["pactl", "get-default-sink"]).strip()
+    sinks = sinks_from_pactl_json(run_text(["pactl", "-f", "json", "list", "sinks"]), default_name)
+    if not sinks:
+        sinks = sinks_from_pactl_short(run_text(["pactl", "list", "short", "sinks"]), default_name)
+    return sinks
+
+
+def volume_state_from_text(text, sinks=None):
+    sinks = sinks or []
+    label = volume_label_from_text(text)
+    match = re.search(r"Volume:\s+([0-9.]+)", text)
+    if not match:
+        return dict(VOLUME_DEFAULT, sinks=sinks)
+    percent = int((Decimal(match.group(1)) * 100).to_integral_value(rounding=ROUND_HALF_UP))
+    muted = "[MUTED]" in text
+    return {
+        "text": label,
+        "percent": percent,
+        "muted": "true" if muted else "false",
+        "class": "muted" if muted else "",
+        "sinks": sinks,
+    }
+
+
 def volume_state():
-    return volume_state_from_text(run_text(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]))
+    return volume_state_from_text(
+        run_text(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]),
+        sinks=volume_sinks(),
+    )
 
 
 def battery_state():

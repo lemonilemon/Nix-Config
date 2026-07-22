@@ -18,6 +18,7 @@ let
       install -Dm755 ${./scripts/backend} $out/bin/eww-bar-backend
       cp -R ${./scripts/eww_bar_backend} $out/bin/eww_bar_backend
       cp $out/bin/eww-bar-backend $out/bin/eww-barctl
+      cp $out/bin/eww-bar-backend $out/bin/eww-popup
       patchShebangs $out/bin
     '';
   };
@@ -26,6 +27,7 @@ let
     (with pkgs; [
       bash
       bluez
+      blueman
       coreutils
       eww
       gawk

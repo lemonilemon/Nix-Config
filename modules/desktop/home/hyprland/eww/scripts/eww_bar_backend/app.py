@@ -20,6 +20,7 @@ from .collectors import (
 from .control import control_server, run_ctl, write_backend_pidfile
 from .display import display_state
 from .inhibitors import idle_inhibited_state
+from .popups import run_popup
 from .state import BarState
 from .watchers import (
     emit_loop,
@@ -121,14 +122,19 @@ def run_bar():
 
 
 def main():
-    if Path(sys.argv[0]).name == "eww-barctl":
+    invoked = Path(sys.argv[0]).name
+    if invoked == "eww-barctl":
         return run_ctl(sys.argv[1:])
+    if invoked == "eww-popup":
+        return run_popup(sys.argv[1:])
 
     mode = sys.argv[1] if len(sys.argv) > 1 else "bar"
     if mode == "bar":
         run_bar()
     elif mode == "ctl":
         return run_ctl(sys.argv[2:])
+    elif mode == "popup":
+        return run_popup(sys.argv[2:])
     else:
         print(f"unknown backend mode: {mode}", file=sys.stderr)
         return 1

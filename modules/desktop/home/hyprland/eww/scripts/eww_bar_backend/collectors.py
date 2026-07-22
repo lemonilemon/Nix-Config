@@ -113,7 +113,7 @@ def active_window_state():
     if not cls and not title:
         return ACTIVE_WINDOW_DEFAULT.copy()
     icon = APP_ICONS.get(cls, " ")
-    display = f"{icon}{cls} · {truncate_text(title, 40)}" if title else f"{icon}{cls}"
+    display = f"{icon}{cls} · {truncate_text(title, 28)}" if title else f"{icon}{cls}"
     return {
         "text": display,
         "tooltip": f"{cls}\n{title}",
@@ -147,7 +147,7 @@ def media_state_from_text(status_text, metadata_text):
         display_status = status or "Media"
 
     return {
-        "text": truncate_text(metadata[0].strip(), 52),
+        "text": truncate_text(metadata[0].strip(), 30),
         "status": display_status,
         "icon": icon,
         "class": cls,

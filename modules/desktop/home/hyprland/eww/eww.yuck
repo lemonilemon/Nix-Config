@@ -10,7 +10,6 @@
 
 (defvar tray_force_expanded false)
 (defvar tray_fold_threshold 6)
-(defvar metrics_expanded true)
 
 (defwindow bar [output]
   :monitor 0
@@ -68,22 +67,17 @@
             :timeout "5s" :onclick "eww-popup toggle bluetooth_popup ${output}"
             (label :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
-          (button :class "metrics-toggle"
-            :onclick "eww update metrics_expanded=${metrics_expanded ? false : true}"
-            (label :text {metrics_expanded ? "‹" : "⋯"}))
-          (revealer :transition "slideright" :duration "250ms" :reveal metrics_expanded
-            (box :orientation "h" :space-evenly false
-              (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
-                :timeout "5s" :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
-                :tooltip {bar_state.ai_usage.tooltip}
-                (label :text {bar_state.ai_usage.text}))
-              (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
-              (button :class "module-button cpu" :onclick "hyprctl dispatch exec 'kitty -- htop'"
-                (label :text {bar_state.cpu}))
-              (button :class "module-button memory ${bar_state.memory.class}"
-                :onclick "hyprctl dispatch exec 'kitty -- htop'"
-                :tooltip {bar_state.memory.tooltip}
-                (label :text {bar_state.memory.text})))))
+          (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
+            :timeout "5s" :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
+            :tooltip {bar_state.ai_usage.tooltip}
+            (label :text {bar_state.ai_usage.text}))
+          (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
+          (button :class "module-button cpu" :onclick "hyprctl dispatch exec 'kitty -- htop'"
+            (label :text {bar_state.cpu}))
+          (button :class "module-button memory ${bar_state.memory.class}"
+            :onclick "hyprctl dispatch exec 'kitty -- htop'"
+            :tooltip {bar_state.memory.tooltip}
+            (label :text {bar_state.memory.text})))
         (box :class "bar-island session-island" :orientation "h" :space-evenly false
           (eventbox
             :onscroll "eww-barctl --quiet volume {}"

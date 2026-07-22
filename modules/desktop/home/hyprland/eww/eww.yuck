@@ -57,7 +57,10 @@
             :tooltip {bar_state.display.mode == "normal" ? (bar_state.idle_inhibited == "true" ? "Hypridle paused" : "Hypridle active") : bar_state.display.status}
             (label :text {bar_state.display.mode == "headless" ? "󰒲" : (bar_state.display.mode == "external" ? "󰍹" : (bar_state.idle_inhibited == "true" ? "" : ""))}))
           (label :class "module network ${bar_state.network.class}" :tooltip {bar_state.network.tooltip} :text {bar_state.network.text})
-          (label :class "module bluetooth ${bar_state.bluetooth.class}" :visible {bar_state.bluetooth.text != ""} :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text}))
+          (button :class "module-button bluetooth ${bar_state.bluetooth.class}"
+            :visible {bar_state.bluetooth.text != ""}
+            :onclick "eww-popup toggle bluetooth_popup ${output}"
+            (label :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
           (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
             :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
@@ -200,6 +203,43 @@
       (button :class "display-mode-footer-action danger"
         :onclick "eww-barctl --quiet display normal && eww-popup close"
         (label :text "Exit mode")))))
+
+(defwidget bluetooth_panel []
+  (box :class "popup accent-bluetooth" :orientation "v" :space-evenly false
+    (popup_header :icon "󰂯" :title "Bluetooth"
+      :subtitle {bar_state.bluetooth.powered == "true" ? "Powered on" : "Powered off"})
+    (box :class "popup-body" :orientation "v" :space-evenly false
+      (button :class "popup-action bluetooth-power ${bar_state.bluetooth.powered == 'true' ? 'active' : ''}"
+        :onclick "eww-barctl --quiet bluetooth power-toggle"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text {bar_state.bluetooth.powered == "true" ? "󰂯" : "󰂲"})
+          (label :class "popup-action-label" :halign "start"
+            :text {bar_state.bluetooth.powered == "true" ? "Turn off" : "Turn on"})))
+      (box :class "popup-section-label" :orientation "h" :space-evenly false
+        (label :halign "start" :text "CONNECTED"))
+      (box :class "bluetooth-devices" :orientation "v" :space-evenly false
+        (box :class "popup-empty" :orientation "h" :space-evenly false
+          :visible {arraylength(bar_state.bluetooth.devices) == 0}
+          (label :halign "start" :text "No connected devices"))
+        (for device in {bar_state.bluetooth.devices}
+          (box :class "popup-row bluetooth-device" :orientation "h" :space-evenly false
+            (label :class "bluetooth-device-name" :halign "start" :text {device.name})
+            (label :class "bluetooth-device-battery" :visible {device.battery != ""} :text {device.battery})
+            (button :class "bluetooth-disconnect" :halign "end" :hexpand true
+              :onclick "eww-barctl --quiet bluetooth disconnect ${device.mac}"
+              (label :text "󰅖")))))
+      (button :class "popup-footer-action"
+        :onclick "hyprctl dispatch exec blueman-manager"
+        (label :text "Open blueman")))))
+
+(defwindow bluetooth_popup
+  :monitor 0
+  :geometry (geometry :x "205px" :y "50px" :width "300px" :height "230px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-bluetooth"
+  (bluetooth_panel))
 
 (defwindow ai_usage_popup
   :monitor 0

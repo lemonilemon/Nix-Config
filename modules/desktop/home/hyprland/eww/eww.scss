@@ -1052,6 +1052,13 @@ tooltip label {
 .volume-sink.active .volume-sink-dot { color: $yellow; }
 .volume-sink-name { color: $text; }
 
+/* Bluetooth popup specifics */
+.bluetooth-power.active { background: rgba(116, 199, 236, 0.12); color: $sapphire; }
+.bluetooth-device-name { color: $text; font-weight: 700; }
+.bluetooth-device-battery { color: $overlay1; font-size: 10px; margin-left: 8px; }
+.bluetooth-disconnect { border-radius: 6px; color: $overlay1; min-height: 24px; min-width: 26px; }
+.bluetooth-disconnect:hover { background: rgba(243, 139, 168, 0.14); color: $red; }
+
 .popup-backdrop {
   background: transparent;
 }

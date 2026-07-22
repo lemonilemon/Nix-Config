@@ -14,6 +14,7 @@ from .collectors import (
     network_state,
     refresh_ai_usage,
     temperature_state,
+    tray_count,
     volume_state,
     workspace_state,
 )
@@ -114,6 +115,12 @@ def run_bar():
             daemon=True,
         ),
         threading.Thread(target=watch_bluetooth, args=(state,), daemon=True),
+        threading.Thread(
+            target=periodic,
+            args=(state, 5),
+            kwargs={"tray_count": tray_count},
+            daemon=True,
+        ),
     ]
     for thread in threads:
         thread.start()

@@ -1181,6 +1181,30 @@ def volume_state():
     )
 
 
+def tray_count_from_text(text):
+    # `busctl get-property ... RegisteredStatusNotifierItems` prints the value as
+    # `as N "item1" "item2" ...` — the token after the `as` type tag is the count.
+    parts = text.split()
+    if len(parts) >= 2 and parts[0] == "as":
+        try:
+            return int(parts[1])
+        except ValueError:
+            return 0
+    return 0
+
+
+def tray_count():
+    return tray_count_from_text(
+        run_text(
+            [
+                "busctl", "--user", "get-property",
+                "org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher",
+                "org.kde.StatusNotifierWatcher", "RegisteredStatusNotifierItems",
+            ]
+        )
+    )
+
+
 def battery_state(root=Path("/sys/class/power_supply")):
     for battery in root.glob("BAT*"):
         capacity_path = battery / "capacity"

@@ -30,6 +30,7 @@ class BarState:
             "volume": VOLUME_DEFAULT.copy(),
             "battery": BATTERY_DEFAULT.copy(),
             "bluetooth": BLUETOOTH_DEFAULT.copy(),
+            "tray_count": 0,
             "idle_inhibited": "false",
             "display": {
                 "mode": "normal",

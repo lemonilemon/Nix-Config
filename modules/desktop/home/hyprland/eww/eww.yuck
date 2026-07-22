@@ -1,4 +1,4 @@
-(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false"},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"","alt":"","capacity":100,"class":"","status":"Unknown","time":"N/A","health":"--","power":"—"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false"},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"","alt":"","capacity":100,"class":"","status":"Unknown","time":"N/A","health":"--","power":"—"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"tray_count":0,"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
 
 (defvar laptop_controls "@laptopControls@")
 
@@ -7,6 +7,9 @@
 (defvar show_reset_exact false)
 (defvar ai_usage_tab "total")
 (defvar ai_usage_period "today")
+
+(defvar tray_force_expanded false)
+(defvar tray_fold_threshold 6)
 
 (defwindow bar [output]
   :monitor 0
@@ -49,7 +52,13 @@
             (label :text {show_date == "true" ? bar_state.clock.date : bar_state.clock.time}))))
       (box :class "right" :orientation "h" :space-evenly false :halign "end" :hexpand true
         (box :class "bar-island tray-island" :orientation "h" :space-evenly false
-          (systray :class "tray" :icon-size 14 :spacing 8)
+          (button :class "tray-toggle"
+            :visible {bar_state.tray_count > tray_fold_threshold}
+            :onclick "eww update tray_force_expanded=${tray_force_expanded ? false : true}"
+            (label :text {(bar_state.tray_count <= tray_fold_threshold || tray_force_expanded) ? "‹" : "⋯"}))
+          (revealer :transition "slideright" :duration "250ms"
+            :reveal {bar_state.tray_count <= tray_fold_threshold || tray_force_expanded}
+            (systray :class "tray" :icon-size 14 :spacing 8))
           (button :class "idle-inhibitor ${bar_state.idle_inhibited == 'true' ? 'active' : (bar_state.display.mode != 'normal' ? 'active' : '')} ${bar_state.display.class}"
             :onclick "eww-barctl --quiet idle toggle"
             :timeout "5s" :onrightclick {laptop_controls == "true" ? "eww-popup toggle display_mode_popup ${output}" : "true"}

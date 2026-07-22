@@ -250,6 +250,19 @@ tooltip label {
   padding: 0 3px;
 }
 
+.tray-toggle {
+  border-radius: 6px;
+  color: $overlay1;
+  min-height: 24px;
+  min-width: 20px;
+  padding: 0 5px;
+}
+
+.tray-toggle:hover {
+  background: rgba(49, 50, 68, 0.78);
+  color: $text;
+}
+
 .idle-inhibitor {
   color: $overlay1;
   min-width: 18px;

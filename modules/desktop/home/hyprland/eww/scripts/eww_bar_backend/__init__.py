@@ -78,6 +78,13 @@ from .inhibitors import (
     set_lid_inhibited,
     toggle_idle_inhibited,
 )
+from .popups import (
+    BACKDROP_WINDOW,
+    POPUP_WINDOWS,
+    parse_open_windows,
+    popup_eww_calls,
+    run_popup,
+)
 from .state import BarState
 from .watchers import (
     emit_loop,

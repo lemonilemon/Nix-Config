@@ -1,8 +1,12 @@
 import subprocess
 import sys
 
-# The full set of popup windows the helper manages. Closing a window that is not
-# open is a harmless no-op in eww, so `close` can name all of them at once.
+from .common import run_text
+
+# The full set of popup windows the helper manages. `eww close` is fire-and-forget
+# here (via _run_eww with check=False): naming a window that is closed or not yet
+# defined just prints a warning and exits non-zero, which we ignore — so `close`
+# can safely name every popup plus the backdrop at once.
 POPUP_WINDOWS = [
     "volume_popup",
     "bluetooth_popup",
@@ -54,12 +58,10 @@ def popup_eww_calls(command, args, open_ids):
 
 
 def _active_windows_text():
-    try:
-        return subprocess.check_output(
-            ["eww", "active-windows"], text=True, stderr=subprocess.DEVNULL
-        )
-    except Exception:
-        return ""
+    # Reuse the package's shared runner so this inherits the same 2s timeout and
+    # empty-on-failure behavior as every other collector, rather than blocking
+    # forever if the eww daemon is running but wedged.
+    return run_text(["eww", "active-windows"], timeout=2.0)
 
 
 def _run_eww(args):

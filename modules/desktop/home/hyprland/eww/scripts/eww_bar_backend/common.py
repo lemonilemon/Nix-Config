@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 EMPTY_MODULE = {"text": "", "tooltip": "", "class": ""}
+NETWORK_DEFAULT = {"text": "", "tooltip": "", "class": "", "wifi_enabled": "false"}
 BATTERY_DEFAULT = {"text": "󰂄", "alt": "󰂄", "capacity": 100, "class": "charging"}
 MEDIA_DEFAULT = {"text": "", "status": "", "icon": "", "class": "", "tooltip": ""}
 VOLUME_DEFAULT = {"text": "", "percent": 0, "muted": "false", "class": "", "sinks": []}

@@ -1031,7 +1031,7 @@ def network_state_from_text(status_text, wifi_text, ip_by_device):
     }
 
 
-def network_state():
+def network_connection_state():
     status = run_text(["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "dev", "status"])
     wifi_device = connected_device(status, "wifi")
     if wifi_device:
@@ -1081,6 +1081,16 @@ def network_state():
         "tooltip": "No connection",
         "class": "disconnected",
     }
+
+
+def network_radio_enabled():
+    return "true" if run_text(["nmcli", "radio", "wifi"]).strip() == "enabled" else "false"
+
+
+def network_state():
+    result = network_connection_state()
+    result["wifi_enabled"] = network_radio_enabled()
+    return result
 
 
 def volume_label_from_text(text):

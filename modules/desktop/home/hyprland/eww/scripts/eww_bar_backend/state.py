@@ -8,6 +8,7 @@ from .common import (
     BLUETOOTH_DEFAULT,
     EMPTY_MODULE,
     MEDIA_DEFAULT,
+    NETWORK_DEFAULT,
     VOLUME_DEFAULT,
     WORKSPACE_DEFAULT,
 )
@@ -25,7 +26,7 @@ class BarState:
             "cpu": " --%",
             "memory": EMPTY_MODULE.copy(),
             "temperature": {"text": " --°C", "class": ""},
-            "network": EMPTY_MODULE.copy(),
+            "network": NETWORK_DEFAULT.copy(),
             "volume": VOLUME_DEFAULT.copy(),
             "battery": BATTERY_DEFAULT.copy(),
             "bluetooth": BLUETOOTH_DEFAULT.copy(),

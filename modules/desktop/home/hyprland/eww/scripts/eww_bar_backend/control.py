@@ -6,7 +6,14 @@ import subprocess
 import sys
 import threading
 
-from .collectors import bluetooth_state, media_state, refresh_ai_usage, volume_state
+from .collectors import (
+    bluetooth_state,
+    media_state,
+    network_radio_enabled,
+    network_state,
+    refresh_ai_usage,
+    volume_state,
+)
 from .common import backend_pidfile_path, control_socket_path, parse_json
 from .display import display_state, set_display_mode
 from .inhibitors import idle_inhibited_state, set_idle_inhibited, toggle_idle_inhibited
@@ -16,7 +23,7 @@ CONTROL_USAGE = (
     "usage: eww-barctl ping | volume up|down|set <0-100>|mute|sink <name> | "
     "media play-pause|next|previous | "
     "idle toggle|on|off|status | display normal|external|headless|restore|toggle|status | ai refresh"
-    " | bluetooth power-toggle|disconnect <mac>"
+    " | bluetooth power-toggle|disconnect <mac> | network wifi-toggle"
 )
 
 _AI_REFRESH_LOCK = threading.Lock()
@@ -122,6 +129,15 @@ def disconnect_bluetooth(mac):
     return bluetooth_state()
 
 
+def toggle_wifi():
+    target = "off" if network_radio_enabled() == "true" else "on"
+    subprocess.run(
+        ["nmcli", "radio", "wifi", target],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+    )
+    return network_state()
+
+
 def queue_ai_refresh(state):
     if not _AI_REFRESH_LOCK.acquire(blocking=False):
         return False
@@ -172,6 +188,15 @@ def handle_control_command(state, payload):
             raise ValueError("bluetooth action must be power-toggle or disconnect")
         state.update(bluetooth=value)
         return {"ok": True, "command": "bluetooth", "action": action, "bluetooth": value}
+
+    if command == "network":
+        action = payload.get("action", "")
+        if action == "wifi-toggle":
+            value = toggle_wifi()
+        else:
+            raise ValueError("network action must be wifi-toggle")
+        state.update(network=value)
+        return {"ok": True, "command": "network", "action": action, "network": value}
 
     if command == "idle":
         action = payload.get("action", "toggle")
@@ -286,6 +311,8 @@ def control_payload_from_args(args):
         if args[1] == "disconnect" and len(args) >= 3:
             payload["mac"] = args[2]
         return payload
+    if args[0] == "network" and len(args) >= 2:
+        return {"command": "network", "action": args[1]}
     if args[0] == "idle":
         action = args[1] if len(args) > 1 else "toggle"
         return {"command": "idle", "action": action}

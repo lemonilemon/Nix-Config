@@ -1322,7 +1322,7 @@ def bluetooth_state_from_text(controller_text, devices_text, info_by_address):
         fallback = parts[2] if len(parts) >= 3 else address
         alias, battery = parse_device_info(info_by_address.get(address, ""), fallback)
         structured.append(
-            {"mac": address, "name": alias, "battery": battery, "connected": "true"}
+            {"mac": address, "name": truncate_text(alias, 24), "battery": battery, "connected": "true"}
         )
 
     if not devices:

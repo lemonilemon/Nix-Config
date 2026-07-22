@@ -56,7 +56,9 @@
             :onrightclick {laptop_controls == "true" ? "eww-popup toggle display_mode_popup ${output}" : "true"}
             :tooltip {bar_state.display.mode == "normal" ? (bar_state.idle_inhibited == "true" ? "Hypridle paused" : "Hypridle active") : bar_state.display.status}
             (label :text {bar_state.display.mode == "headless" ? "󰒲" : (bar_state.display.mode == "external" ? "󰍹" : (bar_state.idle_inhibited == "true" ? "" : ""))}))
-          (label :class "module network ${bar_state.network.class}" :tooltip {bar_state.network.tooltip} :text {bar_state.network.text})
+          (button :class "module-button network ${bar_state.network.class}"
+            :onclick "eww-popup toggle network_popup ${output}"
+            (label :tooltip {bar_state.network.tooltip} :text {bar_state.network.text}))
           (button :class "module-button bluetooth ${bar_state.bluetooth.class}"
             :visible {bar_state.bluetooth.text != ""}
             :onclick "eww-popup toggle bluetooth_popup ${output}"
@@ -240,6 +242,34 @@
   :focusable false
   :namespace "eww-bluetooth"
   (bluetooth_panel))
+
+(defwidget network_panel []
+  (box :class "popup accent-network" :orientation "v" :space-evenly false
+    (popup_header :icon "" :title "Network"
+      :subtitle {bar_state.network.class == "disconnected" ? "Disconnected" : "Connected"})
+    (box :class "popup-body" :orientation "v" :space-evenly false
+      (box :class "network-card" :orientation "v" :space-evenly false
+        (label :class "network-primary" :halign "start"
+          :text {bar_state.network.text != "" ? bar_state.network.text : "No connection"})
+        (label :class "network-detail" :halign "start" :text {bar_state.network.tooltip}))
+      (button :class "popup-action network-wifi ${bar_state.network.wifi_enabled == 'true' ? 'active' : ''}"
+        :onclick "eww-barctl --quiet network wifi-toggle"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text {bar_state.network.wifi_enabled == "true" ? "" : "󰖪"})
+          (label :class "popup-action-label" :halign "start"
+            :text {bar_state.network.wifi_enabled == "true" ? "Wi-Fi on" : "Wi-Fi off"})))
+      (button :class "popup-footer-action"
+        :onclick "hyprctl dispatch exec 'kitty -- nmtui'"
+        (label :text "Advanced…")))))
+
+(defwindow network_popup
+  :monitor 0
+  :geometry (geometry :x "275px" :y "50px" :width "300px" :height "200px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-network"
+  (network_panel))
 
 (defwindow ai_usage_popup
   :monitor 0

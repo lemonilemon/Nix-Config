@@ -82,7 +82,7 @@
               :onclick "eww-popup toggle volume_popup ${output}"
               (label :text {bar_state.volume.text})))
           (button :class "module-button battery ${bar_state.battery.class}"
-            :onclick "eww update show_battery_time=${show_battery_time == 'true' ? 'false' : 'true'}"
+            :onclick "eww-popup toggle battery_popup ${output}"
             (label :text {show_battery_time == "true" ? bar_state.battery.alt : bar_state.battery.text}))
           (button :class "power-button" :onclick "hyprctl dispatch exec wlogout"
             (label :text "")))))))
@@ -270,6 +270,33 @@
   :focusable false
   :namespace "eww-network"
   (network_panel))
+
+(defwidget battery_row [label value]
+  (box :class "popup-row battery-row" :orientation "h" :space-evenly false
+    (label :class "battery-row-label" :halign "start" :text label)
+    (label :class "battery-row-value" :halign "end" :hexpand true :text value)))
+
+(defwidget battery_panel []
+  (box :class "popup accent-battery" :orientation "v" :space-evenly false
+    (popup_header :icon "󰁹" :title "Battery" :subtitle {bar_state.battery.status})
+    (box :class "popup-body" :orientation "v" :space-evenly false
+      (box :class "battery-headline" :orientation "h" :space-evenly false
+        (label :class "battery-capacity" :text "${bar_state.battery.capacity}%")
+        (label :class "battery-status" :halign "end" :hexpand true :text {bar_state.battery.status}))
+      (progress :class "popup-meter battery-meter ${bar_state.battery.class}" :value {bar_state.battery.capacity})
+      (box :class "battery-rows" :orientation "v" :space-evenly false
+        (battery_row :label "Time" :value {bar_state.battery.time})
+        (battery_row :label "Health" :value {bar_state.battery.health})
+        (battery_row :label "Power draw" :value {bar_state.battery.power})))))
+
+(defwindow battery_popup
+  :monitor 0
+  :geometry (geometry :x "8px" :y "50px" :width "280px" :height "220px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-battery"
+  (battery_panel))
 
 (defwindow ai_usage_popup
   :monitor 0

@@ -5,6 +5,7 @@ from .collectors import clock_state
 from .common import (
     AI_USAGE_DEFAULT,
     BATTERY_DEFAULT,
+    BLUETOOTH_DEFAULT,
     EMPTY_MODULE,
     MEDIA_DEFAULT,
     VOLUME_DEFAULT,
@@ -27,7 +28,7 @@ class BarState:
             "network": EMPTY_MODULE.copy(),
             "volume": VOLUME_DEFAULT.copy(),
             "battery": BATTERY_DEFAULT.copy(),
-            "bluetooth": EMPTY_MODULE.copy(),
+            "bluetooth": BLUETOOTH_DEFAULT.copy(),
             "idle_inhibited": "false",
             "display": {
                 "mode": "normal",

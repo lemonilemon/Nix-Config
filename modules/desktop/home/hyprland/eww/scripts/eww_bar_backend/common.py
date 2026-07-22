@@ -9,6 +9,7 @@ BATTERY_DEFAULT = {"text": "󰂄", "alt": "󰂄", "capacity": 100, "class": "cha
 MEDIA_DEFAULT = {"text": "", "status": "", "icon": "", "class": "", "tooltip": ""}
 VOLUME_DEFAULT = {"text": "", "percent": 0, "muted": "false", "class": "", "sinks": []}
 ACTIVE_WINDOW_DEFAULT = {"text": "", "tooltip": "", "class": ""}
+BLUETOOTH_DEFAULT = {"text": "", "tooltip": "", "class": "", "powered": "false", "devices": []}
 AI_USAGE_DEFAULT = {
     "text": "󰙴 --",
     "tooltip": "AI usage data is not available yet",

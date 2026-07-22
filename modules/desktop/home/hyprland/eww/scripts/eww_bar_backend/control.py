@@ -6,7 +6,7 @@ import subprocess
 import sys
 import threading
 
-from .collectors import media_state, refresh_ai_usage, volume_state
+from .collectors import bluetooth_state, media_state, refresh_ai_usage, volume_state
 from .common import backend_pidfile_path, control_socket_path, parse_json
 from .display import display_state, set_display_mode
 from .inhibitors import idle_inhibited_state, set_idle_inhibited, toggle_idle_inhibited
@@ -16,6 +16,7 @@ CONTROL_USAGE = (
     "usage: eww-barctl ping | volume up|down|set <0-100>|mute|sink <name> | "
     "media play-pause|next|previous | "
     "idle toggle|on|off|status | display normal|external|headless|restore|toggle|status | ai refresh"
+    " | bluetooth power-toggle|disconnect <mac>"
 )
 
 _AI_REFRESH_LOCK = threading.Lock()
@@ -101,6 +102,26 @@ def control_media(action):
     return media_state()
 
 
+def toggle_bluetooth_power():
+    current = bluetooth_state().get("powered", "false")
+    target = "off" if current == "true" else "on"
+    subprocess.run(
+        ["bluetoothctl", "power", target],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+    )
+    return bluetooth_state()
+
+
+def disconnect_bluetooth(mac):
+    if not mac:
+        raise ValueError("bluetooth disconnect requires a device address")
+    subprocess.run(
+        ["bluetoothctl", "disconnect", mac],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+    )
+    return bluetooth_state()
+
+
 def queue_ai_refresh(state):
     if not _AI_REFRESH_LOCK.acquire(blocking=False):
         return False
@@ -140,6 +161,17 @@ def handle_control_command(state, payload):
         value = control_media(action)
         state.update(media=value)
         return {"ok": True, "command": "media", "action": action, "media": value}
+
+    if command == "bluetooth":
+        action = payload.get("action", "")
+        if action == "power-toggle":
+            value = toggle_bluetooth_power()
+        elif action == "disconnect":
+            value = disconnect_bluetooth(payload.get("mac", ""))
+        else:
+            raise ValueError("bluetooth action must be power-toggle or disconnect")
+        state.update(bluetooth=value)
+        return {"ok": True, "command": "bluetooth", "action": action, "bluetooth": value}
 
     if command == "idle":
         action = payload.get("action", "toggle")
@@ -249,6 +281,11 @@ def control_payload_from_args(args):
         return payload
     if args[0] == "media" and len(args) == 2:
         return {"command": "media", "action": args[1]}
+    if args[0] == "bluetooth" and len(args) >= 2:
+        payload = {"command": "bluetooth", "action": args[1]}
+        if args[1] == "disconnect" and len(args) >= 3:
+            payload["mac"] = args[2]
+        return payload
     if args[0] == "idle":
         action = args[1] if len(args) > 1 else "toggle"
         return {"command": "idle", "action": action}

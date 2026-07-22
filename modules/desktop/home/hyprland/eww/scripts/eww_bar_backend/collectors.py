@@ -1263,10 +1263,24 @@ def parse_device_info(info_text, fallback_alias):
 
 def bluetooth_state_from_text(controller_text, devices_text, info_by_address):
     controller_alias, controller_address, powered = parse_controller(controller_text)
+    powered_flag = "true" if powered == "yes" else "false"
     devices = [line for line in devices_text.splitlines() if line.strip()]
+
+    structured = []
+    for line in devices:
+        parts = line.split(maxsplit=2)
+        if len(parts) < 2:
+            continue
+        address = parts[1]
+        fallback = parts[2] if len(parts) >= 3 else address
+        alias, battery = parse_device_info(info_by_address.get(address, ""), fallback)
+        structured.append(
+            {"mac": address, "name": alias, "battery": battery, "connected": "true"}
+        )
+
     if not devices:
         tooltip = f"{controller_alias}\t{controller_address}\n\n0 connected"
-        return {"text": "", "tooltip": tooltip, "class": powered}
+        return {"text": "", "tooltip": tooltip, "class": powered, "powered": powered_flag, "devices": []}
 
     preferred = next(
         (line for line in devices if re.search(r"ugreen_1|ugreen_2", line, re.I)),
@@ -1282,24 +1296,23 @@ def bluetooth_state_from_text(controller_text, devices_text, info_by_address):
     text = truncate_text(text, 24)
 
     detail_lines = []
-    for line in devices:
-        parts = line.split(maxsplit=2)
-        if len(parts) < 2:
-            continue
-        address = parts[1]
-        fallback = parts[2] if len(parts) >= 3 else address
-        alias, battery = parse_device_info(info_by_address.get(address, ""), fallback)
-        if battery:
-            detail_lines.append(f"{alias}\t{address}\t{battery}")
+    for device in structured:
+        if device["battery"]:
+            detail_lines.append(f"{device['name']}\t{device['mac']}\t{device['battery']}")
         else:
-            detail_lines.append(f"{alias}\t{address}")
+            detail_lines.append(f"{device['name']}\t{device['mac']}")
 
     tooltip = (
         f"{controller_alias}\t{controller_address}\n\n"
-        f"{len(devices)} connected\n\n"
-        + "\n".join(detail_lines)
+        f"{len(devices)} connected\n\n" + "\n".join(detail_lines)
     )
-    return {"text": text, "tooltip": tooltip, "class": "connected"}
+    return {
+        "text": text,
+        "tooltip": tooltip,
+        "class": "connected",
+        "powered": powered_flag,
+        "devices": structured,
+    }
 
 
 def bluetooth_state():

@@ -124,7 +124,7 @@
 
 (defwindow volume_popup
   :monitor 0
-  :geometry (geometry :x "110px" :y "50px" :width "300px" :height "240px" :anchor "top right")
+  :geometry (geometry :x "12px" :y "50px" :width "300px" :height "240px" :anchor "top right")
   :stacking "fg"
   :exclusive false
   :focusable false
@@ -235,7 +235,7 @@
 
 (defwindow bluetooth_popup
   :monitor 0
-  :geometry (geometry :x "455px" :y "50px" :width "300px" :height "230px" :anchor "top right")
+  :geometry (geometry :x "12px" :y "50px" :width "300px" :height "230px" :anchor "top right")
   :stacking "fg"
   :exclusive false
   :focusable false
@@ -263,7 +263,7 @@
 
 (defwindow network_popup
   :monitor 0
-  :geometry (geometry :x "595px" :y "50px" :width "300px" :height "200px" :anchor "top right")
+  :geometry (geometry :x "12px" :y "50px" :width "300px" :height "200px" :anchor "top right")
   :stacking "fg"
   :exclusive false
   :focusable false
@@ -290,7 +290,7 @@
 
 (defwindow battery_popup
   :monitor 0
-  :geometry (geometry :x "48px" :y "50px" :width "280px" :height "220px" :anchor "top right")
+  :geometry (geometry :x "12px" :y "50px" :width "280px" :height "220px" :anchor "top right")
   :stacking "fg"
   :exclusive false
   :focusable false

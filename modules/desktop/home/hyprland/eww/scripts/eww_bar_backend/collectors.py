@@ -1175,8 +1175,8 @@ def volume_state():
     )
 
 
-def battery_state():
-    for battery in Path("/sys/class/power_supply").glob("BAT*"):
+def battery_state(root=Path("/sys/class/power_supply")):
+    for battery in root.glob("BAT*"):
         capacity_path = battery / "capacity"
         if not capacity_path.exists():
             continue
@@ -1202,20 +1202,32 @@ def battery_state():
         else:
             icon = "󰁹"
 
-        time_str = "N/A"
-        now = rate = full_value = None
-        for now_name, rate_name, full_name in [
-            ("energy_now", "power_now", "energy_full"),
-            ("charge_now", "current_now", "charge_full"),
+        now = rate = full_value = design_value = voltage = None
+        unit = None
+        for unit_name, now_name, rate_name, full_name, design_name in [
+            ("energy", "energy_now", "power_now", "energy_full", "energy_full_design"),
+            ("charge", "charge_now", "current_now", "charge_full", "charge_full_design"),
         ]:
             try:
                 now = int((battery / now_name).read_text().strip())
                 rate = int((battery / rate_name).read_text().strip())
                 full_value = int((battery / full_name).read_text().strip())
-                break
+                unit = unit_name
             except Exception:
                 now = rate = full_value = None
+                continue
+            try:
+                design_value = int((battery / design_name).read_text().strip())
+            except Exception:
+                design_value = None
+            if unit == "charge":
+                try:
+                    voltage = int((battery / "voltage_now").read_text().strip())
+                except Exception:
+                    voltage = None
+            break
 
+        time_str = "N/A"
         minutes = None
         if now is not None and rate and rate > 0:
             if status == "Discharging":
@@ -1224,6 +1236,21 @@ def battery_state():
                 minutes = (full_value - now) * 60 // rate
         if minutes is not None:
             time_str = f"{minutes // 60}h {minutes % 60}m"
+
+        health = "--"
+        if full_value and design_value and design_value > 0:
+            health = f"{int(round(full_value * 100 / design_value))}%"
+
+        power = "—"
+        if rate and rate > 0:
+            if unit == "energy":
+                watts = rate / 1_000_000
+            elif unit == "charge" and voltage:
+                watts = rate * voltage / 1_000_000_000_000
+            else:
+                watts = None
+            if watts is not None:
+                power = f"{watts:.1f} W"
 
         cls = ""
         if status == "Charging":
@@ -1237,6 +1264,10 @@ def battery_state():
             "alt": f"{icon} {time_str}",
             "capacity": capacity,
             "class": cls,
+            "status": status or "Unknown",
+            "time": time_str,
+            "health": health,
+            "power": power,
         }
     return BATTERY_DEFAULT.copy()
 

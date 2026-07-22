@@ -8,6 +8,7 @@
       llm-agents.antigravity-cli
       llm-agents.skills
       llm-agents.ccusage
+      kiro-cli
 
       # for sandbox
       socat

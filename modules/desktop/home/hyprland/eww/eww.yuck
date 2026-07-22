@@ -74,7 +74,7 @@
           (eventbox
             :onscroll "eww-barctl --quiet volume {}"
             (button :class "module-button volume"
-              :onclick "hyprctl dispatch exec 'kitty -- pulsemixer'"
+              :onclick "eww-popup toggle volume_popup ${output}"
               (label :text {bar_state.volume.text})))
           (button :class "module-button battery ${bar_state.battery.class}"
             :onclick "eww update show_battery_time=${show_battery_time == 'true' ? 'false' : 'true'}"
@@ -110,6 +110,47 @@
   :namespace "eww-popup-backdrop"
   (eventbox :class "popup-backdrop" :onclick "eww-popup close"
     (box :hexpand true :vexpand true)))
+
+(defwidget popup_header [icon title subtitle]
+  (box :class "popup-header" :orientation "h" :space-evenly false
+    (box :class "popup-mark" (label :text icon))
+    (box :class "popup-title-stack" :orientation "v" :space-evenly false
+      (label :class "popup-title" :halign "start" :text title)
+      (label :class "popup-eyebrow" :halign "start" :text subtitle))))
+
+(defwindow volume_popup
+  :monitor 0
+  :geometry (geometry :x "70px" :y "50px" :width "300px" :height "240px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-volume"
+  (volume_panel))
+
+(defwidget volume_panel []
+  (box :class "popup accent-volume" :orientation "v" :space-evenly false
+    (popup_header :icon "" :title "Volume" :subtitle "Output level & device")
+    (box :class "popup-body" :orientation "v" :space-evenly false
+      (label :class "volume-value" :halign "start"
+        :text {bar_state.volume.muted == "true" ? "Muted" : "${bar_state.volume.percent}%"})
+      (scale :class "popup-slider volume-slider"
+        :value {bar_state.volume.percent} :min 0 :max 100
+        :onchange "eww-barctl --quiet volume set {}")
+      (button :class "popup-action volume-mute ${bar_state.volume.muted == 'true' ? 'active' : ''}"
+        :onclick "eww-barctl --quiet volume mute"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text {bar_state.volume.muted == "true" ? "󰝟" : ""})
+          (label :class "popup-action-label" :halign "start"
+            :text {bar_state.volume.muted == "true" ? "Unmute" : "Mute"})))
+      (box :class "popup-section-label" :orientation "h" :space-evenly false
+        (label :halign "start" :text "OUTPUT"))
+      (box :class "volume-sinks" :orientation "v" :space-evenly false
+        (for sink in {bar_state.volume.sinks}
+          (button :class "popup-row volume-sink ${sink.active == 'true' ? 'active' : ''}"
+            :onclick "eww-barctl --quiet volume sink ${sink.name}"
+            (box :orientation "h" :space-evenly false
+              (label :class "volume-sink-dot" :text {sink.active == "true" ? "" : ""})
+              (label :class "volume-sink-name" :halign "start" :text {sink.description}))))))))
 
 (defwindow display_mode_popup
   :monitor 0

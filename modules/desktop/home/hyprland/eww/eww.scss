@@ -950,6 +950,108 @@ tooltip label {
   padding: 10px 15px 11px;
 }
 
+/* --- Shared card for module popups (volume/bluetooth/network/battery) --- */
+.popup {
+  background: rgba(17, 17, 27, 0.985);
+  border: 1px solid rgba(205, 214, 244, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 20px 48px rgba(7, 8, 17, 0.58);
+  color: $text;
+}
+
+.popup-header {
+  border-bottom: 1px solid rgba(205, 214, 244, 0.07);
+  padding: 14px 15px 13px;
+}
+
+.popup-mark {
+  background: rgba(205, 214, 244, 0.08);
+  border: 1px solid rgba(205, 214, 244, 0.14);
+  border-radius: 8px;
+  font-size: 15px;
+  margin-right: 9px;
+  min-height: 34px;
+  min-width: 34px;
+}
+
+.popup-title { color: $text; font-size: 16px; font-weight: 800; }
+.popup-eyebrow { color: $overlay1; font-size: 10px; margin-top: 1px; }
+.popup-body { padding: 12px 14px 14px; }
+
+.popup-section-label {
+  color: $overlay0;
+  font-size: 10px;
+  font-weight: 800;
+  margin: 12px 2px 4px;
+}
+
+.popup-row {
+  border-radius: 7px;
+  min-height: 30px;
+  padding: 0 9px;
+}
+.popup-row:hover { background: rgba(49, 50, 68, 0.5); }
+
+.popup-action {
+  border-radius: 7px;
+  color: $subtext0;
+  margin-top: 8px;
+  min-height: 32px;
+  padding: 0 9px;
+}
+.popup-action:hover { background: rgba(49, 50, 68, 0.78); color: $text; }
+.popup-action-icon { margin-right: 9px; min-width: 18px; }
+.popup-action-label { font-weight: 700; }
+
+.popup-footer-action {
+  border-radius: 7px;
+  color: $sapphire;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 10px;
+  min-height: 28px;
+  padding: 0 10px;
+}
+.popup-footer-action:hover { background: rgba(49, 50, 68, 0.6); }
+
+.popup-empty { color: $overlay1; font-size: 11px; padding: 8px 2px; }
+
+.popup-slider trough {
+  background: rgba(69, 71, 90, 0.46);
+  border-radius: 999px;
+  min-height: 6px;
+}
+.popup-slider trough highlight { border-radius: 999px; min-height: 6px; }
+.popup-slider trough slider {
+  background: $text;
+  border-radius: 999px;
+  min-height: 14px;
+  min-width: 14px;
+  margin: -5px;
+}
+
+.popup-meter trough {
+  background: rgba(69, 71, 90, 0.46);
+  border-radius: 999px;
+  min-height: 6px;
+}
+.popup-meter trough progress { border-radius: 999px; min-height: 6px; }
+
+/* Accents */
+.accent-volume .popup-mark { background: rgba(249, 226, 175, 0.11); border-color: rgba(249, 226, 175, 0.18); color: $yellow; }
+.accent-bluetooth .popup-mark { background: rgba(116, 199, 236, 0.11); border-color: rgba(116, 199, 236, 0.18); color: $sapphire; }
+.accent-network .popup-mark { background: rgba(250, 179, 135, 0.11); border-color: rgba(250, 179, 135, 0.18); color: $peach; }
+.accent-battery .popup-mark { background: rgba(137, 180, 250, 0.11); border-color: rgba(137, 180, 250, 0.18); color: $blue; }
+
+/* Volume specifics */
+.volume-value { color: $text; font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+.volume-slider trough highlight { background: $yellow; }
+.volume-mute.active { background: rgba(249, 226, 175, 0.12); color: $yellow; }
+.volume-sink.active { background: rgba(249, 226, 175, 0.10); color: $yellow; }
+.volume-sink-dot { color: $overlay1; margin-right: 8px; }
+.volume-sink.active .volume-sink-dot { color: $yellow; }
+.volume-sink-name { color: $text; }
+
 .popup-backdrop {
   background: transparent;
 }

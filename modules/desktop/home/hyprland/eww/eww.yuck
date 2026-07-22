@@ -53,14 +53,14 @@
           (systray :class "tray" :icon-size 14 :spacing 8)
           (button :class "idle-inhibitor ${bar_state.idle_inhibited == 'true' ? 'active' : (bar_state.display.mode != 'normal' ? 'active' : '')} ${bar_state.display.class}"
             :onclick "eww-barctl --quiet idle toggle"
-            :onrightclick {laptop_controls == "true" ? "eww open --toggle display_mode_popup --screen ${output}" : "true"}
+            :onrightclick {laptop_controls == "true" ? "eww-popup toggle display_mode_popup ${output}" : "true"}
             :tooltip {bar_state.display.mode == "normal" ? (bar_state.idle_inhibited == "true" ? "Hypridle paused" : "Hypridle active") : bar_state.display.status}
             (label :text {bar_state.display.mode == "headless" ? "󰒲" : (bar_state.display.mode == "external" ? "󰍹" : (bar_state.idle_inhibited == "true" ? "" : ""))}))
           (label :class "module network ${bar_state.network.class}" :tooltip {bar_state.network.tooltip} :text {bar_state.network.text})
           (label :class "module bluetooth ${bar_state.bluetooth.class}" :visible {bar_state.bluetooth.text != ""} :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text}))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
           (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
-            :onclick "eww open --toggle ai_usage_popup --screen ${output} && eww-barctl --quiet ai refresh"
+            :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
             :tooltip {bar_state.ai_usage.tooltip}
             (label :text {bar_state.ai_usage.text}))
           (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
@@ -95,6 +95,21 @@
     :class "workspace ${state_class}"
     :onclick "hyprctl dispatch workspace ${id}"
     (label :text icon)))
+
+(defwindow popup_backdrop
+  :monitor 0
+  :geometry (geometry
+    :x "0"
+    :y "44px"
+    :width "100%"
+    :height "100%"
+    :anchor "top center")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-popup-backdrop"
+  (eventbox :class "popup-backdrop" :onclick "eww-popup close"
+    (box :hexpand true :vexpand true)))
 
 (defwindow display_mode_popup
   :monitor 0
@@ -142,7 +157,7 @@
         :onclick "eww-barctl --quiet display restore"
         (label :text "Turn screens on"))
       (button :class "display-mode-footer-action danger"
-        :onclick "eww-barctl --quiet display normal && eww close display_mode_popup"
+        :onclick "eww-barctl --quiet display normal && eww-popup close"
         (label :text "Exit mode")))))
 
 (defwindow ai_usage_popup

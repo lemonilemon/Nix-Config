@@ -50,18 +50,18 @@
         description = "Enable Dunst notifications for Hyprland";
       };
 
-      hyprland.swww.enable = helpers.mkHomeOpt {
+      hyprland.awww.enable = helpers.mkHomeOpt {
         inherit osConfig;
-        path = "home.desktop.hyprland.swww.enable";
+        path = "home.desktop.hyprland.awww.enable";
         default = false;
-        description = "Enable the swww wallpaper engine and picker for Hyprland";
+        description = "Enable the awww (formerly swww) wallpaper engine and picker for Hyprland";
       };
 
       hyprland.hyprpaper.enable = helpers.mkHomeOpt {
         inherit osConfig;
         path = "home.desktop.hyprland.hyprpaper.enable";
-        default = config.home.desktop.hyprland.enable && !config.home.desktop.hyprland.swww.enable;
-        description = "Enable hyprpaper static wallpaper (fallback engine when swww is off)";
+        default = config.home.desktop.hyprland.enable && !config.home.desktop.hyprland.awww.enable;
+        description = "Enable hyprpaper static wallpaper (fallback engine when awww is off)";
       };
 
       hyprland.wlogout.enable = helpers.mkHomeOpt {

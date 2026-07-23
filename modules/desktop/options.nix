@@ -42,16 +42,16 @@
         description = "Enable Dunst notifications for Hyprland";
       };
 
-      hyprland.swww.enable = lib.mkOption {
+      hyprland.awww.enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable the swww wallpaper engine and picker for Hyprland";
+        description = "Enable the awww (formerly swww) wallpaper engine and picker for Hyprland";
       };
 
       hyprland.hyprpaper.enable = lib.mkOption {
         type = lib.types.bool;
-        default = config.home.desktop.hyprland.enable && !config.home.desktop.hyprland.swww.enable;
-        description = "Enable hyprpaper static wallpaper (fallback engine when swww is off)";
+        default = config.home.desktop.hyprland.enable && !config.home.desktop.hyprland.awww.enable;
+        description = "Enable hyprpaper static wallpaper (fallback engine when awww is off)";
       };
 
       hyprland.wlogout.enable = lib.mkOption {

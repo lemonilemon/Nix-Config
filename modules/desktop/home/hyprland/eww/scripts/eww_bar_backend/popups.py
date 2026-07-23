@@ -14,6 +14,7 @@ POPUP_WINDOWS = [
     "battery_popup",
     "ai_usage_popup",
     "display_mode_popup",
+    "notif_center_popup",
 ]
 BACKDROP_WINDOW = "popup_backdrop"
 

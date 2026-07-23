@@ -1,4 +1,4 @@
-(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false"},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"","alt":"","capacity":100,"class":"","status":"Unknown","time":"N/A","health":"--","power":"—"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"tray_count":0,"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false"},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"","alt":"","capacity":100,"class":"","status":"Unknown","time":"N/A","health":"--","power":"—"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"tray_count":0,"notifications":{"paused":"false","new":0,"count":0,"groups":[]},"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
 
 (defvar laptop_controls "@laptopControls@")
 
@@ -54,6 +54,11 @@
           (revealer :transition "slideright" :duration "250ms"
             :reveal {bar_state.tray_count <= tray_fold_threshold || tray_force_expanded}
             (systray :class "tray" :icon-size 14 :spacing 8))
+          (button :class "module-button notif-bell ${bar_state.notifications.paused == 'true' ? 'dnd' : (bar_state.notifications.new > 0 ? 'has-new' : '')}"
+            :timeout "5s"
+            :onclick "eww-popup toggle notif_center_popup ${output} && eww-barctl --quiet notif mark-seen"
+            :tooltip {bar_state.notifications.paused == "true" ? "Do not disturb" : "${bar_state.notifications.count} notifications"}
+            (label :text {bar_state.notifications.paused == "true" ? "󰂛" : (bar_state.notifications.new > 0 ? "󰂚 ${bar_state.notifications.new}" : "󰂜")}))
           (button :class "idle-inhibitor ${bar_state.idle_inhibited == 'true' ? 'active' : (bar_state.display.mode != 'normal' ? 'active' : '')} ${bar_state.display.class}"
             :onclick "eww-barctl --quiet idle toggle"
             :timeout "5s" :onrightclick {laptop_controls == "true" ? "eww-popup toggle display_mode_popup ${output}" : "true"}
@@ -307,6 +312,71 @@
   :focusable false
   :namespace "eww-battery"
   (battery_panel))
+
+(defwindow notif_center_popup
+  :monitor 0
+  :geometry (geometry :x "12px" :y "50px" :width "340px" :height "420px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-notifications"
+  (notif_center_panel))
+
+(defwidget notif_center_panel []
+  (box :class "popup accent-notif notif-center" :orientation "v" :space-evenly false
+    (box :class "popup-header" :orientation "h" :space-evenly false
+      (box :class "popup-mark" (label :text "󰂚"))
+      (box :class "popup-title-stack" :orientation "v" :space-evenly false
+        (label :class "popup-title" :halign "start" :text "Notifications")
+        (label :class "popup-eyebrow" :halign "start"
+          :text {bar_state.notifications.paused == "true" ? "Do not disturb" : "${bar_state.notifications.count} in history"}))
+      (box :class "notif-header-actions" :orientation "h" :space-evenly false :halign "end" :hexpand true
+        (button :class "notif-dnd ${bar_state.notifications.paused == 'true' ? 'active' : ''}"
+          :onclick "eww-barctl --quiet notif dnd-toggle"
+          :tooltip {bar_state.notifications.paused == "true" ? "Resume notifications" : "Do not disturb"}
+          (label :text "󰂛"))
+        (button :class "notif-clear-all"
+          :onclick "eww-barctl --quiet notif clear-all"
+          :tooltip "Clear all"
+          (label :text "󰎟"))))
+    (box :class "popup-empty notif-empty" :orientation "h" :space-evenly false
+      :visible {arraylength(bar_state.notifications.groups) == 0}
+      (label :halign "start" :text "No notifications"))
+    (scroll :class "notif-scroll" :vscroll true :hscroll false :vexpand true
+      :visible {arraylength(bar_state.notifications.groups) > 0}
+      (box :class "notif-groups" :orientation "v" :space-evenly false
+        (for group in {bar_state.notifications.groups}
+          (notif_group :group group))))))
+
+(defwidget notif_group [group]
+  (box :class "notif-group" :orientation "v" :space-evenly false
+    (box :class "notif-group-header" :orientation "h" :space-evenly false
+      (button :class "notif-group-toggle" :hexpand true
+        :onclick "eww-barctl --quiet notif toggle-group '${group.app}'"
+        (box :orientation "h" :space-evenly false
+          (label :class "notif-group-app" :halign "start" :text {group.app})
+          (label :class "notif-group-count" :text {group.count})
+          (label :class "notif-group-chevron" :halign "end" :hexpand true
+            :text {group.collapsed == "true" ? "▸" : "▾"})))
+      (button :class "notif-group-clear"
+        :onclick "eww-barctl --quiet notif clear-group '${group.app}'"
+        :tooltip "Clear group"
+        (label :text "󰅖")))
+    (revealer :transition "slidedown" :duration "200ms" :reveal {group.collapsed != "true"}
+      (box :class "notif-items" :orientation "v" :space-evenly false
+        (for item in {group.items}
+          (notif_item :item item))))))
+
+(defwidget notif_item [item]
+  (box :class "notif-item ${item.urgency == 'CRITICAL' ? 'critical' : ''}" :orientation "h" :space-evenly false
+    (box :class "notif-item-body" :orientation "v" :space-evenly false :hexpand true
+      (box :orientation "h" :space-evenly false
+        (label :class "notif-item-summary" :halign "start" :text {item.summary})
+        (label :class "notif-item-age" :halign "end" :hexpand true :text {item.age}))
+      (label :class "notif-item-text" :halign "start" :visible {item.body != ""} :text {item.body}))
+    (button :class "notif-item-dismiss" :valign "start"
+      :onclick "eww-barctl --quiet notif dismiss ${item.id}"
+      (label :text "󰅖"))))
 
 (defwindow ai_usage_popup
   :monitor 0

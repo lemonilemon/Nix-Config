@@ -1086,6 +1086,59 @@ tooltip label {
 .battery-row-label { color: $overlay1; font-size: 11px; }
 .battery-row-value { color: $text; font-size: 11px; font-weight: 800; }
 
+/* Notification center */
+.accent-notif { @include glass-popup($mauve); }
+.accent-notif .popup-mark { background: rgba(203, 166, 247, 0.11); border-color: rgba(203, 166, 247, 0.18); color: $mauve; }
+
+.notif-bell.has-new { color: $mauve; }
+.notif-bell.dnd { color: $overlay0; }
+
+.notif-header-actions { margin-left: 8px; }
+.notif-dnd,
+.notif-clear-all {
+  border-radius: 6px;
+  color: $subtext0;
+  margin-left: 6px;
+  min-height: 28px;
+  min-width: 28px;
+}
+.notif-dnd:hover,
+.notif-clear-all:hover { background: rgba(203, 166, 247, 0.10); color: $mauve; }
+.notif-dnd.active { background: rgba(203, 166, 247, 0.14); color: $mauve; }
+
+.notif-scroll { margin: 4px 3px 6px 0; }
+.notif-scroll scrollbar { background: transparent; min-width: 5px; }
+.notif-scroll scrollbar slider { background: rgba(127, 132, 156, 0.34); border-radius: 999px; min-width: 3px; }
+
+.notif-groups { padding: 6px 10px 8px 14px; }
+.notif-group { margin-bottom: 8px; }
+.notif-group-header { min-height: 28px; }
+.notif-group-toggle { border-radius: 7px; padding: 0 8px; }
+.notif-group-toggle:hover { background: rgba(49, 50, 68, 0.5); }
+.notif-group-app { color: $mauve; font-size: 12px; font-weight: 800; }
+.notif-group-count {
+  background: rgba(203, 166, 247, 0.14);
+  border-radius: 999px;
+  color: $mauve;
+  font-size: 9px;
+  font-weight: 800;
+  margin-left: 7px;
+  padding: 1px 7px;
+}
+.notif-group-chevron { color: $overlay0; font-size: 10px; }
+.notif-group-clear { border-radius: 6px; color: $overlay1; min-width: 26px; }
+.notif-group-clear:hover { background: rgba(243, 139, 168, 0.14); color: $red; }
+
+.notif-item { border-radius: 7px; margin-top: 3px; padding: 6px 8px; }
+.notif-item:hover { background: rgba(49, 50, 68, 0.4); }
+.notif-item-summary { color: $text; font-size: 12px; font-weight: 700; }
+.notif-item-age { color: $overlay0; font-size: 9px; margin-left: 8px; }
+.notif-item-text { color: $subtext0; font-size: 11px; margin-top: 1px; }
+.notif-item.critical .notif-item-summary { color: $red; }
+.notif-item-dismiss { border-radius: 6px; color: $overlay1; margin-left: 6px; min-width: 24px; }
+.notif-item-dismiss:hover { background: rgba(243, 139, 168, 0.14); color: $red; }
+.notif-empty { padding: 14px; }
+
 .popup-backdrop {
   background: transparent;
 }

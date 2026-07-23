@@ -95,5 +95,10 @@ class SingleArgToggleTests(unittest.TestCase):
         self.assertIn(["open", "volume_popup", "--screen", "HDMI-A-1"], calls)
 
 
+class NotifWindowRegisteredTests(unittest.TestCase):
+    def test_notif_center_popup_is_managed(self):
+        self.assertIn("notif_center_popup", popups.POPUP_WINDOWS)
+
+
 if __name__ == "__main__":
     unittest.main()

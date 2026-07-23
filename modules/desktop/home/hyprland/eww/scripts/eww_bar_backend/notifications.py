@@ -69,13 +69,18 @@ def format_age(seconds):
     return f"{int(seconds // 86400)}d"
 
 
-def monotonic_seconds():
-    # dunst stamps history with CLOCK_MONOTONIC (suspend-excluded); /proc/uptime
-    # is BOOTTIME (suspend-included) and drifts ahead on every suspend.
+def boottime_seconds():
+    # dunst stamps history with CLOCK_BOOTTIME (suspend-included) — verified on
+    # this host: timestamps run ahead of CLOCK_MONOTONIC by exactly the
+    # accumulated suspend time. Using MONOTONIC here makes ages go negative
+    # (clamped to "now") after any suspend.
     try:
-        return time.clock_gettime(time.CLOCK_MONOTONIC)
+        return time.clock_gettime(time.CLOCK_BOOTTIME)
     except Exception:
-        return 0.0
+        try:
+            return time.clock_gettime(time.CLOCK_MONOTONIC)
+        except Exception:
+            return 0.0
 
 
 def notifications_state_from_parts(items, paused_text, now_monotonic_us, collapsed, last_seen_us):
@@ -120,7 +125,7 @@ def notifications_state():
         collapsed = set(_COLLAPSED)
         last_seen = _LAST_SEEN_US
     return notifications_state_from_parts(
-        items, paused_text, monotonic_seconds() * 1_000_000, collapsed, last_seen
+        items, paused_text, boottime_seconds() * 1_000_000, collapsed, last_seen
     )
 
 
@@ -175,7 +180,7 @@ def toggle_dnd():
 def mark_seen():
     global _LAST_SEEN_US
     items = parse_history_items(run_text(["dunstctl", "history"]))
-    newest = items[0]["timestamp"] if items else int(monotonic_seconds() * 1_000_000)
+    newest = items[0]["timestamp"] if items else int(boottime_seconds() * 1_000_000)
     with _UI_LOCK:
         _LAST_SEEN_US = max(_LAST_SEEN_US, newest)
     return notifications_state()

@@ -4,7 +4,7 @@
   ...
 }:
 {
-  config = lib.mkIf config.home.desktop.hyprland.enable {
+  config = lib.mkIf config.home.desktop.hyprland.hyprpaper.enable {
     home.file.".config/hypr/wallpaper/pixel_sunset.jxl" = {
       enable = true;
       source = ./wallpaper/pixel_sunset.jxl;

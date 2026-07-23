@@ -16,6 +16,7 @@
     ./network
     ./wlogout
     ./hyprpaper
+    ./wallpaper
     ./bluetooth
   ];
   config = lib.mkIf config.home.desktop.hyprland.enable {

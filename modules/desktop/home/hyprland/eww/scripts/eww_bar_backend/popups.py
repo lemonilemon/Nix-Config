@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-from .common import run_text
+from .common import parse_json, run_text
 
 # The full set of popup windows the helper manages. `eww close` is fire-and-forget
 # here (via _run_eww with check=False): naming a window that is closed or not yet
@@ -17,7 +17,7 @@ POPUP_WINDOWS = [
 ]
 BACKDROP_WINDOW = "popup_backdrop"
 
-POPUP_USAGE = "usage: eww-popup toggle <window> <screen> | close"
+POPUP_USAGE = "usage: eww-popup toggle <window> [screen] | close"
 
 
 def parse_open_windows(active_windows_text):
@@ -31,6 +31,21 @@ def parse_open_windows(active_windows_text):
             continue
         open_ids.add(line.split(":", 1)[0].strip())
     return open_ids
+
+
+def focused_monitor_from_json(monitors_json):
+    data = parse_json(monitors_json, [])
+    if isinstance(data, list):
+        for monitor in data:
+            if isinstance(monitor, dict) and monitor.get("focused") is True:
+                name = monitor.get("name")
+                if isinstance(name, str) and name:
+                    return name
+    return "0"
+
+
+def _focused_monitor():
+    return focused_monitor_from_json(run_text(["hyprctl", "monitors", "-j"]))
 
 
 def _close_call():
@@ -74,11 +89,13 @@ def _run_eww(args):
     )
 
 
-def run_popup(argv, active_windows_fn=_active_windows_text, eww_fn=_run_eww):
+def run_popup(argv, active_windows_fn=_active_windows_text, eww_fn=_run_eww, monitor_fn=_focused_monitor):
     if not argv or argv[0] in ("-h", "--help", "help"):
         print(POPUP_USAGE, file=sys.stderr)
         return 1
     command, args = argv[0], argv[1:]
+    if command == "toggle" and len(args) == 1:
+        args = [args[0], monitor_fn()]
     open_ids = parse_open_windows(active_windows_fn()) if command == "toggle" else set()
     try:
         calls = popup_eww_calls(command, args, open_ids)

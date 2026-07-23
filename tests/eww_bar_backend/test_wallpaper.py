@@ -98,3 +98,24 @@ class WallpaperPayloadTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ActiveThroughSymlinkTests(unittest.TestCase):
+    def test_active_matches_when_item_is_symlink_to_current(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = root / "store" / "pixel-sunset-png"
+            target.parent.mkdir()
+            target.write_bytes(b"x")
+            link = root / "pixel_sunset.png"
+            link.symlink_to(target)
+            items = wallpaper.wallpaper_items(
+                [link], str(target), thumb_fn=lambda p: ""
+            )
+            self.assertEqual(items[0]["active"], "true")
+
+    def test_inactive_when_current_empty(self):
+        items = wallpaper.wallpaper_items(
+            [Path("/w/a.png")], "", thumb_fn=lambda p: ""
+        )
+        self.assertEqual(items[0]["active"], "false")

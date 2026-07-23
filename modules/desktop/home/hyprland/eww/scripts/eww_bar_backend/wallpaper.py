@@ -74,14 +74,24 @@ def ensure_thumbnail(path):
     return str(thumb) if thumb.exists() else ""
 
 
+def _real_path(path_str):
+    try:
+        return str(Path(path_str).resolve()) if path_str else ""
+    except Exception:
+        return path_str
+
+
 def wallpaper_items(files, current, thumb_fn=ensure_thumbnail):
+    # awww query reports the resolved target, and Home Manager deploys the seed
+    # as a store symlink — compare resolved paths or the seed never highlights.
+    current_real = _real_path(current)
     return [
         {
             "name": truncate_text(path.stem, NAME_MAX),
             "path": str(path),
             "thumb": thumb_fn(path),
             "animated": "true" if path.suffix.lower() == ".gif" else "false",
-            "active": "true" if str(path) == current else "false",
+            "active": "true" if current_real and _real_path(str(path)) == current_real else "false",
         }
         for path in files
     ]

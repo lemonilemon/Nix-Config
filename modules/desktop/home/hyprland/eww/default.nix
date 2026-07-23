@@ -38,6 +38,7 @@ let
       blueman
       coreutils
       dbus
+      dunst
       eww
       gawk
       gnugrep

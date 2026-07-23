@@ -1,6 +1,6 @@
 import subprocess
 import threading
-from pathlib import Path
+import time
 
 from .common import parse_json, run_text, truncate_text
 
@@ -69,14 +69,16 @@ def format_age(seconds):
     return f"{int(seconds // 86400)}d"
 
 
-def uptime_seconds():
+def monotonic_seconds():
+    # dunst stamps history with CLOCK_MONOTONIC (suspend-excluded); /proc/uptime
+    # is BOOTTIME (suspend-included) and drifts ahead on every suspend.
     try:
-        return float(Path("/proc/uptime").read_text().split()[0])
+        return time.clock_gettime(time.CLOCK_MONOTONIC)
     except Exception:
         return 0.0
 
 
-def notifications_state_from_parts(items, paused_text, now_boot_us, collapsed, last_seen_us):
+def notifications_state_from_parts(items, paused_text, now_monotonic_us, collapsed, last_seen_us):
     grouped = {}
     order = []
     for item in items:
@@ -84,7 +86,7 @@ def notifications_state_from_parts(items, paused_text, now_boot_us, collapsed, l
         if app not in grouped:
             grouped[app] = []
             order.append(app)
-        age = max(0.0, (now_boot_us - item["timestamp"]) / 1_000_000)
+        age = max(0.0, (now_monotonic_us - item["timestamp"]) / 1_000_000)
         grouped[app].append(
             {
                 "id": item["id"],
@@ -118,7 +120,7 @@ def notifications_state():
         collapsed = set(_COLLAPSED)
         last_seen = _LAST_SEEN_US
     return notifications_state_from_parts(
-        items, paused_text, uptime_seconds() * 1_000_000, collapsed, last_seen
+        items, paused_text, monotonic_seconds() * 1_000_000, collapsed, last_seen
     )
 
 
@@ -126,7 +128,7 @@ def _run_dunstctl(args):
     subprocess.run(
         ["dunstctl", *args],
         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        check=False,
+        check=False, timeout=5,
     )
 
 
@@ -173,7 +175,7 @@ def toggle_dnd():
 def mark_seen():
     global _LAST_SEEN_US
     items = parse_history_items(run_text(["dunstctl", "history"]))
-    newest = items[0]["timestamp"] if items else int(uptime_seconds() * 1_000_000)
+    newest = items[0]["timestamp"] if items else int(monotonic_seconds() * 1_000_000)
     with _UI_LOCK:
         _LAST_SEEN_US = max(_LAST_SEEN_US, newest)
     return notifications_state()

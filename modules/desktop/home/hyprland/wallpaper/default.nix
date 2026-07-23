@@ -49,6 +49,7 @@ in
       Service = {
         ExecStart = "${pkgs.awww}/bin/awww-daemon";
         ExecStartPost = awwwInit;
+        MemoryAccounting = true;
         Restart = "on-failure";
         RestartSec = "1s";
       };

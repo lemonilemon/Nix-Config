@@ -100,9 +100,12 @@ def wallpaper_state():
 def set_wallpaper(path):
     if not path:
         raise ValueError("wallpaper set requires a path")
-    subprocess.run(
-        ["awww", "img", path, *AWWW_TRANSITION],
-        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        check=False,
-    )
+    try:
+        subprocess.run(
+            ["awww", "img", path, *AWWW_TRANSITION],
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            check=False, timeout=5,
+        )
+    except Exception:
+        pass
     return wallpaper_state()

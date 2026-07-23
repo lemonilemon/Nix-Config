@@ -538,7 +538,7 @@ Glyphs (paste exactly): image `󰸉` (U+F0E09), folder `` (U+F07B), play badge `
       (button :class "wallpaper-open-folder" :halign "end" :hexpand true
         :onclick "hyprctl dispatch exec 'nemo ~/Pictures/wallpapers'"
         :tooltip "Open folder"
-        (label :text "")))
+        (label :text "")))
     (box :class "popup-empty wallpaper-empty" :orientation "h" :space-evenly false
       :visible {arraylength(bar_state.wallpaper.rows) == 0}
       (label :halign "start" :text "Drop images into ~/Pictures/wallpapers"))
@@ -624,7 +624,7 @@ In the eww blur-namespace list (Task 2 of the notifications plan), append `"eww-
 Run: `python3 - <<'EOF'`
 ```python
 text = open("modules/desktop/home/hyprland/eww/eww.yuck", encoding="utf-8").read()
-for glyph, name in [("󰸉", "image"), ("", "folder"), ("▶", "play-badge")]:
+for glyph, name in [("󰸉", "image"), ("", "folder"), ("▶", "play-badge")]:
     assert glyph in text, f"missing glyph: {name}"
 depth = 0
 in_string = False

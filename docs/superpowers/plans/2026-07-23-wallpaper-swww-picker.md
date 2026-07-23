@@ -33,7 +33,7 @@
 - Modify: `profiles/laptop/config.nix`, `profiles/desktop/config.nix` (enable swww)
 
 **Interfaces:**
-- Produces: options `home.desktop.hyprland.swww.enable` (default `false`) and `home.desktop.hyprland.hyprpaper.enable` (default `hyprland.enable && !swww.enable`); systemd user services `swww-daemon` (+ seed init); `~/Pictures/wallpapers/pixel_sunset.png` present on activation. Later tasks assume `awww` on the backend PATH (Task 3 adds it to eww `runtimePackages`).
+- Produces: options `home.desktop.hyprland.awww.enable` (default `false`) and `home.desktop.hyprland.hyprpaper.enable` (default `hyprland.enable && !awww.enable`), each also mirrored as a NixOS-level option in `modules/desktop/options.nix` (profiles assign at system level); systemd user service `awww-daemon` (+ seed init); `~/Pictures/wallpapers/pixel_sunset.png` present on activation. Later tasks assume `awww` on the backend PATH (Task 3 adds it to eww `runtimePackages`).
 
 - [ ] **Step 1: Add the options (in `options.nix`, after the `hyprland.dunst.enable` block, same `mkHomeOpt` pattern)**
 

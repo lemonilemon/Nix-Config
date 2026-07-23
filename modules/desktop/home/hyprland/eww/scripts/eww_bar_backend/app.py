@@ -21,6 +21,7 @@ from .collectors import (
 from .control import control_server, run_ctl, write_backend_pidfile
 from .display import display_state
 from .inhibitors import idle_inhibited_state
+from .notifications import notifications_state
 from .popups import run_popup
 from .state import BarState
 from .watchers import (
@@ -59,6 +60,7 @@ def run_bar():
         idle_inhibited=idle_inhibited_state(),
         display=display_state(),
         workspace_state=workspace_state(),
+        notifications=notifications_state(),
     )
 
     threads = [
@@ -84,7 +86,7 @@ def run_bar():
         threading.Thread(
             target=periodic,
             args=(state, 30),
-            kwargs={"battery": battery_state},
+            kwargs={"battery": battery_state, "notifications": notifications_state},
             daemon=True,
         ),
         threading.Thread(target=watch_idle_inhibitor, args=(state, idle_refresh), daemon=True),
@@ -119,6 +121,16 @@ def run_bar():
             target=periodic,
             args=(state, 5),
             kwargs={"tray_count": tray_count},
+            daemon=True,
+        ),
+        threading.Thread(
+            target=watch_command,
+            args=(
+                state,
+                "notifications",
+                notifications_state,
+                ["dbus-monitor", "--profile", "interface='org.freedesktop.Notifications'"],
+            ),
             daemon=True,
         ),
     ]

@@ -12,6 +12,7 @@ from .common import (
     VOLUME_DEFAULT,
     WORKSPACE_DEFAULT,
 )
+from .notifications import NOTIFICATIONS_DEFAULT
 
 
 class BarState:
@@ -31,6 +32,7 @@ class BarState:
             "battery": BATTERY_DEFAULT.copy(),
             "bluetooth": BLUETOOTH_DEFAULT.copy(),
             "tray_count": 0,
+            "notifications": dict(NOTIFICATIONS_DEFAULT, groups=[]),
             "idle_inhibited": "false",
             "display": {
                 "mode": "normal",

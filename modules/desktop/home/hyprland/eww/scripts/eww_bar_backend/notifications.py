@@ -120,3 +120,60 @@ def notifications_state():
     return notifications_state_from_parts(
         items, paused_text, uptime_seconds() * 1_000_000, collapsed, last_seen
     )
+
+
+def _run_dunstctl(args):
+    subprocess.run(
+        ["dunstctl", *args],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        check=False,
+    )
+
+
+def toggle_group(app):
+    if not app:
+        raise ValueError("notif toggle-group requires an app name")
+    with _UI_LOCK:
+        if app in _COLLAPSED:
+            _COLLAPSED.discard(app)
+        else:
+            _COLLAPSED.add(app)
+    return notifications_state()
+
+
+def dismiss_notification(notif_id):
+    try:
+        value = int(notif_id)
+    except (TypeError, ValueError):
+        raise ValueError("notif dismiss requires a numeric id")
+    _run_dunstctl(["history-rm", str(value)])
+    return notifications_state()
+
+
+def clear_group(app):
+    if not app:
+        raise ValueError("notif clear-group requires an app name")
+    # Group names are the truncated app names, so match with the same truncation.
+    for item in parse_history_items(run_text(["dunstctl", "history"])):
+        if truncate_text(item["app"], APP_MAX) == app:
+            _run_dunstctl(["history-rm", str(item["id"])])
+    return notifications_state()
+
+
+def clear_all_notifications():
+    _run_dunstctl(["history-clear"])
+    return notifications_state()
+
+
+def toggle_dnd():
+    _run_dunstctl(["set-paused", "toggle"])
+    return notifications_state()
+
+
+def mark_seen():
+    global _LAST_SEEN_US
+    items = parse_history_items(run_text(["dunstctl", "history"]))
+    newest = items[0]["timestamp"] if items else int(uptime_seconds() * 1_000_000)
+    with _UI_LOCK:
+        _LAST_SEEN_US = max(_LAST_SEEN_US, newest)
+    return notifications_state()

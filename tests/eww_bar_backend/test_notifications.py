@@ -8,6 +8,7 @@ SCRIPTS_DIR = REPO_ROOT / "modules" / "desktop" / "home" / "hyprland" / "eww" / 
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from eww_bar_backend import notifications  # noqa: E402
+from eww_bar_backend import control  # noqa: E402
 
 
 def wrap(value):
@@ -118,6 +119,54 @@ class StateFromPartsTests(unittest.TestCase):
         self.assertEqual(len(group["app"]), 20)
         self.assertEqual(len(group["items"][0]["summary"]), 48)
         self.assertEqual(len(group["items"][0]["body"]), 64)
+
+
+class NotifActionTests(unittest.TestCase):
+    def test_toggle_group_flips_membership(self):
+        notifications._COLLAPSED.clear()
+        calls = []
+        original = notifications.notifications_state
+        notifications.notifications_state = lambda: calls.append(1) or {"stub": True}
+        try:
+            notifications.toggle_group("Element")
+            self.assertIn("Element", notifications._COLLAPSED)
+            notifications.toggle_group("Element")
+            self.assertNotIn("Element", notifications._COLLAPSED)
+        finally:
+            notifications.notifications_state = original
+        self.assertEqual(len(calls), 2)
+
+    def test_toggle_group_requires_app(self):
+        with self.assertRaises(ValueError):
+            notifications.toggle_group("")
+
+    def test_dismiss_requires_numeric_id(self):
+        with self.assertRaises(ValueError):
+            notifications.dismiss_notification("abc")
+
+
+class NotifPayloadTests(unittest.TestCase):
+    def test_payloads(self):
+        self.assertEqual(
+            control.control_payload_from_args(["notif", "toggle-group", "Claude", "Code"]),
+            {"command": "notif", "action": "toggle-group", "app": "Claude Code"},
+        )
+        self.assertEqual(
+            control.control_payload_from_args(["notif", "dismiss", "42"]),
+            {"command": "notif", "action": "dismiss", "id": "42"},
+        )
+        self.assertEqual(
+            control.control_payload_from_args(["notif", "clear-all"]),
+            {"command": "notif", "action": "clear-all"},
+        )
+        self.assertEqual(
+            control.control_payload_from_args(["notif", "dnd-toggle"]),
+            {"command": "notif", "action": "dnd-toggle"},
+        )
+
+    def test_notif_without_action_is_usage_error(self):
+        with self.assertRaises(ValueError):
+            control.control_payload_from_args(["notif"])
 
 
 if __name__ == "__main__":

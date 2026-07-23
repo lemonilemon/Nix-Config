@@ -36,6 +36,7 @@ let
       bluez
       blueman
       coreutils
+      dbus
       eww
       gawk
       gnugrep

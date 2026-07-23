@@ -17,6 +17,14 @@ from .collectors import (
 from .common import backend_pidfile_path, control_socket_path, parse_json
 from .display import display_state, set_display_mode
 from .inhibitors import idle_inhibited_state, set_idle_inhibited, toggle_idle_inhibited
+from .notifications import (
+    clear_all_notifications,
+    clear_group,
+    dismiss_notification,
+    mark_seen,
+    toggle_dnd,
+    toggle_group,
+)
 
 
 CONTROL_USAGE = (
@@ -24,6 +32,7 @@ CONTROL_USAGE = (
     "media play-pause|next|previous | "
     "idle toggle|on|off|status | display normal|external|headless|restore|toggle|status | ai refresh"
     " | bluetooth power-toggle|disconnect <mac> | network wifi-toggle"
+    " | notif toggle-group <app>|dismiss <id>|clear-group <app>|clear-all|dnd-toggle|mark-seen"
 )
 
 _AI_REFRESH_LOCK = threading.Lock()
@@ -226,6 +235,27 @@ def handle_control_command(state, payload):
         status = "queued" if queue_ai_refresh(state) else "already-refreshing"
         return {"ok": True, "command": "ai", "action": action, "status": status}
 
+    if command == "notif":
+        action = payload.get("action", "")
+        if action == "toggle-group":
+            value = toggle_group(payload.get("app", ""))
+        elif action == "dismiss":
+            value = dismiss_notification(payload.get("id", ""))
+        elif action == "clear-group":
+            value = clear_group(payload.get("app", ""))
+        elif action == "clear-all":
+            value = clear_all_notifications()
+        elif action == "dnd-toggle":
+            value = toggle_dnd()
+        elif action == "mark-seen":
+            value = mark_seen()
+        else:
+            raise ValueError(
+                "notif action must be toggle-group, dismiss, clear-group, clear-all, dnd-toggle, or mark-seen"
+            )
+        state.update(notifications=value)
+        return {"ok": True, "command": "notif", "action": action, "notifications": value}
+
     raise ValueError("unknown control command")
 
 
@@ -321,6 +351,13 @@ def control_payload_from_args(args):
         return {"command": "display", "action": action}
     if args[0] == "ai" and len(args) == 2:
         return {"command": "ai", "action": args[1]}
+    if args[0] == "notif" and len(args) >= 2:
+        payload = {"command": "notif", "action": args[1]}
+        if args[1] in ("toggle-group", "clear-group") and len(args) >= 3:
+            payload["app"] = " ".join(args[2:])
+        elif args[1] == "dismiss" and len(args) >= 3:
+            payload["id"] = args[2]
+        return payload
     raise ValueError(CONTROL_USAGE)
 
 

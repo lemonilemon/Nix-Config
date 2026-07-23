@@ -14,17 +14,16 @@ in
         global = {
           # Position
           origin = "top-right";
-          offset = "16x56"; # 56px down to clear the waybar
+          offset = "(16, 56)"; # 56px down to clear the waybar
           notification_limit = 5;
           gap_size = 8;
 
           # Dimensions
           width = "(200, 380)";
-          height = 120;
+          height = "(0, 300)";
           padding = 14;
           horizontal_padding = 16;
           text_icon_padding = 12;
-          icon_size = 32;
 
           # Appearance
           corner_radius = 12;
@@ -51,10 +50,8 @@ in
           timeout = 6;
           idle_threshold = 120;
           sticky_history = true;
-          history_length = 20;
+          history_length = 50;
           always_run_script = true;
-          close = "ctrl+space";
-          close_all = "ctrl+shift+space";
 
           # Icons
           icon_theme = "rose-pine";
@@ -70,26 +67,27 @@ in
           progress_bar_min_width = 150;
           progress_bar_max_width = 300;
           progress_bar_corner_radius = 3;
+          highlight = palette.mauve;
         };
 
         urgency_low = {
-          background = palette.base;
+          background = "${palette.crust}99";
           foreground = palette.subtext0;
-          frame_color = palette.surface0;
+          frame_color = "${palette.overlay0}40";
           timeout = 4;
         };
 
         urgency_normal = {
-          background = palette.base;
+          background = "${palette.crust}99";
           foreground = palette.text;
-          frame_color = palette.mauve;
+          frame_color = "${palette.mauve}73";
           timeout = 6;
         };
 
         urgency_critical = {
-          background = palette.base;
+          background = "${palette.crust}b3";
           foreground = palette.red;
-          frame_color = palette.red;
+          frame_color = "${palette.red}b3";
           timeout = 0; # never auto-dismiss
         };
       };

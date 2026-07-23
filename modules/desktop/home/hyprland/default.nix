@@ -78,6 +78,14 @@
               [
                 "${MOD1}+SHIFT, o, exec, eww-barctl display toggle"
               ]
+          ++ lib.optionals config.home.desktop.hyprland.eww.enable [
+            "${MOD1}, n, exec, eww-popup toggle notif_center_popup && eww-barctl --quiet notif mark-seen"
+            "${MOD1}+CTRL, n, exec, eww-barctl --quiet notif dnd-toggle"
+          ]
+          ++ lib.optionals config.home.desktop.hyprland.dunst.enable [
+            "${MOD1}, Escape, exec, dunstctl close"
+            "${MOD1}+SHIFT, Escape, exec, dunstctl close-all"
+          ]
           ++ (
             # workspaces
             # binds $mod + [shift +] {1..5} to [move to] workspace {1..5}

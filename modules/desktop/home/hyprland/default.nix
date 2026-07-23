@@ -158,6 +158,7 @@
                 "eww-ai-usage"
                 "eww-notifications"
                 "eww-wallpaper"
+                "eww-settings"
               ]
             )
             ++ lib.optionals config.home.desktop.hyprland.dunst.enable [

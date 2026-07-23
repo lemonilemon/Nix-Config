@@ -107,3 +107,8 @@ class WallpaperWindowRegisteredTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SettingsWindowRegisteredTests(unittest.TestCase):
+    def test_settings_popup_is_managed(self):
+        self.assertIn("settings_popup", popups.POPUP_WINDOWS)

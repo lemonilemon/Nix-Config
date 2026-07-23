@@ -16,6 +16,7 @@ POPUP_WINDOWS = [
     "display_mode_popup",
     "notif_center_popup",
     "wallpaper_picker_popup",
+    "settings_popup",
 ]
 BACKDROP_WINDOW = "popup_backdrop"
 

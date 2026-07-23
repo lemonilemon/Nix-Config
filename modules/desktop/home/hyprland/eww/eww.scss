@@ -1179,6 +1179,19 @@ tooltip label {
 }
 .wallpaper-empty { padding: 14px; }
 
+/* Settings popup + bar gear */
+.accent-settings { @include glass-popup($lavender); }
+.accent-settings .popup-mark { background: rgba(180, 190, 254, 0.11); border-color: rgba(180, 190, 254, 0.18); color: $lavender; }
+
+.settings-button {
+  border-radius: 8px;
+  color: $overlay1;
+  min-height: 24px;
+  min-width: 18px;
+  padding: 0 7px;
+}
+.settings-button:hover { background: rgba(180, 190, 254, 0.12); color: $lavender; }
+
 .popup-backdrop {
   background: transparent;
 }

@@ -92,6 +92,10 @@
           (button :class "module-button battery ${bar_state.battery.class}"
             :timeout "5s" :onclick "eww-popup toggle battery_popup ${output}"
             (label :text {bar_state.battery.text}))
+          (button :class "settings-button"
+            :timeout "5s" :onclick "eww-popup toggle settings_popup ${output}"
+            :tooltip "Settings"
+            (label :text "󰒓"))
           (button :class "power-button" :onclick "hyprctl dispatch exec wlogout"
             (label :text "")))))
       (box :class "bar-clock-center" :halign "center" :valign "center"
@@ -422,6 +426,35 @@
       (label :class "wallpaper-thumb-missing" :visible {item.thumb == ""} :text "󰸉")
       (label :class "wallpaper-badge" :visible {item.animated == "true"}
         :halign "end" :valign "start" :text "▶"))))
+
+(defwindow settings_popup
+  :monitor 0
+  :geometry (geometry :x "12px" :y "50px" :width "280px" :height "210px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-settings"
+  (settings_panel))
+
+(defwidget settings_panel []
+  (box :class "popup accent-settings" :orientation "v" :space-evenly false
+    (popup_header :icon "󰒓" :title "Settings" :subtitle "Quick controls")
+    (box :class "popup-body" :orientation "v" :space-evenly false
+      (button :class "popup-action" :timeout "5s"
+        :onclick "eww-barctl --quiet wallpaper rescan && eww-popup toggle wallpaper_picker_popup"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text "󰸉")
+          (label :class "popup-action-label" :halign "start" :text "Wallpapers")))
+      (button :class "popup-action" :timeout "5s" :visible {laptop_controls == "true"}
+        :onclick "eww-popup toggle display_mode_popup"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text "󰍹")
+          (label :class "popup-action-label" :halign "start" :text "Display mode")))
+      (button :class "popup-action" :timeout "5s"
+        :onclick "hyprctl dispatch exec nwg-displays && eww-popup close"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text "󰍺")
+          (label :class "popup-action-label" :halign "start" :text "Monitor layout"))))))
 
 (defwindow ai_usage_popup
   :monitor 0

@@ -77,7 +77,7 @@ In the `let` block (after `cfg = ...;`), add:
 ```nix
   palette = import ../theme/palette.nix;
   paletteScss = pkgs.writeText "_palette.scss" (
-    lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: "$${name}: ${value};") palette)
+    lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: "\$" + name + ": " + value + ";") palette)
   );
 ```
 
@@ -87,7 +87,7 @@ In the config body, next to the existing `xdg.configFile."eww/eww.scss"` line, a
     xdg.configFile."eww/_palette.scss".source = paletteScss;
 ```
 
-Note the escaping: inside a Nix string, a literal `$` followed by `{` must be written `$$` → the template `"$${name}: ${value};"` renders `$mauve: #cba6f7;`.
+Escaping note: `"$${name}"` would NOT work — in Nix, `$$` suppresses the interpolation entirely and renders the literal text `${name}`. Plain string concatenation (as above) renders the intended `$mauve: #cba6f7;`. (Implemented and verified in Task 1.)
 
 - [ ] **Step 4: Replace the variable block in `eww.scss`**
 

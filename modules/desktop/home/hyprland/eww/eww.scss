@@ -140,8 +140,7 @@ tooltip label {
 .module-button,
 .media,
 .submap,
-.power-button,
-.idle-inhibitor {
+.power-button {
   border-radius: 8px;
   min-height: 24px;
   padding: 0 8px;
@@ -232,13 +231,11 @@ tooltip label {
 
 .module,
 .module-button,
-.idle-inhibitor,
 .power-button {
   color: $subtext0;
 }
 
 .module-button:hover,
-.idle-inhibitor:hover,
 .power-button:hover {
   background: rgba(49, 50, 68, 0.78);
 }
@@ -258,17 +255,6 @@ tooltip label {
 .tray-toggle:hover {
   background: rgba(49, 50, 68, 0.78);
   color: $text;
-}
-
-.idle-inhibitor {
-  color: $overlay1;
-  min-width: 18px;
-  padding: 0 7px;
-}
-
-.idle-inhibitor.active {
-  background: rgba(249, 226, 175, 0.12);
-  color: $yellow;
 }
 
 .temperature {
@@ -479,14 +465,6 @@ tooltip label {
 
 .display-mode-footer-action.danger {
   color: $red;
-}
-
-.idle-inhibitor.external {
-  color: $blue;
-}
-
-.idle-inhibitor.headless {
-  color: $teal;
 }
 
 .ai-usage-popup {
@@ -1191,6 +1169,7 @@ tooltip label {
   padding: 0 7px;
 }
 .settings-button:hover { background: rgba(180, 190, 254, 0.12); color: $lavender; }
+.settings-idle.active { background: rgba(249, 226, 175, 0.10); color: $yellow; }
 
 .popup-backdrop {
   background: transparent;

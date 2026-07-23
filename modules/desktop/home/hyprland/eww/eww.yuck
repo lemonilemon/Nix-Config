@@ -59,11 +59,6 @@
             :onclick "eww-popup toggle notif_center_popup ${output} && eww-barctl --quiet notif mark-seen"
             :tooltip {bar_state.notifications.paused == "true" ? "Do not disturb" : "${bar_state.notifications.count} notifications"}
             (label :text {bar_state.notifications.paused == "true" ? "󰂛" : (bar_state.notifications.new > 0 ? "󰂚 ${bar_state.notifications.new}" : "󰂜")}))
-          (button :class "idle-inhibitor ${bar_state.idle_inhibited == 'true' ? 'active' : (bar_state.display.mode != 'normal' ? 'active' : '')} ${bar_state.display.class}"
-            :onclick "eww-barctl --quiet idle toggle"
-            :timeout "5s" :onrightclick {laptop_controls == "true" ? "eww-popup toggle display_mode_popup ${output}" : "true"}
-            :tooltip {bar_state.display.mode == "normal" ? (bar_state.idle_inhibited == "true" ? "Hypridle paused" : "Hypridle active") : bar_state.display.status}
-            (label :text {bar_state.display.mode == "headless" ? "󰒲" : (bar_state.display.mode == "external" ? "󰍹" : (bar_state.idle_inhibited == "true" ? "" : ""))}))
           (button :class "module-button network ${bar_state.network.class}"
             :timeout "5s" :onclick "eww-popup toggle network_popup ${output}"
             (label :tooltip {bar_state.network.tooltip} :text {bar_state.network.text}))
@@ -450,6 +445,12 @@
         (box :orientation "h" :space-evenly false
           (label :class "popup-action-icon" :text "󰍹")
           (label :class "popup-action-label" :halign "start" :text "Display mode")))
+      (button :class "popup-action settings-idle ${bar_state.idle_inhibited == 'true' ? 'active' : ''}" :timeout "5s"
+        :onclick "eww-barctl --quiet idle toggle"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text "")
+          (label :class "popup-action-label" :halign "start"
+            :text {bar_state.idle_inhibited == "true" ? "Resume Hypridle" : "Pause Hypridle"})))
       (button :class "popup-action" :timeout "5s"
         :onclick "hyprctl dispatch exec nwg-displays && eww-popup close"
         (box :orientation "h" :space-evenly false

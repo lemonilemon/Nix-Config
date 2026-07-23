@@ -415,9 +415,11 @@
     :onclick "eww-barctl --quiet wallpaper set '${item.path}' && eww-popup close"
     :tooltip {item.name}
     (overlay
-      (box :class "wallpaper-thumb-missing" :visible {item.thumb == ""}
-        (label :text "󰸉"))
+      ;; eww overlays size to their FIRST child; an invisible first child
+      ;; collapses the whole cell — keep this fixed-size frame first.
+      (box :class "wallpaper-thumb-frame" :width 92 :height 58)
       (image :visible {item.thumb != ""} :path {item.thumb} :image-width 92 :image-height 58)
+      (label :class "wallpaper-thumb-missing" :visible {item.thumb == ""} :text "󰸉")
       (label :class "wallpaper-badge" :visible {item.animated == "true"}
         :halign "end" :valign "start" :text "▶"))))
 

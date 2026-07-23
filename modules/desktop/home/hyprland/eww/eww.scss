@@ -1,5 +1,19 @@
 @import "palette";
 
+// Luminous glass: translucent surface + accent-tinted hairline + faint glow.
+// Alphas/radii are calibration values — tune in the final live pass only.
+@mixin glass-island($accent) {
+  background: rgba(17, 17, 27, 0.60);
+  border: 1px solid rgba($accent, 0.35);
+  box-shadow: 0 0 10px rgba($accent, 0.14), 0 6px 18px rgba(7, 8, 17, 0.32);
+}
+
+@mixin glass-popup($accent) {
+  background: rgba(17, 17, 27, 0.72);
+  border: 1px solid rgba($accent, 0.40);
+  box-shadow: 0 0 14px rgba($accent, 0.16), 0 20px 48px rgba(7, 8, 17, 0.58);
+}
+
 * {
   all: unset;
   border: none;
@@ -71,19 +85,22 @@ tooltip label {
 }
 
 .bar-island {
-  background: rgba(24, 24, 37, 0.88);
-  border: 1px solid rgba(205, 214, 244, 0.09);
+  @include glass-island($overlay1);
   border-radius: 9px;
-  box-shadow: 0 6px 18px rgba(7, 8, 17, 0.32);
   margin: 0 3px;
   min-height: 30px;
   padding: 0 6px;
 }
 
 .bar-island:hover {
-  border-color: rgba(205, 214, 244, 0.16);
-  background: rgba(30, 30, 46, 0.88);
+  background: rgba(30, 30, 46, 0.66);
 }
+
+.workspace-island { @include glass-island($green); }
+.media-island { @include glass-island($teal); }
+.window-island { @include glass-island($lavender); }
+.sys-island { @include glass-island($mauve); }
+.session-island { @include glass-island($blue); }
 
 .workspace-island {
   padding-left: 5px;
@@ -105,7 +122,7 @@ tooltip label {
 }
 
 .clock-island {
-  background: rgba(24, 24, 37, 0.88);
+  @include glass-island($green);
   padding: 0 13px;
 }
 
@@ -349,10 +366,8 @@ tooltip label {
 }
 
 .display-mode-popup {
-  background: rgba(17, 17, 27, 0.985);
-  border: 1px solid rgba(205, 214, 244, 0.14);
+  @include glass-popup($yellow);
   border-radius: 12px;
-  box-shadow: 0 20px 48px rgba(7, 8, 17, 0.58);
   color: $text;
 }
 
@@ -475,10 +490,8 @@ tooltip label {
 }
 
 .ai-usage-popup {
-  background: rgba(17, 17, 27, 0.985);
-  border: 1px solid rgba(205, 214, 244, 0.14);
+  @include glass-popup($sapphire);
   border-radius: 12px;
-  box-shadow: 0 20px 48px rgba(7, 8, 17, 0.58);
   color: $text;
 }
 
@@ -945,12 +958,15 @@ tooltip label {
 
 /* --- Shared card for module popups (volume/bluetooth/network/battery) --- */
 .popup {
-  background: rgba(17, 17, 27, 0.985);
-  border: 1px solid rgba(205, 214, 244, 0.14);
+  @include glass-popup($lavender);
   border-radius: 12px;
-  box-shadow: 0 20px 48px rgba(7, 8, 17, 0.58);
   color: $text;
 }
+
+.accent-volume { @include glass-popup($yellow); }
+.accent-bluetooth { @include glass-popup($sapphire); }
+.accent-network { @include glass-popup($peach); }
+.accent-battery { @include glass-popup($blue); }
 
 .popup-header {
   border-bottom: 1px solid rgba(205, 214, 244, 0.07);

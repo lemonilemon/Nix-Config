@@ -137,8 +137,20 @@
             lib.optionals config.home.desktop.hyprland.waybar.enable [
               "match:namespace waybar, blur on"
             ]
-            ++ lib.optionals config.home.desktop.hyprland.eww.enable [
-              "match:namespace eww-bar, blur on"
+            ++ lib.optionals config.home.desktop.hyprland.eww.enable (
+              map (ns: "match:namespace ${ns}, blur on") [
+                "eww-bar"
+                "eww-volume"
+                "eww-display-mode"
+                "eww-bluetooth"
+                "eww-network"
+                "eww-battery"
+                "eww-ai-usage"
+                "eww-notifications"
+              ]
+            )
+            ++ lib.optionals config.home.desktop.hyprland.dunst.enable [
+              "match:namespace notifications, blur on"
             ];
 
           workspace = [

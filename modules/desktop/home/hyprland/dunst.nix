@@ -3,6 +3,9 @@
   config,
   ...
 }:
+let
+  palette = import ./theme/palette.nix;
+in
 {
   config = lib.mkIf config.home.desktop.hyprland.dunst.enable {
     services.dunst = {
@@ -70,23 +73,23 @@
         };
 
         urgency_low = {
-          background = "#1e1e2e"; # base
-          foreground = "#a6adc8"; # subtext0
-          frame_color = "#313244"; # surface0
+          background = palette.base;
+          foreground = palette.subtext0;
+          frame_color = palette.surface0;
           timeout = 4;
         };
 
         urgency_normal = {
-          background = "#1e1e2e"; # base
-          foreground = "#cdd6f4"; # text
-          frame_color = "#cba6f7"; # mauve
+          background = palette.base;
+          foreground = palette.text;
+          frame_color = palette.mauve;
           timeout = 6;
         };
 
         urgency_critical = {
-          background = "#1e1e2e"; # base
-          foreground = "#f38ba8"; # red
-          frame_color = "#f38ba8"; # red
+          background = palette.base;
+          foreground = palette.red;
+          frame_color = palette.red;
           timeout = 0; # never auto-dismiss
         };
       };

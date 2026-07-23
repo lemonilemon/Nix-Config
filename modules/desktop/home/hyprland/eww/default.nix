@@ -7,6 +7,13 @@
 let
   cfg = config.home.desktop.hyprland.eww;
 
+  palette = import ../theme/palette.nix;
+  paletteScss = pkgs.writeText "_palette.scss" (
+    lib.concatStringsSep "\n" (
+      lib.mapAttrsToList (name: value: "\$" + name + ": " + value + ";") palette
+    )
+  );
+
   ewwBarTools = pkgs.stdenvNoCC.mkDerivation {
     pname = "eww-bar-tools";
     version = "0";
@@ -108,6 +115,7 @@ in
 
     xdg.configFile."eww/eww.yuck".source = ewwYuck;
     xdg.configFile."eww/eww.scss".source = ./eww.scss;
+    xdg.configFile."eww/_palette.scss".source = paletteScss;
     xdg.configFile."eww/assets" = {
       source = ./assets;
       recursive = true;

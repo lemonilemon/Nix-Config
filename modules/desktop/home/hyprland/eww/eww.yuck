@@ -1,4 +1,4 @@
-(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false"},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"","alt":"","capacity":100,"class":"","status":"Unknown","time":"N/A","health":"--","power":"—"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"tray_count":0,"notifications":{"paused":"false","new":0,"count":0,"groups":[]},"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false"},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"","alt":"","capacity":100,"class":"","status":"Unknown","time":"N/A","health":"--","power":"—"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"tray_count":0,"notifications":{"paused":"false","new":0,"count":0,"groups":[]},"wallpaper":{"current":"","count":0,"rows":[]},"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
 
 (defvar laptop_controls "@laptopControls@")
 
@@ -377,6 +377,49 @@
     (button :class "notif-item-dismiss" :valign "start"
       :onclick "eww-barctl --quiet notif dismiss ${item.id}"
       (label :text "󰅖"))))
+
+(defwindow wallpaper_picker_popup
+  :monitor 0
+  :geometry (geometry :x "12px" :y "50px" :width "340px" :height "300px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-wallpaper"
+  (wallpaper_panel))
+
+(defwidget wallpaper_panel []
+  (box :class "popup accent-wallpaper wallpaper-picker" :orientation "v" :space-evenly false
+    (box :class "popup-header" :orientation "h" :space-evenly false
+      (box :class "popup-mark" (label :text "󰸉"))
+      (box :class "popup-title-stack" :orientation "v" :space-evenly false
+        (label :class "popup-title" :halign "start" :text "Wallpapers")
+        (label :class "popup-eyebrow" :halign "start" :text "${bar_state.wallpaper.count} in ~/Pictures/wallpapers"))
+      (button :class "wallpaper-open-folder" :halign "end" :hexpand true
+        :onclick "hyprctl dispatch exec 'nemo ~/Pictures/wallpapers'"
+        :tooltip "Open folder"
+        (label :text "")))
+    (box :class "popup-empty wallpaper-empty" :orientation "h" :space-evenly false
+      :visible {arraylength(bar_state.wallpaper.rows) == 0}
+      (label :halign "start" :text "Drop images into ~/Pictures/wallpapers"))
+    (scroll :class "wallpaper-scroll" :vscroll true :hscroll false :vexpand true
+      :visible {arraylength(bar_state.wallpaper.rows) > 0}
+      (box :class "wallpaper-grid" :orientation "v" :space-evenly false
+        (for row in {bar_state.wallpaper.rows}
+          (box :class "wallpaper-row" :orientation "h" :space-evenly false
+            (for item in {row}
+              (wallpaper_cell :item item))))))))
+
+(defwidget wallpaper_cell [item]
+  (button :class "wallpaper-cell ${item.active == 'true' ? 'active' : ''}"
+    :timeout "5s"
+    :onclick "eww-barctl --quiet wallpaper set '${item.path}' && eww-popup close"
+    :tooltip {item.name}
+    (overlay
+      (box :class "wallpaper-thumb-missing" :visible {item.thumb == ""}
+        (label :text "󰸉"))
+      (image :visible {item.thumb != ""} :path {item.thumb} :image-width 92 :image-height 58)
+      (label :class "wallpaper-badge" :visible {item.animated == "true"}
+        :halign "end" :valign "start" :text "▶"))))
 
 (defwindow ai_usage_popup
   :monitor 0

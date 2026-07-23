@@ -82,6 +82,7 @@
           ++ lib.optionals config.home.desktop.hyprland.eww.enable [
             "${MOD1}, n, exec, eww-popup toggle notif_center_popup && eww-barctl --quiet notif mark-seen"
             "${MOD1}+CTRL, n, exec, eww-barctl --quiet notif dnd-toggle"
+            "${MOD1}, w, exec, eww-barctl --quiet wallpaper rescan && eww-popup toggle wallpaper_picker_popup"
           ]
           ++ lib.optionals config.home.desktop.hyprland.dunst.enable [
             "${MOD1}, Escape, exec, dunstctl close"
@@ -156,6 +157,7 @@
                 "eww-battery"
                 "eww-ai-usage"
                 "eww-notifications"
+                "eww-wallpaper"
               ]
             )
             ++ lib.optionals config.home.desktop.hyprland.dunst.enable [

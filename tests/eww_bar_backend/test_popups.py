@@ -100,5 +100,10 @@ class NotifWindowRegisteredTests(unittest.TestCase):
         self.assertIn("notif_center_popup", popups.POPUP_WINDOWS)
 
 
+class WallpaperWindowRegisteredTests(unittest.TestCase):
+    def test_wallpaper_picker_popup_is_managed(self):
+        self.assertIn("wallpaper_picker_popup", popups.POPUP_WINDOWS)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1139,6 +1139,46 @@ tooltip label {
 .notif-item-dismiss:hover { background: rgba(243, 139, 168, 0.14); color: $red; }
 .notif-empty { padding: 14px; }
 
+/* Wallpaper picker */
+.accent-wallpaper { @include glass-popup($mauve); }
+.accent-wallpaper .popup-mark { background: rgba(203, 166, 247, 0.11); border-color: rgba(203, 166, 247, 0.18); color: $mauve; }
+
+.wallpaper-open-folder {
+  border-radius: 6px;
+  color: $subtext0;
+  margin-left: 8px;
+  min-height: 28px;
+  min-width: 28px;
+}
+.wallpaper-open-folder:hover { background: rgba(203, 166, 247, 0.10); color: $mauve; }
+
+.wallpaper-scroll { margin: 4px 3px 6px 0; }
+.wallpaper-scroll scrollbar { background: transparent; min-width: 5px; }
+.wallpaper-scroll scrollbar slider { background: rgba(127, 132, 156, 0.34); border-radius: 999px; min-width: 3px; }
+
+.wallpaper-grid { padding: 8px 10px 10px 14px; }
+.wallpaper-row { margin-bottom: 8px; }
+.wallpaper-cell {
+  border: 1px solid rgba(205, 214, 244, 0.10);
+  border-radius: 8px;
+  margin-right: 8px;
+  padding: 2px;
+}
+.wallpaper-cell:hover { border-color: rgba(203, 166, 247, 0.45); }
+.wallpaper-cell.active {
+  border: 2px solid rgba(203, 166, 247, 0.75);
+  box-shadow: 0 0 10px rgba(203, 166, 247, 0.30);
+  padding: 1px;
+}
+.wallpaper-thumb-missing { color: $overlay0; font-size: 22px; min-height: 58px; min-width: 92px; }
+.wallpaper-badge {
+  color: $text;
+  font-size: 9px;
+  margin: 3px 5px 0 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.wallpaper-empty { padding: 14px; }
+
 .popup-backdrop {
   background: transparent;
 }

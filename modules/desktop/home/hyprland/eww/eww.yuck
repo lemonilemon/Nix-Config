@@ -446,6 +446,7 @@
           (label :class "popup-action-icon" :text "󰍹")
           (label :class "popup-action-label" :halign "start" :text "Display mode")))
       (button :class "popup-action settings-idle ${bar_state.idle_inhibited == 'true' ? 'active' : ''}" :timeout "5s"
+        :visible {laptop_controls != "true"}
         :onclick "eww-barctl --quiet idle toggle"
         (box :orientation "h" :space-evenly false
           (label :class "popup-action-icon" :text "")

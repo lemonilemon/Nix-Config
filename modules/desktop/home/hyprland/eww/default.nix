@@ -32,6 +32,7 @@ let
 
   runtimePackages =
     (with pkgs; [
+      awww
       bash
       bluez
       blueman
@@ -44,6 +45,7 @@ let
       gsimplecal
       htop
       hyprland
+      imagemagick
       jq
       kitty
       networkmanager

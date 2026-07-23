@@ -13,6 +13,7 @@ from .common import (
     WORKSPACE_DEFAULT,
 )
 from .notifications import NOTIFICATIONS_DEFAULT
+from .wallpaper import WALLPAPER_DEFAULT
 
 
 class BarState:
@@ -33,6 +34,7 @@ class BarState:
             "bluetooth": BLUETOOTH_DEFAULT.copy(),
             "tray_count": 0,
             "notifications": dict(NOTIFICATIONS_DEFAULT, groups=[]),
+            "wallpaper": dict(WALLPAPER_DEFAULT, rows=[]),
             "idle_inhibited": "false",
             "display": {
                 "mode": "normal",

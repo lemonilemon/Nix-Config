@@ -24,6 +24,7 @@ from .inhibitors import idle_inhibited_state
 from .notifications import notifications_state
 from .popups import run_popup
 from .state import BarState
+from .wallpaper import wallpaper_state
 from .watchers import (
     emit_loop,
     periodic,
@@ -131,6 +132,10 @@ def run_bar():
                 notifications_state,
                 ["dbus-monitor", "--profile", "interface='org.freedesktop.Notifications'"],
             ),
+            daemon=True,
+        ),
+        threading.Thread(
+            target=lambda: state.update(wallpaper=wallpaper_state()),
             daemon=True,
         ),
     ]

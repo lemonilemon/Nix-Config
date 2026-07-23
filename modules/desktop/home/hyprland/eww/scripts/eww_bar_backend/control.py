@@ -25,6 +25,7 @@ from .notifications import (
     toggle_dnd,
     toggle_group,
 )
+from .wallpaper import set_wallpaper, wallpaper_state
 
 
 CONTROL_USAGE = (
@@ -33,6 +34,7 @@ CONTROL_USAGE = (
     "idle toggle|on|off|status | display normal|external|headless|restore|toggle|status | ai refresh"
     " | bluetooth power-toggle|disconnect <mac> | network wifi-toggle"
     " | notif toggle-group <app>|dismiss <id>|clear-group <app>|clear-all|dnd-toggle|mark-seen"
+    " | wallpaper set <path>|rescan"
 )
 
 _AI_REFRESH_LOCK = threading.Lock()
@@ -256,6 +258,17 @@ def handle_control_command(state, payload):
         state.update(notifications=value)
         return {"ok": True, "command": "notif", "action": action, "notifications": value}
 
+    if command == "wallpaper":
+        action = payload.get("action", "")
+        if action == "set":
+            value = set_wallpaper(payload.get("path", ""))
+        elif action == "rescan":
+            value = wallpaper_state()
+        else:
+            raise ValueError("wallpaper action must be set or rescan")
+        state.update(wallpaper=value)
+        return {"ok": True, "command": "wallpaper", "action": action, "wallpaper": value}
+
     raise ValueError("unknown control command")
 
 
@@ -357,6 +370,11 @@ def control_payload_from_args(args):
             payload["app"] = " ".join(args[2:])
         elif args[1] == "dismiss" and len(args) >= 3:
             payload["id"] = args[2]
+        return payload
+    if args[0] == "wallpaper" and len(args) >= 2:
+        payload = {"command": "wallpaper", "action": args[1]}
+        if args[1] == "set" and len(args) >= 3:
+            payload["path"] = args[2]
         return payload
     raise ValueError(CONTROL_USAGE)
 

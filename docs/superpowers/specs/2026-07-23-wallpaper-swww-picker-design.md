@@ -1,5 +1,13 @@
 # Wallpaper System Design: swww + Glass Grid Picker
 
+> **Amendment (2026-07-23, found during implementation):** the pinned nixpkgs
+> renamed the engine swww → **awww** (`pkgs.swww` is a deprecated alias to
+> `awww-0.12.1` that ships only `awww`/`awww-daemon` binaries). Everywhere
+> this spec says swww, the implementation uses `pkgs.awww`, the `awww` CLI,
+> an `awww-daemon` user service, and the option
+> `home.desktop.hyprland.awww.enable`. Behavior is unchanged — awww is the
+> renamed continuation of swww.
+
 ## Goal
 
 Replace the single baked-in hyprpaper wallpaper with a proper wallpaper

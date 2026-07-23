@@ -15,9 +15,10 @@
 - **Depends on the notifications plan being merged first**: reuses `glass-popup` SCSS mixin, `@import "palette"`, and single-arg `eww-popup toggle` (focused-monitor default).
 - Implementers must NOT run `sudo`, `just build`, `nixos-rebuild`, or `systemctl`. The user triggers rebuilds; the controller verifies live (Task 5).
 - Python stdlib only; test suite `cd tests/eww_bar_backend && python3 -m unittest discover -p 'test_*.py'` must stay green (baseline: 65 after the notifications plan).
-- swww-supported extensions only: `.jpg .jpeg .png .gif .webp .bmp .tiff` — **never `.jxl`** (swww cannot decode it).
+- **Engine rename (discovered in Task 1 review):** the pinned nixpkgs renamed swww → awww; `pkgs.swww` is a deprecated alias to `awww-0.12.1` whose bin dir ships ONLY `awww` and `awww-daemon`. All package references, binary invocations, unit names, and option names use `awww`. The CLI is the renamed continuation of swww (same subcommands); output format assumptions verified live in Task 5.
+- awww-supported extensions only: `.jpg .jpeg .png .gif .webp .bmp .tiff` — **never `.jxl`** (awww cannot decode it).
 - Booleans inside `bar_state` are strings (`"true"`/`"false"`).
-- Names that are load-bearing across tasks: window `wallpaper_picker_popup` (namespace `eww-wallpaper`), state key `wallpaper`, verb group `wallpaper`, collection dir `~/Pictures/wallpapers`, seed file `pixel_sunset.png`.
+- Names that are load-bearing across tasks: window `wallpaper_picker_popup` (namespace `eww-wallpaper`), state key `wallpaper`, verb group `wallpaper`, option `home.desktop.hyprland.awww.enable`, collection dir `~/Pictures/wallpapers`, seed file `pixel_sunset.png`.
 - Commit after every task.
 
 ---
@@ -32,23 +33,23 @@
 - Modify: `profiles/laptop/config.nix`, `profiles/desktop/config.nix` (enable swww)
 
 **Interfaces:**
-- Produces: options `home.desktop.hyprland.swww.enable` (default `false`) and `home.desktop.hyprland.hyprpaper.enable` (default `hyprland.enable && !swww.enable`); systemd user services `swww-daemon` (+ seed init); `~/Pictures/wallpapers/pixel_sunset.png` present on activation. Later tasks assume `swww` on the backend PATH (Task 3 adds it to eww `runtimePackages`).
+- Produces: options `home.desktop.hyprland.swww.enable` (default `false`) and `home.desktop.hyprland.hyprpaper.enable` (default `hyprland.enable && !swww.enable`); systemd user services `swww-daemon` (+ seed init); `~/Pictures/wallpapers/pixel_sunset.png` present on activation. Later tasks assume `awww` on the backend PATH (Task 3 adds it to eww `runtimePackages`).
 
 - [ ] **Step 1: Add the options (in `options.nix`, after the `hyprland.dunst.enable` block, same `mkHomeOpt` pattern)**
 
 ```nix
-      hyprland.swww.enable = helpers.mkHomeOpt {
+      hyprland.awww.enable = helpers.mkHomeOpt {
         inherit osConfig;
-        path = "home.desktop.hyprland.swww.enable";
+        path = "home.desktop.hyprland.awww.enable";
         default = false;
-        description = "Enable the swww wallpaper engine and picker for Hyprland";
+        description = "Enable the awww (formerly swww) wallpaper engine and picker for Hyprland";
       };
 
       hyprland.hyprpaper.enable = helpers.mkHomeOpt {
         inherit osConfig;
         path = "home.desktop.hyprland.hyprpaper.enable";
-        default = config.home.desktop.hyprland.enable && !config.home.desktop.hyprland.swww.enable;
-        description = "Enable hyprpaper static wallpaper (fallback engine when swww is off)";
+        default = config.home.desktop.hyprland.enable && !config.home.desktop.hyprland.awww.enable;
+        description = "Enable hyprpaper static wallpaper (fallback engine when awww is off)";
       };
 ```
 
@@ -72,42 +73,42 @@ In `hyprpaper/default.nix` change only the `mkIf` condition:
 let
   cfg = config.home.desktop.hyprland;
 
-  # Repo source of truth stays JXL (hyprpaper still uses it); swww cannot
+  # Repo source of truth stays JXL (hyprpaper still uses it); awww cannot
   # decode JXL, so derive a PNG seed at build time.
   seedPng = pkgs.runCommand "pixel-sunset-png" { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
     magick ${../hyprpaper/wallpaper/pixel_sunset.jxl} png:$out
   '';
 
-  swwwInit = pkgs.writeShellScript "swww-init" ''
-    export PATH=${lib.makeBinPath [ pkgs.swww pkgs.gnugrep pkgs.coreutils ]}
+  awwwInit = pkgs.writeShellScript "awww-init" ''
+    export PATH=${lib.makeBinPath [ pkgs.awww pkgs.gnugrep pkgs.coreutils ]}
     for _ in $(seq 1 50); do
-      if swww query >/dev/null 2>&1; then
+      if awww query >/dev/null 2>&1; then
         break
       fi
       sleep 0.1
     done
-    # swww restores its own per-output cache on start; only seed a blank slate.
-    if ! swww query 2>/dev/null | grep -q "image: "; then
-      swww img "$HOME/Pictures/wallpapers/pixel_sunset.png" --transition-type none
+    # awww restores its own per-output cache on start; only seed a blank slate.
+    if ! awww query 2>/dev/null | grep -q "image: "; then
+      awww img "$HOME/Pictures/wallpapers/pixel_sunset.png" --transition-type none
     fi
   '';
 in
 {
-  config = lib.mkIf cfg.swww.enable {
-    home.packages = [ pkgs.swww ];
+  config = lib.mkIf cfg.awww.enable {
+    home.packages = [ pkgs.awww ];
 
     home.file."Pictures/wallpapers/pixel_sunset.png".source = seedPng;
 
-    systemd.user.services.swww-daemon = {
+    systemd.user.services.awww-daemon = {
       Unit = {
-        Description = "swww wallpaper daemon";
+        Description = "awww wallpaper daemon";
         After = [ "hyprland-session.target" ];
         PartOf = [ "hyprland-session.target" ];
       };
 
       Service = {
-        ExecStart = "${pkgs.swww}/bin/swww-daemon";
-        ExecStartPost = swwwInit;
+        ExecStart = "${pkgs.awww}/bin/awww-daemon";
+        ExecStartPost = awwwInit;
         Restart = "on-failure";
         RestartSec = "1s";
       };
@@ -125,7 +126,7 @@ in
 `profiles/laptop/config.nix` and `profiles/desktop/config.nix`: next to the existing `home.desktop.hyprland.eww.enable = true;` line add:
 
 ```nix
-  home.desktop.hyprland.swww.enable = true;
+  home.desktop.hyprland.awww.enable = true;
 ```
 
 - [ ] **Step 5: Verify option wiring evaluates**
@@ -151,7 +152,7 @@ git commit -m "feat(wallpaper): swww engine module with hyprpaper fallback optio
 - Test: `tests/eww_bar_backend/test_wallpaper.py`
 
 **Interfaces:**
-- Produces: `wallpaper_state() -> {"current": str, "count": int, "rows": [[{"name","path","thumb","animated","active"}]]}` (rows pre-chunked to 3 columns); `set_wallpaper(path)` (applies via swww + returns fresh state); pure helpers `scan_wallpaper_files(directory)`, `parse_swww_query(text)`, `thumb_cache_path(path, stat)`, `wallpaper_items(files, current, thumb_fn)`, `rows_from_items(items)`; constant `WALLPAPER_DEFAULT`.
+- Produces: `wallpaper_state() -> {"current": str, "count": int, "rows": [[{"name","path","thumb","animated","active"}]]}` (rows pre-chunked to 3 columns); `set_wallpaper(path)` (applies via awww + returns fresh state); pure helpers `scan_wallpaper_files(directory)`, `parse_awww_query(text)`, `thumb_cache_path(path, stat)`, `wallpaper_items(files, current, thumb_fn)`, `rows_from_items(items)`; constant `WALLPAPER_DEFAULT`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -193,13 +194,13 @@ class QueryParseTests(unittest.TestCase):
     def test_parses_image_path(self):
         text = 'eDP-1: 1920x1200, scale: 2, currently displaying: image: /home/u/Pictures/wallpapers/pixel_sunset.png\n'
         self.assertEqual(
-            wallpaper.parse_swww_query(text),
+            wallpaper.parse_awww_query(text),
             "/home/u/Pictures/wallpapers/pixel_sunset.png",
         )
 
     def test_color_or_garbage_yields_empty(self):
-        self.assertEqual(wallpaper.parse_swww_query("eDP-1: ... displaying: color: 000000"), "")
-        self.assertEqual(wallpaper.parse_swww_query(""), "")
+        self.assertEqual(wallpaper.parse_awww_query("eDP-1: ... displaying: color: 000000"), "")
+        self.assertEqual(wallpaper.parse_awww_query(""), "")
 
 
 class ThumbCacheTests(unittest.TestCase):
@@ -259,12 +260,12 @@ WALLPAPER_DEFAULT = {"current": "", "count": 0, "rows": []}
 
 WALLPAPER_DIR = Path("~/Pictures/wallpapers").expanduser()
 THUMB_DIR = Path("~/.cache/eww-bar/wallpaper-thumbs").expanduser()
-# swww-decodable only — notably NOT .jxl.
+# awww-decodable only — notably NOT .jxl.
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff"}
 GRID_COLUMNS = 3
 NAME_MAX = 22
 # Calibration values; grow-from-top-right matches where the picker popup sits.
-SWWW_TRANSITION = [
+AWWW_TRANSITION = [
     "--transition-type", "grow",
     "--transition-pos", "top-right",
     "--transition-duration", "0.8",
@@ -284,8 +285,8 @@ def scan_wallpaper_files(directory=None):
     ]
 
 
-def parse_swww_query(text):
-    # `swww query` prints one line per output, e.g.
+def parse_awww_query(text):
+    # `awww query` prints one line per output, e.g.
     # `eDP-1: 1920x1200, scale: 2, currently displaying: image: /path/img.png`.
     # Both monitors mirror, so the first image path wins.
     for line in text.splitlines():
@@ -343,7 +344,7 @@ def rows_from_items(items, columns=GRID_COLUMNS):
 
 
 def wallpaper_state():
-    current = parse_swww_query(run_text(["swww", "query"]))
+    current = parse_awww_query(run_text(["awww", "query"]))
     items = wallpaper_items(scan_wallpaper_files(), current)
     return {"current": current, "count": len(items), "rows": rows_from_items(items)}
 
@@ -352,7 +353,7 @@ def set_wallpaper(path):
     if not path:
         raise ValueError("wallpaper set requires a path")
     subprocess.run(
-        ["swww", "img", path, *SWWW_TRANSITION],
+        ["awww", "img", path, *AWWW_TRANSITION],
         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         check=False,
     )
@@ -462,7 +463,7 @@ Import: `from .wallpaper import set_wallpaper, wallpaper_state`. Extend `CONTROL
 
 - [ ] **Step 4: Runtime deps in `eww/default.nix`**
 
-Add `imagemagick` and `swww` to `runtimePackages` (alphabetical positions).
+Add `awww` and `imagemagick` to `runtimePackages` (alphabetical positions).
 
 - [ ] **Step 5: Run suite + compile**
 
@@ -659,11 +660,11 @@ git commit -m "feat(eww): wallpaper picker popup on SUPER+W"
 
 Executed by the controller after the **user** triggers the rebuild. Do not dispatch to an implementer.
 
-- [ ] Ask the user to rebuild (`NIXHOST=laptop just build`) when RAM is free; then `systemctl --user restart eww-bar` and confirm `swww-daemon` is active while hyprpaper's unit is gone (`systemctl --user status swww-daemon hyprpaper`).
-- [ ] `hyprctl layers` shows `swww-daemon` on the background layer of both monitors; wallpaper visible (seed or restored cache).
+- [ ] Ask the user to rebuild (`NIXHOST=laptop just build`) when RAM is free; then `systemctl --user restart eww-bar` and confirm `awww-daemon` is active while hyprpaper's unit is gone (`systemctl --user status awww-daemon hyprpaper`).
+- [ ] `hyprctl layers` shows the awww daemon on the background layer of both monitors; wallpaper visible (seed or restored cache).
 - [ ] Drop 2–3 test images (+1 GIF) into `~/Pictures/wallpapers`; `SUPER+W` opens the picker with thumbnails; current is highlighted; GIF shows ▶.
 - [ ] Click a thumbnail → grow transition from top-right, popup closes, bar stays responsive; picked GIF animates.
-- [ ] Reboot-persistence: `systemctl --user restart swww-daemon` restores the same wallpaper (cache path, no seed reapply).
+- [ ] Reboot-persistence: `systemctl --user restart awww-daemon` restores the same wallpaper (cache path, no seed reapply).
 - [ ] Empty-dir hint: temporarily `mv` the collection aside, rescan, verify hint; restore.
 - [ ] Tune calibration values if needed (cell size 92×58, popup 340×300, transition type/duration); commit as `fix(eww): wallpaper picker calibration`.
 - [ ] Update `.superpowers/sdd/progress.md`.
@@ -672,4 +673,4 @@ Executed by the controller after the **user** triggers the rebuild. Do not dispa
 
 ## Verification checklist (spec → task)
 
-Engine options + hyprpaper kept → Task 1. Daemon + init + seed conversion + collection dir → Task 1. Backend state/thumbs/query/rows → Task 2. Verbs + rescan triggers → Tasks 3–4. Picker popup (grid, highlight, ▶ badge, empty hint, open-folder) → Task 4. `SUPER+W`, no bar module → Task 4. Transition constants → Task 2 (`SWWW_TRANSITION`). Error handling (missing dir, query/thumb failure) → Task 2 guards. GIF-tier animation → extension flag (Task 2) + live check (Task 5).
+Engine options + hyprpaper kept → Task 1. Daemon + init + seed conversion + collection dir → Task 1. Backend state/thumbs/query/rows → Task 2. Verbs + rescan triggers → Tasks 3–4. Picker popup (grid, highlight, ▶ badge, empty hint, open-folder) → Task 4. `SUPER+W`, no bar module → Task 4. Transition constants → Task 2 (`AWWW_TRANSITION`). Error handling (missing dir, query/thumb failure) → Task 2 guards. GIF-tier animation → extension flag (Task 2) + live check (Task 5).

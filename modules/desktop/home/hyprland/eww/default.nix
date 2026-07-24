@@ -93,6 +93,9 @@ let
 
     eww close-all >/dev/null 2>&1 || true
 
+    # Startup only — monitors hotplugged later are handled by the backend
+    # (watchers.py reacts to socket2 monitoradded/monitorremoved with the
+    # same open/close commands).
     monitors=$(hyprctl monitors -j | jq -r '.[].name')
     if [ -z "$monitors" ]; then
       eww open bar --arg output=0

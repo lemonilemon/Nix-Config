@@ -2,6 +2,7 @@ import os
 import select
 import socket
 import subprocess
+import threading
 import time
 from pathlib import Path
 
@@ -53,6 +54,43 @@ def hyprland_socket_path():
     return Path(runtime_dir) / "hypr" / signature / ".socket2.sock"
 
 
+def monitor_event(line):
+    # Hyprland emits both v1 and v2 monitor events; matching only the v1
+    # prefixes (v2 lines start "monitoraddedv2>>") keeps this single-fire.
+    for prefix, action in (("monitoradded>>", "added"), ("monitorremoved>>", "removed")):
+        if line.startswith(prefix):
+            name = line[len(prefix):].strip()
+            if name:
+                return (action, name)
+    return None
+
+
+def bar_window_command(action, name):
+    # Must mirror the open-bars script in eww/default.nix so hotplugged
+    # monitors get the same bar-<name> windows as service startup.
+    if action == "added":
+        return ["eww", "open", "bar", "--id", f"bar-{name}", "--screen", name, "--arg", f"output={name}"]
+    return ["eww", "close", f"bar-{name}"]
+
+
+def apply_monitor_event(action, name):
+    # GDK learns about a hotplugged output a beat after Hyprland announces it,
+    # so retry the open a few times instead of trusting the first attempt.
+    attempts = 5 if action == "added" else 1
+    for _ in range(attempts):
+        time.sleep(1)
+        try:
+            result = subprocess.run(
+                bar_window_command(action, name),
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                check=False, timeout=10,
+            )
+            if result.returncode == 0:
+                return
+        except Exception:
+            pass
+
+
 def watch_hyprland(state):
     while True:
         state.update(workspace_state=workspace_state())
@@ -91,6 +129,13 @@ def watch_hyprland(state):
                         )
                     ):
                         state.update(active_window=active_window_state())
+                    event = monitor_event(line)
+                    if event is not None:
+                        # Own thread: apply_monitor_event sleeps/retries and
+                        # must not stall workspace/window event handling.
+                        threading.Thread(
+                            target=apply_monitor_event, args=event, daemon=True
+                        ).start()
         except Exception:
             time.sleep(2)
 

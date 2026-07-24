@@ -113,7 +113,9 @@ def active_window_state():
     if not cls and not title:
         return ACTIVE_WINDOW_DEFAULT.copy()
     icon = APP_ICONS.get(cls, " ")
-    display = f"{icon}{cls} · {truncate_text(title, 28)}" if title else f"{icon}{cls}"
+    # Upper bound only — the bar label has :truncate, so GTK ellipsizes to the
+    # actual space available; this just keeps the state JSON bounded.
+    display = f"{icon}{cls} · {truncate_text(title, 60)}" if title else f"{icon}{cls}"
     return {
         "text": display,
         "tooltip": f"{cls}\n{title}",
@@ -147,7 +149,7 @@ def media_state_from_text(status_text, metadata_text):
         display_status = status or "Media"
 
     return {
-        "text": truncate_text(metadata[0].strip(), 30),
+        "text": truncate_text(metadata[0].strip(), 60),
         "status": display_status,
         "icon": icon,
         "class": cls,

@@ -27,8 +27,7 @@
 
 (defwidget bar [output]
   (box :class "bar-window" :orientation "h" :hexpand true
-    (overlay
-      (centerbox :class "bar-root" :hexpand true
+    (centerbox :class "bar-root" :hexpand true
       (box :class "left" :orientation "h" :space-evenly false :halign "start" :hexpand true
         (box :class "bar-island workspace-island" :orientation "h" :space-evenly false
           (workspaces)
@@ -38,13 +37,22 @@
             :onclick "eww-barctl --quiet media play-pause"
             :onrightclick "eww-barctl --quiet media next"
             :tooltip {bar_state.media.tooltip}
-            (label :text {bar_state.media.text != "" ? "${bar_state.media.icon} ${bar_state.media.text}" : ""})))
+            (label :truncate true
+              :text {bar_state.media.text != "" ? "${bar_state.media.icon} ${bar_state.media.text}" : ""})))
         (box :class "bar-island window-island" :orientation "h" :space-evenly false
           :visible {bar_state.active_window.text != ""}
-          (label :class "active-window"
+          (label :class "active-window" :truncate true
             :tooltip {bar_state.active_window.tooltip}
             :text {bar_state.active_window.text})))
-      (box :class "center")
+      ;; The clock lives in the centerbox center slot so its width is reserved:
+      ;; GTK shrinks the truncate-labels on either side before anything can
+      ;; slide under it (verified with a scratch daemon at 1600/900/700px).
+      (box :class "bar-island clock-island" :orientation "h" :space-evenly false
+        (button :class "clock"
+          :onclick "eww update show_date=${show_date == 'true' ? 'false' : 'true'}"
+          :onrightclick "hyprctl dispatch exec gsimplecal"
+          :tooltip {bar_state.clock.tooltip}
+          (label :text {show_date == "true" ? bar_state.clock.date : bar_state.clock.time})))
       (box :class "right" :orientation "h" :space-evenly false :halign "end" :hexpand true
         (box :class "bar-island tray-island" :orientation "h" :space-evenly false
           (button :class "tray-toggle"
@@ -61,11 +69,11 @@
             (label :text {bar_state.notifications.paused == "true" ? "󰂛" : (bar_state.notifications.new > 0 ? "󰂚 ${bar_state.notifications.new}" : "󰂜")}))
           (button :class "module-button network ${bar_state.network.class}"
             :timeout "5s" :onclick "eww-popup toggle network_popup ${output}"
-            (label :tooltip {bar_state.network.tooltip} :text {bar_state.network.text}))
+            (label :truncate true :tooltip {bar_state.network.tooltip} :text {bar_state.network.text}))
           (button :class "module-button bluetooth ${bar_state.bluetooth.class}"
             :visible {bar_state.bluetooth.text != ""}
             :timeout "5s" :onclick "eww-popup toggle bluetooth_popup ${output}"
-            (label :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text})))
+            (label :truncate true :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
           (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
             :timeout "5s" :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
@@ -92,14 +100,7 @@
             :tooltip "Settings"
             (label :text "󰒓"))
           (button :class "power-button" :onclick "hyprctl dispatch exec wlogout"
-            (label :text "")))))
-      (box :class "bar-clock-center" :halign "center" :valign "center"
-        (box :class "bar-island clock-island" :orientation "h" :space-evenly false
-          (button :class "clock"
-            :onclick "eww update show_date=${show_date == 'true' ? 'false' : 'true'}"
-            :onrightclick "hyprctl dispatch exec gsimplecal"
-            :tooltip {bar_state.clock.tooltip}
-            (label :text {show_date == "true" ? bar_state.clock.date : bar_state.clock.time})))))))
+            (label :text "")))))))
 
 (defwidget workspaces []
   (box :class "workspaces" :orientation "h" :space-evenly false

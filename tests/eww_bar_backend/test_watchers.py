@@ -6,7 +6,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "modules" / "desktop" / "home" / "hyprland" / "eww" / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from eww_bar_backend.watchers import bar_window_command, monitor_event  # noqa: E402
+from eww_bar_backend.watchers import (  # noqa: E402
+    bar_window_command,
+    missing_bar_monitors,
+    monitor_event,
+    open_bar_names,
+)
 
 
 class MonitorEventTests(unittest.TestCase):
@@ -43,6 +48,36 @@ class BarWindowCommandTests(unittest.TestCase):
             bar_window_command("removed", "HDMI-A-1"),
             ["eww", "close", "bar-HDMI-A-1"],
         )
+
+
+class OpenBarNamesTests(unittest.TestCase):
+    def test_extracts_monitor_names_from_bar_ids(self):
+        text = "bar-eDP-1: bar\nbar-HDMI-A-1: bar\nvolume_popup: volume_popup\n"
+        self.assertEqual(open_bar_names(text), {"eDP-1", "HDMI-A-1"})
+
+    def test_empty_output(self):
+        self.assertEqual(open_bar_names(""), set())
+
+
+class MissingBarMonitorsTests(unittest.TestCase):
+    MONITORS = '[{"name": "eDP-1"}, {"name": "HDMI-A-1"}]'
+
+    def test_reports_monitor_without_bar(self):
+        self.assertEqual(
+            missing_bar_monitors(self.MONITORS, "bar-eDP-1: bar\n"),
+            ["HDMI-A-1"],
+        )
+
+    def test_nothing_missing_when_all_bars_open(self):
+        self.assertEqual(
+            missing_bar_monitors(self.MONITORS, "bar-eDP-1: bar\nbar-HDMI-A-1: bar\n"),
+            [],
+        )
+
+    def test_malformed_inputs_are_safe(self):
+        self.assertEqual(missing_bar_monitors("not json", ""), [])
+        self.assertEqual(missing_bar_monitors('{"name": "x"}', ""), [])
+        self.assertEqual(missing_bar_monitors('[{"no_name": 1}, 42]', ""), [])
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from .collectors import (
     volume_state,
     workspace_state,
 )
+from .common import parse_json, run_text
 from .display import display_state
 from .inhibitors import idle_inhibited_state
 
@@ -79,6 +80,10 @@ def apply_monitor_event(action, name):
     attempts = 5 if action == "added" else 1
     for _ in range(attempts):
         time.sleep(1)
+        # Another opener may have won meanwhile (the startup script, or eww's
+        # own config reload) — re-opening an open id makes the bar flicker.
+        if action == "added" and name in open_bar_names(run_text(["eww", "active-windows"])):
+            return
         try:
             result = subprocess.run(
                 bar_window_command(action, name),
@@ -91,7 +96,39 @@ def apply_monitor_event(action, name):
             pass
 
 
+def open_bar_names(active_windows_text):
+    names = set()
+    for line in active_windows_text.splitlines():
+        window_id = line.split(":", 1)[0].strip()
+        if window_id.startswith("bar-"):
+            names.add(window_id[len("bar-"):])
+    return names
+
+
+def missing_bar_monitors(monitors_json_text, active_windows_text):
+    monitors = parse_json(monitors_json_text, [])
+    if not isinstance(monitors, list):
+        return []
+    names = [m.get("name") for m in monitors if isinstance(m, dict) and m.get("name")]
+    open_names = open_bar_names(active_windows_text)
+    return [name for name in names if name not in open_names]
+
+
+def reconcile_bar_windows():
+    # When a monitor connects, eww reloads its whole configuration, which
+    # kills and respawns this backend — the monitoradded event fires exactly
+    # while no listener is alive, so it can never be caught. Instead, on
+    # every backend start compare live monitors against open bar windows and
+    # open whatever is missing.
+    for name in missing_bar_monitors(
+        run_text(["hyprctl", "monitors", "-j"], timeout=5.0),
+        run_text(["eww", "active-windows"], timeout=5.0),
+    ):
+        apply_monitor_event("added", name)
+
+
 def watch_hyprland(state):
+    threading.Thread(target=reconcile_bar_windows, daemon=True).start()
     while True:
         state.update(workspace_state=workspace_state())
         socket_path = hyprland_socket_path()

@@ -1034,12 +1034,34 @@ def network_state_from_text(status_text, wifi_text, ip_by_device):
 
 
 def default_route_device(route_text):
+    """Interface owning the default route, lowest metric winning.
+
+    A docked laptop carries one default route per link, and the kernel prefers
+    the lowest metric; an absent metric means 0. ECMP routes (a bare `default`
+    line followed by `nexthop` lines) are deliberately not handled - they have
+    no single owning interface to name.
+    """
+    best_device = ""
+    best_metric = None
     for line in route_text.splitlines():
         fields = line.split()
         if not fields or fields[0] != "default" or "dev" not in fields:
             continue
-        return fields[fields.index("dev") + 1]
-    return ""
+        device_index = fields.index("dev") + 1
+        if device_index >= len(fields):
+            continue
+        metric = 0
+        if "metric" in fields:
+            metric_index = fields.index("metric") + 1
+            if metric_index < len(fields):
+                try:
+                    metric = int(fields[metric_index])
+                except ValueError:
+                    metric = 0
+        if best_metric is None or metric < best_metric:
+            best_device = fields[device_index]
+            best_metric = metric
+    return best_device
 
 
 def device_ipv4(addr_text, device):
@@ -1053,20 +1075,29 @@ def device_ipv4(addr_text, device):
 
 
 def link_state_from_text(route_text, addr_text):
-    """Readout for when nmcli cannot answer — usually NetworkManager being down.
+    """Readout for when nmcli reports nothing usable.
 
     The kernel keeps the lease and the default route after NetworkManager
     stops, so the machine is still online; only the usual source of truth is
-    gone. Report the interface that owns the route rather than claiming to be
+    gone. The same holds when NetworkManager is up but owns nothing, e.g.
+    unmanaged devices or a route belonging to systemd-networkd or a tunnel.
+    Report the interface that owns the route rather than claiming to be
     disconnected.
+
+    run_text() flattens "not running", "not on PATH" and "timed out" into the
+    same empty string, so the tooltip names where the answer came from instead
+    of asserting a cause it cannot know.
     """
     device = default_route_device(route_text)
     if not device:
         return None
     ip_info = device_ipv4(addr_text, device)
     return {
-        "text": f"󰌗 {device}",
-        "tooltip": f"{device}: {ip_info or 'No IP'} (NetworkManager not running)",
+        "text": f"󰌗 {device} ⚠",
+        "tooltip": (
+            f"{device}: {ip_info or 'No IP'} "
+            "(kernel routing table; NetworkManager not reporting)"
+        ),
         "class": "degraded",
     }
 
@@ -1080,16 +1111,6 @@ def link_fallback_state():
 
 def network_connection_state():
     status = run_text(["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "dev", "status"])
-    if not status.strip():
-        fallback = link_fallback_state()
-        if fallback:
-            return fallback
-        return {
-            "text": "⚠ Disconnected",
-            "tooltip": "No connection",
-            "class": "disconnected",
-        }
-
     wifi_device = connected_device(status, "wifi")
     ethernet_device = connected_device(status, "ethernet")
     # Whichever interface carries the default route is the one actually in use.
@@ -1135,6 +1156,13 @@ def network_connection_state():
             "tooltip": f"{ethernet_device}: No IP",
             "class": "linked",
         }
+
+    # nmcli claims nothing is connected. Before believing it, check whether the
+    # kernel still has a default route: NetworkManager may be stopped, absent,
+    # or simply not the owner of this machine's networking.
+    fallback = link_fallback_state()
+    if fallback:
+        return fallback
 
     return {
         "text": "⚠ Disconnected",

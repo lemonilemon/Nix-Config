@@ -71,10 +71,22 @@ ROUTE_TEXT = (
     "192.168.0.0/24 dev eno1 proto kernel scope link src 192.168.0.88 metric 100\n"
 )
 
+# Verbatim `ip -o -4 addr show` output, continuation marker included, so a
+# future parser rewrite cannot pass here and break against the real command.
 ADDR_TEXT = (
-    "1: lo    inet 127.0.0.1/8 scope host lo\n"
-    "2: eno1    inet 192.168.0.88/24 brd 192.168.0.255 scope global dynamic eno1\n"
+    "1: lo    inet 127.0.0.1/8 scope host lo\\       valid_lft forever preferred_lft forever\n"
+    "2: eno1    inet 192.168.0.88/24 brd 192.168.0.255 scope global dynamic noprefixroute eno1"
+    "\\       valid_lft 41678sec preferred_lft 41678sec\n"
 )
+
+# A docked laptop: both links up, each with its own default route. The kernel
+# picks the lowest metric, so the wire wins here.
+MULTI_ROUTE_TEXT = (
+    "default via 192.168.0.1 dev wlan0 proto dhcp src 192.168.0.30 metric 600\n"
+    "default via 192.168.0.1 dev eno1 proto dhcp src 192.168.0.88 metric 100\n"
+)
+
+NMCLI_STATUS = ("nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "dev", "status")
 
 
 class LinkFallbackTests(unittest.TestCase):
@@ -112,6 +124,7 @@ class NetworkManagerDownTests(unittest.TestCase):
 
     def test_falls_back_to_link_state_when_nmcli_is_dead(self):
         responses = {
+            NMCLI_STATUS: "",  # explicit: nmcli produced nothing at all
             ("ip", "route"): ROUTE_TEXT,
             ("ip", "-o", "-4", "addr", "show"): ADDR_TEXT,
         }
@@ -145,6 +158,71 @@ class NetworkManagerDownTests(unittest.TestCase):
             state = collectors.network_connection_state()
         self.assertEqual(state["class"], "ethernet")
         self.assertIn("eno1", state["text"])
+
+    def test_wifi_keeps_selection_when_it_owns_the_default_route(self):
+        # Docked laptop on wifi: ethernet is connected but carries no default
+        # route, so wifi must stay selected. This is the branch the ethernet
+        # short-circuit does not cover.
+        responses = {
+            NMCLI_STATUS: "wlan0:wifi:connected\neno1:ethernet:connected\n",
+            ("ip", "route"): "default via 192.168.0.1 dev wlan0 proto dhcp metric 600\n",
+            ("nmcli", "-t", "-f", "GENERAL.CONNECTION,IP4.ADDRESS", "dev", "show", "wlan0"): (
+                "GENERAL.CONNECTION:HomeWifi\nIP4.ADDRESS[1]:192.168.0.30/24\n"
+            ),
+            ("nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi"): "yes:HomeWifi:72\n",
+        }
+        with unittest.mock.patch.object(
+            collectors, "run_text", side_effect=self._fake_run_text(responses)
+        ):
+            state = collectors.network_connection_state()
+        self.assertEqual(state["class"], "wifi")
+
+    def test_falls_back_when_nmcli_reports_nothing_connected(self):
+        # NetworkManager is alive but owns nothing (unmanaged devices, or the
+        # route belongs to systemd-networkd or a tunnel). The machine is still
+        # online, so claiming "Disconnected" would be the same lie.
+        responses = {
+            NMCLI_STATUS: "eno1:ethernet:unmanaged\nlo:loopback:unmanaged\n",
+            ("ip", "route"): ROUTE_TEXT,
+            ("ip", "-o", "-4", "addr", "show"): ADDR_TEXT,
+        }
+        with unittest.mock.patch.object(
+            collectors, "run_text", side_effect=self._fake_run_text(responses)
+        ):
+            state = collectors.network_connection_state()
+        self.assertEqual(state["class"], "degraded")
+        self.assertIn("eno1", state["text"])
+
+
+class DefaultRouteSelectionTests(unittest.TestCase):
+    def test_prefers_the_lowest_metric(self):
+        self.assertEqual(collectors.default_route_device(MULTI_ROUTE_TEXT), "eno1")
+
+    def test_route_without_metric_outranks_a_metered_one(self):
+        text = "default via 10.0.0.1 dev wlan0 metric 600\ndefault via 10.0.0.1 dev tun0\n"
+        self.assertEqual(collectors.default_route_device(text), "tun0")
+
+    def test_truncated_line_does_not_raise(self):
+        self.assertEqual(collectors.default_route_device("default via 192.168.0.1 dev\n"), "")
+
+    def test_unparsable_metric_does_not_raise(self):
+        text = "default via 10.0.0.1 dev eno1 metric wat\n"
+        self.assertEqual(collectors.default_route_device(text), "eno1")
+
+
+class DegradedReadoutTests(unittest.TestCase):
+    def test_text_is_distinguishable_from_healthy_ethernet(self):
+        state = collectors.link_state_from_text(ROUTE_TEXT, ADDR_TEXT)
+        # Healthy ethernet renders as "<glyph> eno1"; degraded must not look
+        # identical to it on the bar.
+        self.assertNotEqual(state["text"], "\U000f0317 eno1")
+
+    def test_tooltip_names_the_source_without_overclaiming_the_cause(self):
+        state = collectors.link_state_from_text(ROUTE_TEXT, ADDR_TEXT)
+        # run_text() flattens "not running", "not on PATH" and "timed out" into
+        # the same empty string, so the tooltip must not assert which happened.
+        self.assertIn("routing table", state["tooltip"])
+        self.assertNotIn("not running", state["tooltip"])
 
 
 if __name__ == "__main__":

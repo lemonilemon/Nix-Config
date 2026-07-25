@@ -145,6 +145,22 @@
               cp -R ${./tests} tests
               cp -R ${./modules/desktop/home/hyprland/eww/scripts} \
                 modules/desktop/home/hyprland/eww/scripts
+
+              # unittest discovery skips packageless directories in silence, so
+              # a new test dir without __init__.py would leave this check green
+              # while running none of its tests. Only directories that actually
+              # hold test files need to be packages; tests/nix holds eval
+              # assertions, not Python.
+              for dir in $(find tests -type d); do
+                # find, not a glob: stdenv sets nullglob, which would collapse an
+                # unmatched `ls dir/test_*.py` into a bare `ls` that always succeeds.
+                has_tests=$(find "$dir" -maxdepth 1 -name 'test_*.py' -print -quit)
+                if [ -n "$has_tests" ] && [ ! -f "$dir/__init__.py" ]; then
+                  echo "test directory $dir has no __init__.py; unittest would skip it" >&2
+                  exit 1
+                fi
+              done
+
               python3 -m unittest discover -s tests -t . -v
               touch $out
             '';

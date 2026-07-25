@@ -1033,9 +1033,68 @@ def network_state_from_text(status_text, wifi_text, ip_by_device):
     }
 
 
+def default_route_device(route_text):
+    for line in route_text.splitlines():
+        fields = line.split()
+        if not fields or fields[0] != "default" or "dev" not in fields:
+            continue
+        return fields[fields.index("dev") + 1]
+    return ""
+
+
+def device_ipv4(addr_text, device):
+    # `ip -o -4 addr show` lines look like:
+    #   2: eno1    inet 192.168.0.88/24 brd ... scope global dynamic eno1
+    for line in addr_text.splitlines():
+        fields = line.split()
+        if len(fields) >= 4 and fields[1] == device and fields[2] == "inet":
+            return fields[3].split("/")[0]
+    return ""
+
+
+def link_state_from_text(route_text, addr_text):
+    """Readout for when nmcli cannot answer — usually NetworkManager being down.
+
+    The kernel keeps the lease and the default route after NetworkManager
+    stops, so the machine is still online; only the usual source of truth is
+    gone. Report the interface that owns the route rather than claiming to be
+    disconnected.
+    """
+    device = default_route_device(route_text)
+    if not device:
+        return None
+    ip_info = device_ipv4(addr_text, device)
+    return {
+        "text": f"󰌗 {device}",
+        "tooltip": f"{device}: {ip_info or 'No IP'} (NetworkManager not running)",
+        "class": "degraded",
+    }
+
+
+def link_fallback_state():
+    return link_state_from_text(
+        run_text(["ip", "route"]),
+        run_text(["ip", "-o", "-4", "addr", "show"]),
+    )
+
+
 def network_connection_state():
     status = run_text(["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "dev", "status"])
+    if not status.strip():
+        fallback = link_fallback_state()
+        if fallback:
+            return fallback
+        return {
+            "text": "⚠ Disconnected",
+            "tooltip": "No connection",
+            "class": "disconnected",
+        }
+
     wifi_device = connected_device(status, "wifi")
+    ethernet_device = connected_device(status, "ethernet")
+    # Whichever interface carries the default route is the one actually in use.
+    if ethernet_device and default_route_device(run_text(["ip", "route"])) == ethernet_device:
+        wifi_device = ""
     if wifi_device:
         details = run_text(
             ["nmcli", "-t", "-f", "GENERAL.CONNECTION,IP4.ADDRESS", "dev", "show", wifi_device]
@@ -1062,7 +1121,6 @@ def network_connection_state():
             "class": "linked",
         }
 
-    ethernet_device = connected_device(status, "ethernet")
     if ethernet_device:
         details = run_text(["nmcli", "-t", "-f", "IP4.ADDRESS", "dev", "show", ethernet_device])
         ip_info = first_ip(details)

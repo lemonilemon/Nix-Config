@@ -47,6 +47,7 @@ let
       htop
       hyprland
       imagemagick
+      iproute2
       jq
       kitty
       networkmanager

@@ -130,6 +130,24 @@
           pkgs = nixpkgs.legacyPackages.${system};
           inherit (self) nixosConfigurations;
         };
+
+        eww-backend =
+          let
+            pkgs = nixpkgs.legacyPackages.${system};
+          in
+          pkgs.runCommand "eww-backend-tests"
+            {
+              nativeBuildInputs = [ pkgs.python3 ];
+              PYTHONDONTWRITEBYTECODE = "1";
+            }
+            ''
+              mkdir -p modules/desktop/home/hyprland/eww
+              cp -R ${./tests} tests
+              cp -R ${./modules/desktop/home/hyprland/eww/scripts} \
+                modules/desktop/home/hyprland/eww/scripts
+              python3 -m unittest discover -s tests -t . -v
+              touch $out
+            '';
       });
 
       devShells = eachSystem (system: {

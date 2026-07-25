@@ -291,6 +291,11 @@ tooltip label {
   color: $yellow;
 }
 
+.network.degraded {
+  background: rgba(249, 226, 175, 0.10);
+  color: $peach;
+}
+
 .volume {
   color: $yellow;
 }

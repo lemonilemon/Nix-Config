@@ -3,8 +3,10 @@
 Manage one set of cross-tool agent instructions from the repo, and deliver it to
 every installed AI coding agent's global instruction path.
 
-Ships as **two independent commits**. Change 1 does not depend on Change 2, and
-either can be reverted without touching the other.
+Ships as **two independent changesets**. Change 1 does not depend on Change 2,
+and either can be reverted without touching the other. Each changeset lands as
+more than one commit: the gate fix ships with the test that proves it, and the
+wiring is preceded by a pure file move so its diff stays readable.
 
 ## Problem
 

@@ -21,14 +21,7 @@
 
   formFactor = "desktop";
 
-  # networking.wireless.enable = false; # explicitly disable wireless
-  networking.networkmanager = {
-    enable = true; # Easiest to use and most distros use this by default.
-    plugins = with pkgs; [
-      networkmanager-openvpn # OpenVPN support
-      networkmanager-openconnect # OpenConnect support
-    ];
-  };
+  nixos.general.firewall.trustedSubnets = [ "192.168.0.0/24" ];
 
   environment.sessionVariables = {
     NIXHOST = "desktop";

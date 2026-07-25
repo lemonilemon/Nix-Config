@@ -4,6 +4,11 @@
   pkgs,
   ...
 }:
+let
+  # WSL borrows the host's hardware: nothing to power-manage, no NIC of its own
+  # to manage, no firewall to run.
+  isPhysical = config.formFactor != "wsl";
+in
 {
   options = {
     home.general = {
@@ -96,7 +101,7 @@
       power = {
         enable = lib.mkOption {
           type = lib.types.bool;
-          default = config.nixos.general.enable && config.formFactor != "wsl";
+          default = config.nixos.general.enable && isPhysical;
           description = "Enable my power management settings";
         };
 
@@ -155,6 +160,63 @@
           type = lib.types.bool;
           default = config.formFactor == "laptop";
           description = "Enable UPower battery reporting";
+        };
+      };
+
+      network = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.nixos.general.enable && isPhysical;
+          description = "Enable my networking settings";
+        };
+
+        manager.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.nixos.general.network.enable;
+          description = "Manage networking with NetworkManager";
+        };
+
+        wifi.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.formFactor == "laptop";
+          description = "This host has wireless hardware for NetworkManager to manage";
+        };
+
+        firmware.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.nixos.general.network.enable;
+          description = "Install redistributable firmware (wifi, GPU, microcode)";
+        };
+      };
+
+      firewall = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.nixos.general.enable && isPhysical;
+          description = "Enable my firewall settings";
+        };
+
+        allowedTCPPorts = lib.mkOption {
+          type = lib.types.listOf lib.types.port;
+          default = [
+            22
+            80
+            443
+          ];
+          description = "TCP ports accepted from anywhere";
+        };
+
+        allowedUDPPorts = lib.mkOption {
+          type = lib.types.listOf lib.types.port;
+          default = [ ];
+          description = "UDP ports accepted from anywhere";
+        };
+
+        trustedSubnets = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [ "192.168.0.0/24" ];
+          description = "IPv4 subnets accepted wholesale on the input chain";
         };
       };
     };

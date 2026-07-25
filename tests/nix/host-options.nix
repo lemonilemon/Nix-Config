@@ -139,6 +139,96 @@ let
       actual = hosts.wsl.powerManagement.enable;
       expected = false;
     }
+
+    # --- derived network options ---
+    {
+      name = "desktop/network.manager.enable";
+      actual = hosts.desktop.nixos.general.network.manager.enable;
+      expected = true;
+    }
+    {
+      name = "desktop/network.wifi.enable";
+      actual = hosts.desktop.nixos.general.network.wifi.enable;
+      expected = false;
+    }
+    {
+      name = "laptop/network.wifi.enable";
+      actual = hosts.laptop.nixos.general.network.wifi.enable;
+      expected = true;
+    }
+    {
+      name = "wsl/network.enable";
+      actual = hosts.wsl.nixos.general.network.enable;
+      expected = false;
+    }
+
+    # --- effective networking config ---
+    {
+      name = "desktop/networking.networkmanager.enable";
+      actual = hosts.desktop.networking.networkmanager.enable;
+      expected = true;
+    }
+    {
+      name = "laptop/networking.networkmanager.enable";
+      actual = hosts.laptop.networking.networkmanager.enable;
+      expected = true;
+    }
+    {
+      name = "wsl/networking.networkmanager.enable";
+      actual = hosts.wsl.networking.networkmanager.enable;
+      expected = false;
+    }
+    {
+      name = "desktop/firewall.enable";
+      actual = hosts.desktop.networking.firewall.enable;
+      expected = true;
+    }
+    {
+      name = "desktop/firewall.allowedTCPPorts";
+      actual = hosts.desktop.networking.firewall.allowedTCPPorts;
+      expected = [
+        22
+        80
+        443
+      ];
+    }
+    {
+      name = "desktop/firewall.trustedSubnets";
+      actual = hosts.desktop.nixos.general.firewall.trustedSubnets;
+      expected = [ "192.168.0.0/24" ];
+    }
+    {
+      name = "desktop/firewall rule mentions the LAN";
+      actual = lib.hasInfix "192.168.0.0/24" hosts.desktop.networking.firewall.extraCommands;
+      expected = true;
+    }
+    {
+      name = "laptop/firewall.trustedSubnets";
+      actual = hosts.laptop.nixos.general.firewall.trustedSubnets;
+      expected = [ ];
+    }
+    {
+      # The laptop's own list is the shared default; Samba's openFirewall adds
+      # 139/445 on top, which is why the effective list is longer there.
+      name = "laptop/firewall.allowedTCPPorts (option)";
+      actual = hosts.laptop.nixos.general.firewall.allowedTCPPorts;
+      expected = [
+        22
+        80
+        443
+      ];
+    }
+    {
+      name = "laptop/firewall.allowedTCPPorts (effective, incl. samba)";
+      actual = hosts.laptop.networking.firewall.allowedTCPPorts;
+      expected = [
+        22
+        80
+        139
+        443
+        445
+      ];
+    }
   ];
 
   failures = builtins.filter (e: e.actual != e.expected) expectations;

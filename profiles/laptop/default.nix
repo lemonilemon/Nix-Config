@@ -17,8 +17,6 @@
     ../i18n.nix
     ../boot.nix
     ../sound.nix
-    ../network.nix
-    ../firewall.nix
     ../smb.nix
   ];
 

@@ -5,5 +5,6 @@
     ./settings.nix
     ./network.nix
     ./power.nix
+    ./firewall.nix
   ];
 }

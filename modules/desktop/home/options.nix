@@ -36,6 +36,20 @@
         description = "Enable laptop-only Eww controls for clamshell and headless display modes";
       };
 
+      hyprland.eww.battery.enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.eww.battery.enable";
+        default = false;
+        description = "Show the Eww battery module and collect battery state";
+      };
+
+      hyprland.eww.wifi.enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.eww.wifi.enable";
+        default = false;
+        description = "Show the Wi-Fi toggle in the Eww network popup";
+      };
+
       hyprland.waybar.enable = helpers.mkHomeOpt {
         inherit osConfig;
         path = "home.desktop.hyprland.waybar.enable";

@@ -1,5 +1,7 @@
+import os
 import sys
 import unittest
+import unittest.mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -7,7 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "modules" / "desktop" / "home" / "hyprland" / "eww" / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from eww_bar_backend import collectors  # noqa: E402
+from eww_bar_backend import collectors, common  # noqa: E402
 
 
 def _write_bat(root, **files):
@@ -53,6 +55,18 @@ class BatteryStateTests(unittest.TestCase):
         self.assertEqual(state["status"], "Full")
         self.assertEqual(state["health"], "100%")
         self.assertEqual(state["power"], "—")
+
+
+class BatteryModuleDisabledTests(unittest.TestCase):
+    def test_disabled_module_skips_collection(self):
+        with unittest.mock.patch.dict("os.environ", {"EWW_BAR_BATTERY": "0"}, clear=False):
+            state = collectors.battery_state()
+        self.assertEqual(state["status"], "Unknown")
+
+    def test_enabled_by_default(self):
+        with unittest.mock.patch.dict("os.environ", {}, clear=False):
+            os.environ.pop("EWW_BAR_BATTERY", None)
+            self.assertTrue(common.module_enabled("BATTERY"))
 
 
 if __name__ == "__main__":

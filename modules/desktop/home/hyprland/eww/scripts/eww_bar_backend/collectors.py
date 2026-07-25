@@ -17,6 +17,7 @@ from .common import (
     VOLUME_DEFAULT,
     WORKSPACE_DEFAULT,
     idle_pidfile_path,
+    module_enabled,
     parse_json,
     run_text,
     truncate_text,
@@ -1294,6 +1295,8 @@ def tray_count():
 
 
 def battery_state(root=Path("/sys/class/power_supply")):
+    if not module_enabled("BATTERY"):
+        return BATTERY_DEFAULT.copy()
     for battery in root.glob("BAT*"):
         capacity_path = battery / "capacity"
         if not capacity_path.exists():

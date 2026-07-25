@@ -98,6 +98,11 @@ def run_text(command, timeout=2.0):
         return ""
 
 
+def module_enabled(name, default="1"):
+    """Bar modules the Nix module switched off are signalled through the env."""
+    return os.environ.get(f"EWW_BAR_{name}", default) != "0"
+
+
 def parse_json(text, default):
     try:
         return json.loads(text)

@@ -26,8 +26,20 @@
 
       hyprland.eww.laptopControls.enable = lib.mkOption {
         type = lib.types.bool;
-        default = false;
+        default = config.formFactor == "laptop";
         description = "Enable laptop-only Eww controls for clamshell and headless display modes";
+      };
+
+      hyprland.eww.battery.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = config.formFactor == "laptop";
+        description = "Show the Eww battery module and collect battery state";
+      };
+
+      hyprland.eww.wifi.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = config.nixos.general.network.wifi.enable;
+        description = "Show the Wi-Fi toggle in the Eww network popup";
       };
 
       hyprland.waybar.enable = lib.mkOption {

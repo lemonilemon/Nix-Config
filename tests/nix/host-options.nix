@@ -271,6 +271,38 @@ let
       ) hosts.laptop.home-manager.users.lemonilemon.services.hypridle.settings.listener;
       expected = true;
     }
+
+    # --- derived bar options ---
+    {
+      name = "laptop/eww.laptopControls.enable";
+      actual = hosts.laptop.home.desktop.hyprland.eww.laptopControls.enable;
+      expected = true;
+    }
+    {
+      name = "desktop/eww.laptopControls.enable";
+      actual = hosts.desktop.home.desktop.hyprland.eww.laptopControls.enable;
+      expected = false;
+    }
+    {
+      name = "laptop/eww.battery.enable";
+      actual = hosts.laptop.home.desktop.hyprland.eww.battery.enable;
+      expected = true;
+    }
+    {
+      name = "desktop/eww.battery.enable";
+      actual = hosts.desktop.home.desktop.hyprland.eww.battery.enable;
+      expected = false;
+    }
+    {
+      name = "desktop/eww.wifi.enable";
+      actual = hosts.desktop.home.desktop.hyprland.eww.wifi.enable;
+      expected = false;
+    }
+    {
+      name = "laptop/eww.wifi.enable";
+      actual = hosts.laptop.home.desktop.hyprland.eww.wifi.enable;
+      expected = true;
+    }
   ];
 
   failures = builtins.filter (e: e.actual != e.expected) expectations;

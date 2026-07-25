@@ -72,6 +72,8 @@ let
 
   ewwYuck = pkgs.replaceVars ./eww.yuck {
     laptopControls = if cfg.laptopControls.enable then "true" else "false";
+    batteryModule = if cfg.battery.enable then "true" else "false";
+    wifiControls = if cfg.wifi.enable then "true" else "false";
   };
 
   openBar = pkgs.writeShellScript "eww-open-bar" ''
@@ -140,7 +142,10 @@ in
         };
 
         Service = {
-          Environment = [ "PATH=${runtimePath}" ];
+          Environment = [
+            "PATH=${runtimePath}"
+            "EWW_BAR_BATTERY=${if cfg.battery.enable then "1" else "0"}"
+          ];
           ExecStart = "${pkgs.eww}/bin/eww --force-wayland daemon --no-daemonize";
           ExecStartPost = openBar;
           MemoryAccounting = true;

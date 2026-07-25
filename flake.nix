@@ -170,6 +170,10 @@
         default = nixpkgs.legacyPackages.${system}.mkShell {
           inherit (self.checks.${system}.pre-commit-check) shellHook;
 
+          # Matches the eww-backend check, so running the tests by hand in this
+          # shell cannot leave __pycache__ dirs behind.
+          PYTHONDONTWRITEBYTECODE = "1";
+
           buildInputs = with nixpkgs.legacyPackages.${system}; [
             nixfmt
           ];

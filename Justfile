@@ -66,6 +66,13 @@ changehost input:
 check:
     nix flake check
 
+# Run just the eww backend tests, without the full flake check.
+# PYTHONDONTWRITEBYTECODE mirrors the sandboxed check and keeps __pycache__
+# dirs out of the tree; they are gitignored but still clutter it.
+[group('nix')]
+test-backend:
+    PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -t . -v
+
 # Run eval tests
 [group('NixOS')]
 test:

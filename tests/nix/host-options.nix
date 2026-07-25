@@ -8,6 +8,20 @@ let
     wsl = nixosConfigurations.NixOS-wsl.config;
   };
 
+  # A desktop with the programs flag off. Proves home.cli.programs.enable
+  # actually gates modules/cli/home/programs/, rather than only gating
+  # default.nix's own config block.
+  programsOff =
+    (nixosConfigurations.desktop.extendModules {
+      modules = [ { home.cli.programs.enable = false; } ];
+    }).config.home-manager.users.lemonilemon;
+
+  programsOffPackageNames = map (p: p.pname or p.name or "") programsOff.home.packages;
+
+  programsOnPackageNames = map (p: p.pname or p.name or "") (
+    hosts.desktop.home-manager.users.lemonilemon.home.packages
+  );
+
   expectations = [
     # --- form factor ---
     {
@@ -321,6 +335,68 @@ let
       name = "laptop/eww.wifi.enable";
       actual = hosts.laptop.home-manager.users.lemonilemon.home.desktop.hyprland.eww.wifi.enable;
       expected = true;
+    }
+
+    # --- home.cli.programs.enable actually gates programs/ ---
+    # Positive controls: prove claude-code and bubblewrap actually exist in
+    # home.packages when the flag is on, so the absence checks below can't go
+    # vacuous (e.g. an upstream rename of llm-agents' claude-code pname) and
+    # silently stop testing anything.
+    {
+      name = "desktop/claude-code in home.packages";
+      actual = builtins.any (n: n == "claude-code") programsOnPackageNames;
+      expected = true;
+    }
+    {
+      name = "desktop/bubblewrap in home.packages";
+      actual = builtins.any (n: n == "bubblewrap") programsOnPackageNames;
+      expected = true;
+    }
+    {
+      name = "desktop/zip in home.packages";
+      actual = builtins.any (n: n == "zip") programsOnPackageNames;
+      expected = true;
+    }
+    {
+      name = "programs off/atuin.enable";
+      actual = programsOff.programs.atuin.enable;
+      expected = false;
+    }
+    {
+      name = "programs off/fastfetch.enable";
+      actual = programsOff.programs.fastfetch.enable;
+      expected = false;
+    }
+    {
+      name = "programs off/opencode.enable";
+      actual = programsOff.programs.opencode.enable;
+      expected = false;
+    }
+    {
+      name = "programs off/yazi.enable";
+      actual = programsOff.programs.yazi.enable;
+      expected = false;
+    }
+    {
+      name = "programs off/claude-code in home.packages";
+      actual = builtins.any (n: n == "claude-code") programsOffPackageNames;
+      expected = false;
+    }
+    {
+      # bubblewrap, not socat: the eww module puts socat in home.packages of
+      # its own accord (eww/default.nix:127), so it survives the programs flag
+      # being off and cannot witness anything about ai.nix.
+      name = "programs off/bubblewrap in home.packages";
+      actual = builtins.any (n: n == "bubblewrap") programsOffPackageNames;
+      expected = false;
+    }
+    {
+      # utils.nix only sets home.packages (no enable option to witness
+      # directly). zip is a genuine stand-in: it is referenced as a package
+      # nowhere else in this repo.
+      name = "programs off/zip in home.packages (utils.nix)";
+      actual = builtins.any (n: n == "zip") programsOffPackageNames;
+      expected = false;
     }
   ];
 

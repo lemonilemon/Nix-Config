@@ -23,10 +23,40 @@ profiles/
     ├── boot.nix           # Boot loader configuration
     ├── sound.nix          # Audio configuration
     ├── i18n.nix           # Internationalization settings
-    ├── network.nix        # Network configuration
-    ├── firewall.nix       # Firewall settings
     └── smb.nix            # Samba/SMB configuration
 ```
+
+## Form Factor
+
+Every profile declares exactly one form factor:
+
+```nix
+formFactor = "desktop"; # "laptop" | "desktop" | "wsl"
+```
+
+Power, networking, firewall, Eww bar and idle defaults all derive from it. The
+option is declared in `modules/nixos.nix` (NixOS tree only, deliberately: the
+Home Manager tree receives form-factor-dependent values by mirroring its NixOS
+twin through `helpers.mkHomeOpt`, never by reading `formFactor` itself). What
+each value implies lives in the per-domain `options.nix` files.
+
+A host that disagrees with one derived default overrides that single option
+rather than lying about its form factor:
+
+```nix
+formFactor = "desktop";
+nixos.general.power.governor = "powersave"; # this box runs hot
+```
+
+**Invariant:** module `config` blocks never read `formFactor` — they read the
+capability options it seeds. Only `options.nix` files mention it. That is the
+rule to check when adding a host or a new domain.
+
+The former `profiles/network.nix` and `profiles/firewall.nix` fragments are
+gone. Their content lives in `modules/general/nixos/network.nix` and
+`modules/general/nixos/firewall.nix`, selected by option rather than by import,
+which is what stopped the desktop profile from quietly drifting out of sync
+with the laptop one.
 
 ## Profile Organization
 
@@ -171,15 +201,6 @@ Internationalization settings:
 - Input methods
 - Timezone settings
 
-### `network.nix`
-Network configuration:
-- Network manager settings
-- Wireless configuration
-- VPN support
-
-### `firewall.nix`
-Firewall rules and security settings.
-
 ### `smb.nix`
 Samba/SMB file sharing configuration for Windows network compatibility.
 
@@ -210,6 +231,9 @@ To create a new profile for a different machine:
        # ../sound.nix
        # ../i18n.nix
      ];
+
+     # Seeds power, networking, firewall, bar and idle defaults.
+     formFactor = "laptop"; # "laptop" | "desktop" | "wsl"
 
      environment.sessionVariables = {
        NIXHOST = "myprofile";
@@ -254,6 +278,7 @@ To create a new profile for a different machine:
 
 Profiles can control which parts of the system are enabled using these top-level flags:
 
+- `formFactor` - `"laptop" | "desktop" | "wsl"`; seeds the defaults below
 - `cli.enable` - CLI tools and terminal configuration
 - `gui.enable` - GUI applications
 - `general.enable` - General system settings
@@ -261,7 +286,26 @@ Profiles can control which parts of the system are enabled using these top-level
 - `nixos.desktop.gnome.enable` - GNOME desktop (within desktop)
 - `nixos.desktop.hyprland.enable` - Hyprland window manager (within desktop)
 
-See `modules/options.nix` and module-specific options files for the complete hierarchy.
+Capabilities derived from `formFactor`, each overridable on its own:
+
+| Option | laptop | desktop | wsl |
+|--------|--------|---------|-----|
+| `nixos.general.power.governor` | `powersave` | `performance` | (module off) |
+| `nixos.general.power.autoCpufreq.enable` | true | false | false |
+| `nixos.general.power.powertop.enable` | true | false | false |
+| `nixos.general.power.upower.enable` | true | false | false |
+| `nixos.general.network.wifi.enable` | true | false | false |
+| `nixos.general.firewall.enable` | true | true | false |
+| `home.desktop.hyprland.eww.laptopControls.enable` | true | false | - |
+| `home.desktop.hyprland.eww.battery.enable` | true | false | - |
+| `home.desktop.hyprland.idle.suspend.enable` | true | false | - |
+
+`tests/nix/host-options.nix` asserts this table for all three hosts and runs as
+part of `nix flake check` (`just check`), so a change that breaks it fails at
+eval time rather than after a rebuild.
+
+See `modules/options.nix`, `modules/nixos.nix` and module-specific options files
+for the complete hierarchy.
 
 ## Best Practices
 

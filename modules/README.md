@@ -31,6 +31,24 @@ All flags are declared in `options.nix` and default to `true`:
 
 Sub-options follow the same pattern (e.g. `home.cli.nvim.enable`, `home.gui.browsers.firefox.enable`).
 
+## Form Factor
+
+`formFactor` (`"laptop" | "desktop" | "wsl"`) is declared in `nixos.nix`, not in
+the shared `options.nix`, so it exists in the NixOS tree only. Home Manager
+receives form-factor-dependent values by mirroring its NixOS twin through
+`helpers.mkHomeOpt`; it never reads `formFactor` itself, and cannot, which is
+what keeps a wrong-by-default HM copy from being possible.
+
+Capability options across the categories take their **defaults** from it:
+`nixos.general.power.*`, `nixos.general.network.*`, `nixos.general.firewall.*`,
+`home.desktop.hyprland.eww.{laptopControls,battery,wifi}.enable` and
+`home.desktop.hyprland.idle.*`.
+
+**Invariant:** module `config` blocks never read `formFactor` — they read the
+capability options it seeds. Only `options.nix` files (and `nixos.nix`, which
+declares it) mention it. `tests/nix/host-options.nix` asserts the resulting
+values for all three hosts under `nix flake check`.
+
 ## Adding a New Module
 
 1. Create `modules/<category>/<feature>.nix` using the standard skeleton:

@@ -57,6 +57,14 @@ Two conventions to preserve when adding options:
 2. **HM options mirror NixOS**: Home Manager `options.nix` files use `helpers.mkHomeOpt`
    so the HM value follows `osConfig` when running inside NixOS and falls back to `default`
    standalone. See [`references/builders.md`](references/builders.md).
+3. **Form factor drives defaults**: `formFactor` (`"laptop" | "desktop" | "wsl"`, declared
+   in `modules/nixos.nix`) is the one declared fact about the machine. Capability options
+   derive their *defaults* from it; module `config` blocks read those capability options,
+   never `formFactor` itself. Only `options.nix` files mention it. It is deliberately absent
+   from the Home Manager tree, so HM values arrive by mirroring their NixOS twin rather than
+   by re-deriving from a copy that would always read `"desktop"`.
+   `tests/nix/host-options.nix` asserts the derived values for all three hosts and runs
+   under `just check`; add a case there when adding a capability.
 
 **Adding options that don't exist yet**: declare them explicitly with
 `lib.mkOption` / `helpers.mkHomeOpt` in the relevant `options.nix`. Never hardcode values in
@@ -106,6 +114,7 @@ environment variable** (`nixos-rebuild ... --flake .#$NIXHOST`) — if a build f
 empty/unknown attribute, check that first.
 
 ```bash
+just check       # nix flake check — nixfmt, host option assertions, eww backend tests
 just test        # nix eval of the current host config (--show-trace) — catch eval errors first
 just dry-build   # preview closure diff without switching
 just build       # nixos-rebuild switch
@@ -117,9 +126,16 @@ just gc          # nix-collect-garbage -d
 just push        # build toplevel and push closure to cachix
 ```
 
-**Definition of done for any config change**: run `just fmt`, then `just test`, then
-`just dry-build`. All three must pass before presenting the change. Do not run
-`just build` yourself — it uses sudo and switches the live system; leave that to the user.
+**Definition of done for any config change**: run `just fmt`, then `just check`, then
+`just test`, then `just dry-build`. All four must pass before presenting the change.
+
+`just check` is the one that catches regressions the others miss: it evaluates every host
+(not just `$NIXHOST`), asserts the form-factor-derived option values, and runs the Eww
+backend's Python suite. Note `just dry-build` uses sudo, so in a non-interactive session
+substitute `nix build --dry-run .#nixosConfigurations.<host>.config.system.build.toplevel`.
+
+Do not run `just build` yourself — it uses sudo and switches the live system; leave that
+to the user.
 
 ## Keeping This Skill and READMEs Up to Date
 

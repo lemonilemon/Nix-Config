@@ -229,6 +229,48 @@ let
         445
       ];
     }
+
+    # --- idle policy ---
+    {
+      name = "desktop/idle.suspend.enable";
+      actual = hosts.desktop.home.desktop.hyprland.idle.suspend.enable;
+      expected = false;
+    }
+    {
+      name = "laptop/idle.suspend.enable";
+      actual = hosts.laptop.home.desktop.hyprland.idle.suspend.enable;
+      expected = true;
+    }
+    {
+      # lock + dpms only; the suspend listener is dropped entirely.
+      name = "desktop/hypridle listener count";
+      actual = builtins.length (
+        hosts.desktop.home-manager.users.lemonilemon.services.hypridle.settings.listener
+      );
+      expected = 2;
+    }
+    {
+      name = "laptop/hypridle listener count";
+      actual = builtins.length (
+        hosts.laptop.home-manager.users.lemonilemon.services.hypridle.settings.listener
+      );
+      expected = 3;
+    }
+    {
+      # The desktop must not carry a suspend action at all.
+      name = "desktop/hypridle has no suspend action";
+      actual = builtins.any (
+        l: (l.on-timeout or "") == "systemctl suspend"
+      ) hosts.desktop.home-manager.users.lemonilemon.services.hypridle.settings.listener;
+      expected = false;
+    }
+    {
+      name = "laptop/hypridle suspends after 1800s";
+      actual = builtins.any (
+        l: (l.on-timeout or "") == "systemctl suspend" && l.timeout == 1800
+      ) hosts.laptop.home-manager.users.lemonilemon.services.hypridle.settings.listener;
+      expected = true;
+    }
   ];
 
   failures = builtins.filter (e: e.actual != e.expected) expectations;

@@ -70,6 +70,37 @@
         default = config.home.desktop.hyprland.enable;
         description = "Enable wlogout power menu for Hyprland";
       };
+
+      hyprland.idle.lockTimeout = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.idle.lockTimeout";
+        type = lib.types.int;
+        default = 900;
+        description = "Seconds of idle before the session locks";
+      };
+
+      hyprland.idle.dpmsTimeout = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.idle.dpmsTimeout";
+        type = lib.types.int;
+        default = 1200;
+        description = "Seconds of idle before the displays are switched off";
+      };
+
+      hyprland.idle.suspend.enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.idle.suspend.enable";
+        default = false;
+        description = "Suspend the machine after suspendTimeout of idle";
+      };
+
+      hyprland.idle.suspendTimeout = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.idle.suspendTimeout";
+        type = lib.types.int;
+        default = 1800;
+        description = "Seconds of idle before suspending, when suspend is enabled";
+      };
     };
   };
 }

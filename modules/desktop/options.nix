@@ -59,6 +59,34 @@
         default = config.home.desktop.hyprland.enable;
         description = "Enable wlogout power menu for Hyprland";
       };
+
+      hyprland.idle = {
+        lockTimeout = lib.mkOption {
+          type = lib.types.int;
+          default = 900;
+          description = "Seconds of idle before the session locks";
+        };
+
+        dpmsTimeout = lib.mkOption {
+          type = lib.types.int;
+          default = 1200;
+          description = "Seconds of idle before the displays are switched off";
+        };
+
+        suspend = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = config.formFactor == "laptop";
+            description = "Suspend the machine after suspendTimeout of idle";
+          };
+        };
+
+        suspendTimeout = lib.mkOption {
+          type = lib.types.int;
+          default = 1800;
+          description = "Seconds of idle before suspending, when suspend is enabled";
+        };
+      };
     };
 
     nixos.desktop = {

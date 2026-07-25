@@ -107,33 +107,39 @@ in
         ];
       };
     };
-    services.hypridle = {
-      enable = true;
-      settings = {
-        general = {
-          lock_cmd = "pidof hyprlock || hyprlock"; # avoid starting multiple hyprlock instances.
-          before_sleep_cmd = "loginctl lock-session"; # lock before suspend.
-          # Re-enable display then restart hyprlock if it crashed during GPU reset on suspend.
-          after_sleep_cmd = "hyprctl dispatch dpms on; pidof hyprlock || hyprlock";
+    services.hypridle =
+      let
+        idle = config.home.desktop.hyprland.idle;
+      in
+      {
+        enable = true;
+        settings = {
+          general = {
+            lock_cmd = "pidof hyprlock || hyprlock"; # avoid starting multiple hyprlock instances.
+            before_sleep_cmd = "loginctl lock-session"; # lock before suspend.
+            # Re-enable display then restart hyprlock if it crashed during GPU reset on suspend.
+            after_sleep_cmd = "hyprctl dispatch dpms on; pidof hyprlock || hyprlock";
+          };
+          listener = [
+            {
+              timeout = idle.lockTimeout;
+              on-timeout = "loginctl lock-session";
+            }
+            {
+              # Turn off display while locked to save power.
+              # on-resume brings it back if user wakes before suspend fires.
+              timeout = idle.dpmsTimeout;
+              on-timeout = "hyprctl dispatch dpms off";
+              on-resume = "hyprctl dispatch dpms on";
+            }
+          ]
+          ++ lib.optionals idle.suspend.enable [
+            {
+              timeout = idle.suspendTimeout;
+              on-timeout = "systemctl suspend";
+            }
+          ];
         };
-        listener = [
-          {
-            timeout = 900; # 15 min
-            on-timeout = "loginctl lock-session";
-          }
-          {
-            # Turn off display while locked to save power.
-            # on-resume brings it back if user wakes before suspend fires.
-            timeout = 1200; # 20 min
-            on-timeout = "hyprctl dispatch dpms off";
-            on-resume = "hyprctl dispatch dpms on";
-          }
-          {
-            timeout = 1800; # 30 min
-            on-timeout = "systemctl suspend";
-          }
-        ];
       };
-    };
   };
 }

@@ -18,9 +18,20 @@ let
 
   programsOffPackageNames = map (p: p.pname or p.name or "") programsOff.home.packages;
 
-  programsOnPackageNames = map (p: p.pname or p.name or "") (
-    hosts.desktop.home-manager.users.lemonilemon.home.packages
-  );
+  desktopHome = hosts.desktop.home-manager.users.lemonilemon;
+
+  programsOnPackageNames = map (p: p.pname or p.name or "") desktopHome.home.packages;
+
+  # Every agent instruction target must resolve to one store object, so the
+  # tools cannot drift apart. Paths were confirmed against the installed
+  # binaries; the kiro one is inferred and needs rechecking after its first run.
+  agentInstructionSources = [
+    desktopHome.home.file."AGENTS.md".source
+    desktopHome.home.file.".claude/CLAUDE.md".source
+    desktopHome.home.file.".codex/AGENTS.md".source
+    desktopHome.home.file.".kiro/steering/00-global.md".source
+    desktopHome.xdg.configFile."opencode/AGENTS.md".source
+  ];
 
   expectations = [
     # --- form factor ---
@@ -396,6 +407,28 @@ let
       # nowhere else in this repo.
       name = "programs off/zip in home.packages (utils.nix)";
       actual = builtins.any (n: n == "zip") programsOffPackageNames;
+      expected = false;
+    }
+
+    # --- global agent instructions ---
+    {
+      name = "agent instructions/all five targets share one store path";
+      actual = builtins.all (
+        s: builtins.toString s == builtins.toString (builtins.head agentInstructionSources)
+      ) agentInstructionSources;
+      expected = true;
+    }
+    {
+      name = "agent instructions/source points at the instruction file";
+      actual = lib.hasInfix "lemonilemon's agent instructions" (
+        builtins.readFile (builtins.head agentInstructionSources)
+      );
+      expected = true;
+    }
+    {
+      # The flag gates the instruction files too, not just the packages.
+      name = "programs off/no agent instruction files";
+      actual = programsOff.home.file ? "AGENTS.md";
       expected = false;
     }
   ];

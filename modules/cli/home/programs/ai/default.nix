@@ -4,6 +4,13 @@
   pkgs,
   ...
 }:
+let
+  # One file, five symlinks, all resolving to the same store object. Paths were
+  # confirmed against each installed binary. antigravity-cli has no global
+  # instruction path of its own, so ~/AGENTS.md covers it, along with anything
+  # else that resolves AGENTS.md by walking up from the workspace.
+  agentInstructions = ./AGENTS.md;
+in
 {
   config = lib.mkIf config.home.cli.programs.enable {
     home.packages = (
@@ -107,6 +114,21 @@
         };
       };
     };
+
+    home.file = {
+      # It is the only path that reaches `agy` (antigravity-cli), which has no
+      # global instruction file of its own; tree-walking agents also pick this
+      # up for any project under $HOME.
+      "AGENTS.md".source = agentInstructions;
+      ".claude/CLAUDE.md".source = agentInstructions;
+      ".codex/AGENTS.md".source = agentInstructions;
+      # Inferred path: kiro-cli has never run here, so ~/.kiro does not exist.
+      # Its binary documents "global/workspace steering" as a default resource
+      # and its global home is ~/.kiro. Re-verify after the first kiro-cli run.
+      ".kiro/steering/00-global.md".source = agentInstructions;
+    };
+
+    xdg.configFile."opencode/AGENTS.md".source = agentInstructions;
   };
 
 }

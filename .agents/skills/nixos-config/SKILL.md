@@ -115,6 +115,7 @@ empty/unknown attribute, check that first.
 
 ```bash
 just check       # nix flake check — nixfmt, host option assertions, eww backend tests
+just test-backend # eww backend Python tests alone, ~0.03s — fast loop while editing them
 just test        # nix eval of the current host config (--show-trace) — catch eval errors first
 just dry-build   # preview closure diff without switching
 just build       # nixos-rebuild switch

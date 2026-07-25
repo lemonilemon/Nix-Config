@@ -8,7 +8,7 @@
   imports = [
     ./fastfetch.nix
     ./atuin.nix
-    ./ai.nix
+    ./ai
     ./utils.nix
     ./yazi.nix
   ];

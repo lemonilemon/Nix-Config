@@ -8,6 +8,7 @@
     ./config.nix
     ../base.nix
   ];
+  formFactor = "wsl";
   wsl = {
     enable = true;
     defaultUser = username;

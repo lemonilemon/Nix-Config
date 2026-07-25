@@ -22,6 +22,8 @@
     ../smb.nix
   ];
 
+  formFactor = "laptop";
+
   environment.sessionVariables = {
     NIXHOST = "laptop";
   };
@@ -35,32 +37,6 @@
     mesa # 3D graphics library
     mesa-demos # Test utilities for OpenGL
   ];
-
-  services.upower.enable = true; # UPower is needed for battery management
-  # Power
-  powerManagement = {
-    enable = true;
-    powertop.enable = true;
-    cpuFreqGovernor = "powersave";
-  };
-
-  services = {
-    thermald.enable = true;
-    power-profiles-daemon.enable = false;
-    auto-cpufreq = {
-      enable = true;
-      settings = {
-        battery = {
-          governor = "powersave";
-          turbo = "never";
-        };
-        charger = {
-          governor = "powersave";
-          turbo = "auto";
-        };
-      };
-    };
-  };
 
   # Hardware
   hardware = {

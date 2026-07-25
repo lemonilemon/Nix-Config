@@ -125,6 +125,11 @@
             };
           };
         };
+
+        host-options = import ./tests/nix/host-options.nix {
+          pkgs = nixpkgs.legacyPackages.${system};
+          inherit (self) nixosConfigurations;
+        };
       });
 
       devShells = eachSystem (system: {

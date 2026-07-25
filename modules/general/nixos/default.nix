@@ -4,5 +4,6 @@
     ./nixld.nix
     ./settings.nix
     ./network.nix
+    ./power.nix
   ];
 }

@@ -61,6 +61,11 @@ changehost input:
     export NIXHOST={{ input }}
     sudo nixos-rebuild switch --flake .#{{ input }}
 
+# Run flake checks (nixfmt, host option assertions, backend tests)
+[group('nix')]
+check:
+    nix flake check
+
 # Run eval tests
 [group('NixOS')]
 test:

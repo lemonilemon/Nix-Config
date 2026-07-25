@@ -19,6 +19,8 @@
     ../sound.nix
   ];
 
+  formFactor = "desktop";
+
   # networking.wireless.enable = false; # explicitly disable wireless
   networking.networkmanager = {
     enable = true; # Easiest to use and most distros use this by default.
@@ -41,27 +43,6 @@
     mesa # 3D graphics library
     mesa-demos # Test utilities for OpenGL
   ];
-
-  # Power
-  powerManagement = {
-    enable = true;
-    powertop.enable = true;
-    cpuFreqGovernor = "performance";
-  };
-
-  services = {
-    thermald.enable = true;
-    power-profiles-daemon.enable = false;
-    auto-cpufreq = {
-      enable = true;
-      settings = {
-        charger = {
-          governor = "performance";
-          turbo = "auto";
-        };
-      };
-    };
-  };
 
   # Hardware
 

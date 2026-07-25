@@ -18,8 +18,22 @@ Eww bar, and idle/lid/sleep policy.
 `../smb.nix`. `profiles/desktop/default.nix` imports none of them and instead
 inlines a partial copy of the NetworkManager block (no `lib.mkDefault`, no
 `networking.wireless.enable`, no `hardware.enableRedistributableFirmware`). The
-desktop therefore has **no firewall configuration at all**, and its NM settings
-cannot be overridden by a later module because they are not `mkDefault`.
+desktop therefore has **no firewall configuration of its own**, and its NM
+settings cannot be overridden by a later module because they are not
+`mkDefault`.
+
+Corrected after implementation (2026-07-25): "no firewall configuration" is not
+"no firewall". `networking.firewall.enable` defaults to `true` in NixOS, so the
+desktop is firewalled today with **zero** open ports. Adopting the shared list
+therefore *opens* 22/80/443, and `trustedSubnets` adds an all-ports accept for
+the whole LAN. That is a loosening, not a hardening, and the decision below
+should be read in that light.
+
+The same correction applies to the laptop. `profiles/firewall.nix` writes
+`allowedTCPPorts = lib.mkDefault [ 22 80 443 ]`, and because `types.listOf`
+filters overrides before concatenating, Samba's normal-priority `[ 139 445 ]`
+discarded that list wholesale. The laptop never had 22/80/443 open either;
+after this work it does.
 
 `profiles/firewall.nix` hardcodes:
 
@@ -77,10 +91,16 @@ host that enables hyprland.
 
 ### The `formFactor` option
 
-Declared once, at top level, in `modules/options.nix` — alongside `home.enable`,
-`nixos.enable` and `desktop.enable`, because it describes the machine rather
-than one subtree. That file is imported by both `modules/nixos.nix` and
-`modules/home.nix`, so both option trees see it.
+Declared once, at top level, because it describes the machine rather than one
+subtree.
+
+Changed during implementation: it lives in `modules/nixos.nix`, **not** the
+shared `modules/options.nix`. That file is imported by both `modules/nixos.nix`
+and `modules/home.nix`, so declaring it there gives the Home Manager tree its
+own copy that mirrors nothing and always reads `"desktop"` — an option that
+evaluates fine while being silently wrong on the laptop. Keeping it out of the
+HM tree turns that trap into a hard eval error, and forces HM values to arrive
+by mirroring their NixOS twin through `helpers.mkHomeOpt`.
 
 ```nix
 formFactor = lib.mkOption {
@@ -202,10 +222,27 @@ option is a liability.
   (`pkgs.replaceVars` in `eww/default.nix`), gating the bar button and the
   battery popup, and letting the backend skip the battery collector entirely.
 - **`network_connection_state()` gains a non-NM fallback.** When `nmcli`
-  produces nothing, read link state and the default route directly and report
-  the real interface with a distinct `degraded` class and a tooltip naming the
-  cause, e.g. `eno1: 192.168.0.88 (NetworkManager not running)`. `⚠ Disconnected`
+  produces nothing usable, read link state and the default route directly and
+  report the real interface with a distinct `degraded` class. `⚠ Disconnected`
   becomes reserved for genuinely no carrier and no default route.
+
+  Widened during implementation, from review: the trigger is not "nmcli
+  returned nothing" but "nmcli reports nothing connected". NetworkManager can
+  be running while owning nothing (unmanaged devices, systemd-networkd, or a
+  tunnel holding the route), which produced the same false "Disconnected". The
+  fallback therefore sits at the terminal branch rather than behind an
+  empty-output check.
+
+  The tooltip reads `(kernel routing table; NetworkManager not reporting)`
+  rather than the originally specified `(NetworkManager not running)`:
+  `run_text()` flattens "not running", "not on PATH" and "timed out" into the
+  same empty string, so naming one cause would be asserting what it cannot
+  know.
+
+- **`eww.wifi.enable`** (added during implementation) hides the Wi-Fi toggle in
+  the network popup on a host with no wireless, and `network_popup`'s fixed
+  height is templated alongside it (200px with the row, 160px without) so the
+  shorter panel does not leave a dead band inside the card.
 - **Interface selection becomes route-first**: prefer the device that owns the
   default route, then fall back to the existing wifi-then-ethernet order. This
   is correct on both hosts and needs no new option.

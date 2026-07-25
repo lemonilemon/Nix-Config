@@ -208,8 +208,10 @@ let
       expected = [ ];
     }
     {
-      # The laptop's own list is the shared default; Samba's openFirewall adds
-      # 139/445 on top, which is why the effective list is longer there.
+      # Behaviour change, not just a longer list: profiles/firewall.nix wrote
+      # this as lib.mkDefault, and types.listOf filters overrides before
+      # concatenating, so Samba's normal-priority [139 445] discarded 22/80/443
+      # outright. The laptop never actually had them open; now it does.
       name = "laptop/firewall.allowedTCPPorts (option)";
       actual = hosts.laptop.nixos.general.firewall.allowedTCPPorts;
       expected = [
@@ -228,6 +230,21 @@ let
         443
         445
       ];
+    }
+    {
+      # The rule this replaced named a subnet neither machine is on, and went
+      # through nft under an iptables backend. Guard against it coming back.
+      name = "laptop/firewall has no stale 192.168.1.0/24 rule";
+      actual = lib.hasInfix "192.168.1.0/24" hosts.laptop.networking.firewall.extraCommands;
+      expected = false;
+    }
+    {
+      # The capability option is off for wsl, so our module contributes nothing
+      # and NixOS' own default stands. Written down so the profiles/README table
+      # is not read as "wsl has no firewall".
+      name = "wsl/networking.firewall.enable (NixOS default, module inert)";
+      actual = hosts.wsl.networking.firewall.enable;
+      expected = true;
     }
 
     # --- idle policy ---

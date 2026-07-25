@@ -21,8 +21,11 @@ in
       ) cfg.trustedSubnets;
     };
 
+    # The rules above are iptables rules on the iptables backend, so ship the
+    # tool that can actually inspect them. `nft list ruleset` shows nothing here
+    # and reads as "no firewall" to anyone debugging.
     environment.systemPackages = with pkgs; [
-      nftables
+      iptables
     ];
   };
 }

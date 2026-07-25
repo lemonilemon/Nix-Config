@@ -216,7 +216,12 @@ in
           type = lib.types.listOf lib.types.str;
           default = [ ];
           example = [ "192.168.0.0/24" ];
-          description = "IPv4 subnets accepted wholesale on the input chain";
+          description = ''
+            IPv4 subnets accepted on the input chain. This is an all-ports
+            bypass, not an addition to allowedTCPPorts: every host in a listed
+            subnet reaches anything bound to 0.0.0.0, including services added
+            later that never opened a port of their own.
+          '';
         };
       };
     };

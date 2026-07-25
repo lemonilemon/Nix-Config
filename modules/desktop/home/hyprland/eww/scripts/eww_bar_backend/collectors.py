@@ -1177,6 +1177,10 @@ def network_radio_enabled():
 
 
 def network_state():
+    # No EWW_BAR_WIFI counterpart to the battery guard on purpose: a wifi-less
+    # host hides the toggle in the popup (eww.wifi.enable gates the widget),
+    # but the radio query is one cheap nmcli call on a path that has to run
+    # anyway for the connection state, so gating it here would buy nothing.
     result = network_connection_state()
     result["wifi_enabled"] = network_radio_enabled()
     return result

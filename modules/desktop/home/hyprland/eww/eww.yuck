@@ -283,7 +283,7 @@
 
 (defwindow network_popup
   :monitor 0
-  :geometry (geometry :x "12px" :y "50px" :width "300px" :height "200px" :anchor "top right")
+  :geometry (geometry :x "12px" :y "50px" :width "300px" :height "@networkPopupHeight@" :anchor "top right")
   :stacking "fg"
   :exclusive false
   :focusable false

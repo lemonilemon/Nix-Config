@@ -88,9 +88,17 @@ class BatteryModuleDisabledTests(unittest.TestCase):
         self.assertEqual(disabled["status"], "Unknown")
         self.assertEqual(enabled["status"], "Discharging")
 
-    def test_enabled_by_default(self):
+
+class ModuleEnabledTests(unittest.TestCase):
+    def test_enabled_when_unset(self):
         with unittest.mock.patch.dict("os.environ", {}, clear=False):
             os.environ.pop("EWW_BAR_BATTERY", None)
+            self.assertTrue(common.module_enabled("BATTERY"))
+
+    def test_only_literal_zero_disables(self):
+        with unittest.mock.patch.dict("os.environ", {"EWW_BAR_BATTERY": "0"}, clear=False):
+            self.assertFalse(common.module_enabled("BATTERY"))
+        with unittest.mock.patch.dict("os.environ", {"EWW_BAR_BATTERY": "1"}, clear=False):
             self.assertTrue(common.module_enabled("BATTERY"))
 
 

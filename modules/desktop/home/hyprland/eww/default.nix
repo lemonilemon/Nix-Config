@@ -74,6 +74,10 @@ let
     laptopControls = if cfg.laptopControls.enable then "true" else "false";
     batteryModule = if cfg.battery.enable then "true" else "false";
     wifiControls = if cfg.wifi.enable then "true" else "false";
+    # defwindow takes a fixed size, and network_panel has nothing that expands,
+    # so a window sized for the Wi-Fi row would leave a dead band inside the
+    # card once that row is hidden. The row is ~40px including its margin.
+    networkPopupHeight = if cfg.wifi.enable then "200px" else "160px";
   };
 
   openBar = pkgs.writeShellScript "eww-open-bar" ''
@@ -139,6 +143,11 @@ in
           Description = "Eww Hyprland bar";
           After = [ "hyprland-session.target" ];
           PartOf = [ "hyprland-session.target" ];
+          # sd-switch only restarts a service whose unit file changed. Without
+          # this, a yuck-only change (anything gated purely in the template,
+          # e.g. the Wi-Fi toggle) would leave the running bar on the old
+          # config until the next login.
+          X-Restart-Triggers = [ "${ewwYuck}" ];
         };
 
         Service = {

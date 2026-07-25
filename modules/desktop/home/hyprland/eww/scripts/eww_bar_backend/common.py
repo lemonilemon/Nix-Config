@@ -98,9 +98,14 @@ def run_text(command, timeout=2.0):
         return ""
 
 
-def module_enabled(name, default="1"):
-    """Bar modules the Nix module switched off are signalled through the env."""
-    return os.environ.get(f"EWW_BAR_{name}", default) != "0"
+def module_enabled(name):
+    """Whether a bar module is switched on.
+
+    default.nix writes exactly "1" or "0" into EWW_BAR_<NAME> on the eww-bar
+    service, so only that literal "0" disables. An absent variable means
+    enabled, which keeps the backend usable when run by hand outside the unit.
+    """
+    return os.environ.get(f"EWW_BAR_{name}", "1") != "0"
 
 
 def parse_json(text, default):

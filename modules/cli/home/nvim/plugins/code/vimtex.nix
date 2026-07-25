@@ -15,7 +15,7 @@
     plugins = {
       vimtex = {
         enable = true;
-        texlivePackage = pkgs.texlive.combined.scheme-full;
+        texlivePackage = pkgs.texliveSmall;
         settings = {
           view_method = "zathura";
           compiler_latexmk_engines = {

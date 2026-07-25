@@ -10,7 +10,7 @@
       # typst
       typst
       # tex & markdown
-      texlive.combined.scheme-full # tex
+      texliveSmall # tex
       multimarkdown # markdown
       # file conversion
       pandoc

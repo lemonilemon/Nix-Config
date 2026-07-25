@@ -20,6 +20,13 @@ def _write_bat(root, **files):
 
 
 class BatteryStateTests(unittest.TestCase):
+    def setUp(self):
+        # battery_state() honours EWW_BAR_BATTERY; pin it so these tests do not
+        # depend on whatever the ambient environment happens to hold.
+        patcher = unittest.mock.patch.dict("os.environ", {"EWW_BAR_BATTERY": "1"}, clear=False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_charge_units_health_and_power(self):
         with TemporaryDirectory() as root:
             _write_bat(
@@ -59,9 +66,27 @@ class BatteryStateTests(unittest.TestCase):
 
 class BatteryModuleDisabledTests(unittest.TestCase):
     def test_disabled_module_skips_collection(self):
-        with unittest.mock.patch.dict("os.environ", {"EWW_BAR_BATTERY": "0"}, clear=False):
-            state = collectors.battery_state()
-        self.assertEqual(state["status"], "Unknown")
+        # Against a root that DOES hold a battery: reading the real
+        # /sys/class/power_supply would pass on any batteryless machine even
+        # with the guard deleted, since the no-battery fall-through returns the
+        # same "Unknown" default.
+        with TemporaryDirectory() as root:
+            _write_bat(
+                root,
+                capacity="80",
+                status="Discharging",
+                charge_now="2400000",
+                current_now="1000000",
+                charge_full="3000000",
+                charge_full_design="3077000",
+                voltage_now="12000000",
+            )
+            with unittest.mock.patch.dict("os.environ", {"EWW_BAR_BATTERY": "0"}, clear=False):
+                disabled = collectors.battery_state(root=Path(root))
+            with unittest.mock.patch.dict("os.environ", {"EWW_BAR_BATTERY": "1"}, clear=False):
+                enabled = collectors.battery_state(root=Path(root))
+        self.assertEqual(disabled["status"], "Unknown")
+        self.assertEqual(enabled["status"], "Discharging")
 
     def test_enabled_by_default(self):
         with unittest.mock.patch.dict("os.environ", {}, clear=False):

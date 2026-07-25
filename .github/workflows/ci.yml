@@ -9,16 +9,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Installs current Nix rather than a version frozen at the action's
+      # release date. install-nix-action pinned Nix 2.19.1, which rejects store
+      # path names beginning with a dot and so could not evaluate this flake.
       - name: Install Nix
-        uses: cachix/install-nix-action@v24
+        uses: DeterminateSystems/determinate-nix-action@v3
         with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          extra-conf: |
             substituters = https://cache.nixos.org/ https://nix-community.cachix.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
       - name: Setup Cachix
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v17
         with:
           name: lemonilemon
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"

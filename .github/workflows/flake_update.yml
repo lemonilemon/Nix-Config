@@ -14,7 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/determinate-nix-action@v3
-      - uses: DeterminateSystems/update-flake-lock@main
+      # Pinned rather than tracking main: this job holds contents: write,
+      # pull-requests: write and a PAT, so it should not run whatever happens to
+      # be on someone else's default branch. Dependabot bumps the pin.
+      - uses: DeterminateSystems/update-flake-lock@v28
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
           pr-title: "Update Nix flake inputs" # Title of PR to be created

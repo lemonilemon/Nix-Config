@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""Entry point for eww-bar-backend, eww-barctl and eww-popup.
+
+Dispatch happens before any package import so the two CLI paths never load the
+daemon. Every import below is deliberately function-local.
+"""
 import sys
 from pathlib import Path
 
@@ -7,8 +12,34 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from eww_bar_backend import *  # noqa: F401,F403,E402
-from eww_bar_backend.app import main  # noqa: E402
+
+def main():
+    invoked = Path(sys.argv[0]).name
+    if invoked == "eww-barctl":
+        from eww_bar_backend.ctl import run_ctl
+
+        return run_ctl(sys.argv[1:])
+    if invoked == "eww-popup":
+        from eww_bar_backend.popups import run_popup
+
+        return run_popup(sys.argv[1:])
+
+    mode = sys.argv[1] if len(sys.argv) > 1 else "bar"
+    if mode == "ctl":
+        from eww_bar_backend.ctl import run_ctl
+
+        return run_ctl(sys.argv[2:])
+    if mode == "popup":
+        from eww_bar_backend.popups import run_popup
+
+        return run_popup(sys.argv[2:])
+    if mode == "bar":
+        from eww_bar_backend.app import run_bar
+
+        run_bar()
+        return 0
+    print(f"unknown backend mode: {mode}", file=sys.stderr)
+    return 1
 
 
 if __name__ == "__main__":

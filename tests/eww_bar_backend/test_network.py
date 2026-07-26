@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "modules" / "desktop" / "home" / "hyprland" / "eww" / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from eww_bar_backend import collectors, control  # noqa: E402
+from eww_bar_backend import collectors, control, ctl  # noqa: E402
 
 
 class NetworkRadioTests(unittest.TestCase):
@@ -61,7 +61,7 @@ class WifiToggleTests(unittest.TestCase):
 
     def test_arg_parsing(self):
         self.assertEqual(
-            control.control_payload_from_args(["network", "wifi-toggle"]),
+            ctl.control_payload_from_args(["network", "wifi-toggle"]),
             {"command": "network", "action": "wifi-toggle"},
         )
 

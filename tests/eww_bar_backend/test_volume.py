@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "modules" / "desktop" / "home" / "hyprland" / "eww" / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from eww_bar_backend import collectors, control  # noqa: E402
+from eww_bar_backend import collectors, control, ctl  # noqa: E402
 
 
 class VolumeStateTests(unittest.TestCase):
@@ -92,15 +92,15 @@ class VolumeControlTests(unittest.TestCase):
 
     def test_arg_parsing_for_new_verbs(self):
         self.assertEqual(
-            control.control_payload_from_args(["volume", "set", "40"]),
+            ctl.control_payload_from_args(["volume", "set", "40"]),
             {"command": "volume", "action": "set", "value": "40"},
         )
         self.assertEqual(
-            control.control_payload_from_args(["volume", "sink", "bt_headset"]),
+            ctl.control_payload_from_args(["volume", "sink", "bt_headset"]),
             {"command": "volume", "action": "sink", "sink": "bt_headset"},
         )
         self.assertEqual(
-            control.control_payload_from_args(["volume", "up"]),
+            ctl.control_payload_from_args(["volume", "up"]),
             {"command": "volume", "action": "up"},
         )
 

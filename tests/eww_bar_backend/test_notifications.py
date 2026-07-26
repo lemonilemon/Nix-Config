@@ -8,7 +8,7 @@ SCRIPTS_DIR = REPO_ROOT / "modules" / "desktop" / "home" / "hyprland" / "eww" / 
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from eww_bar_backend import notifications  # noqa: E402
-from eww_bar_backend import control  # noqa: E402
+from eww_bar_backend import ctl  # noqa: E402
 
 
 def wrap(value):
@@ -148,25 +148,25 @@ class NotifActionTests(unittest.TestCase):
 class NotifPayloadTests(unittest.TestCase):
     def test_payloads(self):
         self.assertEqual(
-            control.control_payload_from_args(["notif", "toggle-group", "Claude", "Code"]),
+            ctl.control_payload_from_args(["notif", "toggle-group", "Claude", "Code"]),
             {"command": "notif", "action": "toggle-group", "app": "Claude Code"},
         )
         self.assertEqual(
-            control.control_payload_from_args(["notif", "dismiss", "42"]),
+            ctl.control_payload_from_args(["notif", "dismiss", "42"]),
             {"command": "notif", "action": "dismiss", "id": "42"},
         )
         self.assertEqual(
-            control.control_payload_from_args(["notif", "clear-all"]),
+            ctl.control_payload_from_args(["notif", "clear-all"]),
             {"command": "notif", "action": "clear-all"},
         )
         self.assertEqual(
-            control.control_payload_from_args(["notif", "dnd-toggle"]),
+            ctl.control_payload_from_args(["notif", "dnd-toggle"]),
             {"command": "notif", "action": "dnd-toggle"},
         )
 
     def test_notif_without_action_is_usage_error(self):
         with self.assertRaises(ValueError):
-            control.control_payload_from_args(["notif"])
+            ctl.control_payload_from_args(["notif"])
 
 
 if __name__ == "__main__":

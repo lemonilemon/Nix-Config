@@ -77,23 +77,23 @@ class SetWallpaperTests(unittest.TestCase):
             wallpaper.set_wallpaper("")
 
 
-from eww_bar_backend import control  # noqa: E402
+from eww_bar_backend import ctl  # noqa: E402
 
 
 class WallpaperPayloadTests(unittest.TestCase):
     def test_payloads(self):
         self.assertEqual(
-            control.control_payload_from_args(["wallpaper", "set", "/w/a.png"]),
+            ctl.control_payload_from_args(["wallpaper", "set", "/w/a.png"]),
             {"command": "wallpaper", "action": "set", "path": "/w/a.png"},
         )
         self.assertEqual(
-            control.control_payload_from_args(["wallpaper", "rescan"]),
+            ctl.control_payload_from_args(["wallpaper", "rescan"]),
             {"command": "wallpaper", "action": "rescan"},
         )
 
     def test_wallpaper_without_action_is_usage_error(self):
         with self.assertRaises(ValueError):
-            control.control_payload_from_args(["wallpaper"])
+            ctl.control_payload_from_args(["wallpaper"])
 
 
 if __name__ == "__main__":

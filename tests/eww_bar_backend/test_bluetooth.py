@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "modules" / "desktop" / "home" / "hyprland" / "eww" / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from eww_bar_backend import collectors, control  # noqa: E402
+from eww_bar_backend import collectors, control, ctl  # noqa: E402
 
 
 class BluetoothStateTests(unittest.TestCase):
@@ -95,11 +95,11 @@ class BluetoothControlTests(unittest.TestCase):
 
     def test_arg_parsing(self):
         self.assertEqual(
-            control.control_payload_from_args(["bluetooth", "power-toggle"]),
+            ctl.control_payload_from_args(["bluetooth", "power-toggle"]),
             {"command": "bluetooth", "action": "power-toggle"},
         )
         self.assertEqual(
-            control.control_payload_from_args(["bluetooth", "disconnect", "80:99:E7"]),
+            ctl.control_payload_from_args(["bluetooth", "disconnect", "80:99:E7"]),
             {"command": "bluetooth", "action": "disconnect", "mac": "80:99:E7"},
         )
 

@@ -846,10 +846,25 @@ clock ticks between the two calls (that flakiness is the point).
 
 - [ ] **Step 3: Add a deterministic clock default**
 
-Add to `common.py`, next to the other `*_DEFAULT` constants:
+Add to `common.py`, next to the other `*_DEFAULT` constants. **The two glyphs are
+Nerd Font PUA characters** (U+F017 clock, U+F073 calendar) matching what
+`clock_state()` prefixes and what `eww.yuck` already carries — do not retype them by
+hand, and verify with the check below:
 
 ```python
-CLOCK_DEFAULT = {"time": " --:--", "date": " ----", "tooltip": ""}
+CLOCK_DEFAULT = {"time": " --:--", "date": " ----", "tooltip": ""}
+```
+
+Verify the bytes are right before moving on:
+
+```bash
+python3 -c "
+import sys; sys.path.insert(0,'modules/desktop/home/hyprland/eww/scripts')
+from eww_bar_backend.common import CLOCK_DEFAULT
+assert CLOCK_DEFAULT['time'][0] == chr(0xF017), repr(CLOCK_DEFAULT['time'])
+assert CLOCK_DEFAULT['date'][0] == chr(0xF073), repr(CLOCK_DEFAULT['date'])
+print('glyphs OK:', repr(CLOCK_DEFAULT))
+"
 ```
 
 - [ ] **Step 4: Use it in `BarState`**
@@ -874,6 +889,19 @@ with:
             # constructor would make the eww.yuck :initial literal unassertable.
             "clock": CLOCK_DEFAULT.copy(),
 ```
+
+Also add the missing `active_window` key. `eww.yuck:1` carries 18 top-level keys but
+`BarState` initializes only 17 — `active_window` is absent, and `app.py:51` sets it
+only on the first `state.update`. `ACTIVE_WINDOW_DEFAULT` already exists in
+`common.py` and its value is byte-identical to what the yuck literal holds, so add it
+to the `from .common import (...)` list and to the state dict:
+
+```python
+            "active_window": ACTIVE_WINDOW_DEFAULT.copy(),
+```
+
+Without this the drift test can never pass, and any emit before the first update
+would hand `eww.yuck` a missing key.
 
 - [ ] **Step 5: Run the test to get the correct literal**
 

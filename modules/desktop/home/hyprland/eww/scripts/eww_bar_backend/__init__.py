@@ -40,7 +40,6 @@ from .common import (
     backend_pidfile_path,
     control_socket_path,
     display_mode_path,
-    idle_pidfile_path,
     parse_json,
     run_text,
     runtime_file,

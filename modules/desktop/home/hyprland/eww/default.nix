@@ -134,8 +134,6 @@ in
       source = ./assets;
       recursive = true;
     };
-    xdg.configFile."eww/scripts".source = ./scripts;
-    xdg.configFile."eww/scripts".recursive = true;
 
     systemd.user.services = {
       eww-bar = {

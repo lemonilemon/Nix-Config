@@ -126,10 +126,6 @@ def runtime_file(name):
     return Path(runtime_dir) / name
 
 
-def idle_pidfile_path():
-    return runtime_file("eww-idle-inhibit.pid")
-
-
 def display_mode_path():
     return runtime_file("eww-display-mode")
 

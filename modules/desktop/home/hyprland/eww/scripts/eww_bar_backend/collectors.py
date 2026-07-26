@@ -16,7 +16,6 @@ from .common import (
     MEDIA_DEFAULT,
     VOLUME_DEFAULT,
     WORKSPACE_DEFAULT,
-    idle_pidfile_path,
     module_enabled,
     parse_json,
     run_text,
@@ -1499,12 +1498,3 @@ def bluetooth_state():
         if len(parts) >= 2:
             info_by_address[parts[1]] = run_text(["bluetoothctl", "info", parts[1]])
     return bluetooth_state_from_text(controller, devices, info_by_address)
-
-
-def idle_inhibited_state():
-    pidfile = idle_pidfile_path()
-    try:
-        pid = int(pidfile.read_text().strip())
-    except Exception:
-        return "false"
-    return "true" if Path(f"/proc/{pid}").exists() else "false"

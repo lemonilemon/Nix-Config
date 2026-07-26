@@ -22,6 +22,7 @@ BATTERY_DEFAULT = {
     "health": "--",
     "power": "—",
 }
+CLOCK_DEFAULT = {"time": " --:--", "date": " ----", "tooltip": ""}
 MEDIA_DEFAULT = {"text": "", "status": "", "icon": "", "class": "", "tooltip": ""}
 VOLUME_DEFAULT = {"text": "", "percent": 0, "muted": "false", "class": "", "sinks": []}
 ACTIVE_WINDOW_DEFAULT = {"text": "", "tooltip": "", "class": ""}

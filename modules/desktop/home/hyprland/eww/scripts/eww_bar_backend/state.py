@@ -1,11 +1,12 @@
 import json
 import threading
 
-from .collectors import clock_state
 from .common import (
+    ACTIVE_WINDOW_DEFAULT,
     AI_USAGE_DEFAULT,
     BATTERY_DEFAULT,
     BLUETOOTH_DEFAULT,
+    CLOCK_DEFAULT,
     EMPTY_MODULE,
     MEDIA_DEFAULT,
     NETWORK_DEFAULT,
@@ -20,9 +21,13 @@ class BarState:
     def __init__(self):
         self.lock = threading.Lock()
         self.state = {
+            "active_window": ACTIVE_WINDOW_DEFAULT.copy(),
             "workspace_state": WORKSPACE_DEFAULT.copy(),
             "submap": "",
-            "clock": clock_state(),
+            # Placeholder, not a live reading: app.run_bar overwrites this via
+            # its first state.update within milliseconds, and a time-dependent
+            # constructor would make the eww.yuck :initial literal unassertable.
+            "clock": CLOCK_DEFAULT.copy(),
             "media": MEDIA_DEFAULT.copy(),
             "ai_usage": AI_USAGE_DEFAULT.copy(),
             "cpu": " --%",

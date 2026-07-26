@@ -24,9 +24,12 @@ class BarState:
             "active_window": ACTIVE_WINDOW_DEFAULT.copy(),
             "workspace_state": WORKSPACE_DEFAULT.copy(),
             "submap": "",
-            # Placeholder, not a live reading: app.run_bar overwrites this via
-            # its first state.update within milliseconds, and a time-dependent
-            # constructor would make the eww.yuck :initial literal unassertable.
+            # Placeholder, not a live reading: app.run_bar calls state.update(...)
+            # and then emit_loop(state) sequentially on the same thread, and
+            # emit_loop prints unconditionally on entry, so this placeholder can
+            # never reach an emit -- the first emit already carries the live
+            # value. A time-dependent constructor would also make the eww.yuck
+            # :initial literal unassertable.
             "clock": CLOCK_DEFAULT.copy(),
             "media": MEDIA_DEFAULT.copy(),
             "ai_usage": AI_USAGE_DEFAULT.copy(),

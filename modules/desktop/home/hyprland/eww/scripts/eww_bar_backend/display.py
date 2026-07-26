@@ -1,6 +1,7 @@
 import subprocess
 
-from .common import display_mode_path, parse_json, run_text
+from .common import parse_json, run_text
+from .paths import display_mode_path
 from .inhibitors import (
     idle_inhibited_state,
     lid_inhibited_state,

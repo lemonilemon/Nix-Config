@@ -2,12 +2,7 @@ import json
 import os
 import subprocess
 
-from .paths import (
-    backend_pidfile_path,
-    control_socket_path,
-    display_mode_path,
-    runtime_file,
-)
+from .paths import backend_pidfile_path, control_socket_path
 
 
 EMPTY_MODULE = {"text": "", "tooltip": "", "class": ""}

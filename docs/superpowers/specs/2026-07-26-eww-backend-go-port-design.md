@@ -126,10 +126,19 @@ revertable.
 1. **Fix the bluetooth class leak.** Map the raw `Powered:` value to the closed set
    the stylesheet expects. Test asserts `class == "off"` when powered off and that
    `.bluetooth.off` becomes reachable.
-2. **Generate `eww.yuck:1`'s `:initial` from the Python defaults.** Add a
-   `--print-default-state` mode to the backend, and wire it through the existing
-   `pkgs.replaceVars` call at `default.nix:73` so the literal cannot drift again.
-   This kills a whole class of bug rather than one instance.
+2. **Make `eww.yuck:1`'s `:initial` unable to drift from the Python defaults.**
+
+   Generating it outright would mean `builtins.readFile` on a derivation output
+   (import-from-derivation), because the generator is a Python program. IFD is slow
+   and commonly disabled in flake checks, so instead: make `BarState()`
+   deterministic — `state.py:25` currently calls `clock_state()`, which both blocks
+   any assertion and is pointless, since `app.py:52` overwrites `clock` on the first
+   update — then add a test asserting the literal parses to exactly
+   `BarState().snapshot()`, printing the correct literal on failure.
+
+   Same guarantee (drift cannot reach main), no IFD, and it drops `state.py`'s
+   dependency on `collectors` as a side effect. This kills a whole class of bug
+   rather than one instance.
 3. **Split the control client out of the import graph.** New
    `eww_bar_backend/ctl.py` importing only `json` and `socket`; `scripts/backend`
    dispatches on `argv[0]` *before* importing anything heavy; empty the 97-line

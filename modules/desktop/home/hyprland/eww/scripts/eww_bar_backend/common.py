@@ -1,7 +1,13 @@
 import json
 import os
 import subprocess
-from pathlib import Path
+
+from .paths import (
+    backend_pidfile_path,
+    control_socket_path,
+    display_mode_path,
+    runtime_file,
+)
 
 
 EMPTY_MODULE = {"text": "", "tooltip": "", "class": ""}
@@ -119,20 +125,3 @@ def truncate_text(text, max_len):
     if len(text) <= max_len:
         return text
     return text[: max_len - 3] + "..."
-
-
-def runtime_file(name):
-    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
-    return Path(runtime_dir) / name
-
-
-def display_mode_path():
-    return runtime_file("eww-display-mode")
-
-
-def backend_pidfile_path():
-    return runtime_file("eww-backend.pid")
-
-
-def control_socket_path():
-    return runtime_file("eww-backend.sock")

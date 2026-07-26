@@ -44,7 +44,13 @@ class ImportGraphTests(unittest.TestCase):
     suite has already imported into this interpreter.
     """
 
-    FORBIDDEN = ("urllib.request", "http.client", "email.parser")
+    FORBIDDEN = (
+        "urllib.request",
+        "http.client",
+        "email.parser",
+        "subprocess",
+        "eww_bar_backend.common",
+    )
 
     def _modules_after_importing(self, module):
         code = (

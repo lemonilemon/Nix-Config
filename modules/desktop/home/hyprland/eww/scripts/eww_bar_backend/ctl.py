@@ -3,14 +3,14 @@
 Deliberately isolated from the daemon's import graph. scripts/backend dispatches
 here before importing anything else, so a bar click costs one socket round-trip
 instead of loading collectors -> urllib.request -> http.client -> email.parser.
-Keep this module's imports to json, socket, os and pathlib — the test in
-tests/eww_bar_backend/test_ctl.py enforces it.
+The test in tests/eww_bar_backend/test_ctl.py enforces that importing this
+module never pulls in subprocess, common, collectors, or app.
 """
 
 import json
-import os
 import socket
-from pathlib import Path
+
+from .paths import control_socket_path
 
 
 CONTROL_USAGE = (
@@ -21,13 +21,6 @@ CONTROL_USAGE = (
     " | notif toggle-group <app>|dismiss <id>|clear-group <app>|clear-all|dnd-toggle|mark-seen"
     " | wallpaper set <path>|rescan"
 )
-
-
-def control_socket_path():
-    # Mirrors common.control_socket_path. Duplicated rather than imported so the
-    # click path never loads common (and through it subprocess).
-    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
-    return Path(runtime_dir) / "eww-backend.sock"
 
 
 def control_payload_from_args(args):
@@ -86,6 +79,9 @@ def send_control_command(payload):
                 break
             chunks.append(chunk)
     text = b"".join(chunks).decode("utf-8", errors="replace").strip()
+    # Mirrors common.parse_json. Inlined rather than imported: it only needs
+    # json, and a divergence here would degrade an error message rather than
+    # misroute a socket (unlike control_socket_path, which is shared via paths.py).
     try:
         return json.loads(text)
     except Exception:

@@ -28,6 +28,34 @@ class BluetoothStateTests(unittest.TestCase):
         state = collectors.bluetooth_state_from_text(controller, "", {})
         self.assertEqual(state["powered"], "false")
         self.assertEqual(state["devices"], [])
+        self.assertEqual(state["class"], "off")
+
+    def test_powered_off_uses_the_off_class(self):
+        controller = "Controller AA:BB\n\tPowered: no\n"
+        state = collectors.bluetooth_state_from_text(controller, "", {})
+        self.assertEqual(state["class"], "off")
+
+    def test_powered_on_no_devices_has_no_off_class(self):
+        controller = "Controller AA:BB\n\tAlias: MyBT\n\tPowered: yes\n"
+        state = collectors.bluetooth_state_from_text(controller, "", {})
+        self.assertEqual(state["class"], "")
+        self.assertEqual(state["powered"], "true")
+
+    def test_class_is_always_a_known_style(self):
+        # eww.scss defines .bluetooth and .bluetooth.off only; "connected" is
+        # deliberately unstyled and falls through to .bluetooth.
+        known = {"", "off", "connected"}
+        for powered in ("yes", "no", "whatever", ""):
+            controller = f"Controller AA:BB\n\tPowered: {powered}\n"
+            self.assertIn(
+                collectors.bluetooth_state_from_text(controller, "", {})["class"], known
+            )
+            self.assertIn(
+                collectors.bluetooth_state_from_text(
+                    controller, "Device 80:99:E7 Buds\n", {}
+                )["class"],
+                known,
+            )
 
 
 class BluetoothControlTests(unittest.TestCase):

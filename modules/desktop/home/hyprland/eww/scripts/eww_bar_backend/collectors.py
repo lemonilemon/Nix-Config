@@ -1400,7 +1400,7 @@ def battery_state(root=Path("/sys/class/power_supply")):
 def parse_controller(controller_text):
     address = ""
     alias = ""
-    powered = "off"
+    powered = False
     for line in controller_text.splitlines():
         stripped = line.strip()
         if stripped.startswith("Controller "):
@@ -1410,7 +1410,10 @@ def parse_controller(controller_text):
         elif stripped.startswith("Alias:"):
             alias = stripped.split(":", 1)[1].strip()
         elif stripped.startswith("Powered:"):
-            powered = stripped.split(":", 1)[1].strip()
+            # Normalize here rather than passing bluetoothctl's raw "yes"/"no"
+            # outward: this value feeds both `powered` and the CSS `class`, and
+            # leaking the raw string is what made eww.scss's .bluetooth.off dead.
+            powered = stripped.split(":", 1)[1].strip() == "yes"
     return alias or "Bluetooth", address or "N/A", powered
 
 
@@ -1429,7 +1432,7 @@ def parse_device_info(info_text, fallback_alias):
 
 def bluetooth_state_from_text(controller_text, devices_text, info_by_address):
     controller_alias, controller_address, powered = parse_controller(controller_text)
-    powered_flag = "true" if powered == "yes" else "false"
+    powered_flag = "true" if powered else "false"
     devices = [line for line in devices_text.splitlines() if line.strip()]
 
     structured = []
@@ -1446,7 +1449,13 @@ def bluetooth_state_from_text(controller_text, devices_text, info_by_address):
 
     if not devices:
         tooltip = f"{controller_alias}\t{controller_address}\n\n0 connected"
-        return {"text": "", "tooltip": tooltip, "class": powered, "powered": powered_flag, "devices": []}
+        return {
+            "text": "",
+            "tooltip": tooltip,
+            "class": "" if powered else "off",
+            "powered": powered_flag,
+            "devices": [],
+        }
 
     preferred = next(
         (line for line in devices if re.search(r"ugreen_1|ugreen_2", line, re.I)),

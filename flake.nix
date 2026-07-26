@@ -145,6 +145,11 @@
               cp -R ${./tests} tests
               cp -R ${./modules/desktop/home/hyprland/eww/scripts} \
                 modules/desktop/home/hyprland/eww/scripts
+              # test_state_defaults asserts eww.yuck's :initial literal against
+              # BarState(), so the sandbox needs the yuck file too, not just
+              # the Python package.
+              cp ${./modules/desktop/home/hyprland/eww/eww.yuck} \
+                modules/desktop/home/hyprland/eww/eww.yuck
 
               # unittest discovery skips packageless directories in silence, so
               # a new test dir without __init__.py would leave this check green

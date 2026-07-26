@@ -149,22 +149,30 @@ revertable.
 4. **Delete dead code.** `collectors.py:1495-1501`, `common.py:129`, the three
    unused shell scripts, and narrow `default.nix:137-138` so `~/.config/eww/scripts`
    stops shipping them.
-5. **Extract the AI-usage subsystem** (`collectors.py:168-866`) into a separate
-   binary, not merely a separate module.
+5. ~~**Extract the AI-usage subsystem** (`collectors.py:168-866`) into a separate
+   binary.~~ **Dropped. Not worth doing.**
 
-   The daemon currently owns this work via `periodic_refresh(state, 300,
-   refresh_ai_usage)` at `app.py:70-74`, which is why it holds the only HTTP and the
-   only credential handling. Extracting it to a third `argv[0]` target that prints
-   the AI-usage JSON on stdout turns `refresh_ai_usage` into a `run_text(...)` plus
-   parse, exactly the shape the daemon already uses for its other 34 runtime
-   binaries — and it already shells out to `openusage-cli` for the sibling quotas at
-   `collectors.py:442-447`, so this is consistent rather than novel.
+   The original case was that extracting it would keep `urllib` out of the daemon
+   and make (3) durable. That reasoning does not survive (3) actually landing: the
+   import-graph split was fixed at the *entry point* (`scripts/backend` dispatches on
+   `argv[0]` before importing anything, and `ctl.py` is self-contained), so the
+   click path is immune to whatever the daemon imports. A long-lived daemon paying a
+   one-time ~12 ms import is not a cost worth restructuring 699 lines to avoid.
 
-   This is what makes (3) durable: the import-graph split only stays fixed if
-   nothing pulls `urllib` back into the daemon's module graph.
+   The secondary case — isolating the credential handling — does not hold either.
+   The helper would run as the same user with the same access to
+   `~/.claude/.credentials.json`, so there is no privilege boundary gained.
 
-After (5), `collectors.py` drops from 1501 to ~800 lines; after (3), (4) and (5)
-the package drops from 3231 to roughly 2400-2500.
+   What remains is "the daemon would be simpler", against reimplementing the
+   liberal multi-schema parsing that three independent sources feed
+   (`ccusage daily --json`, `openusage-cli probe`, and a direct GET to
+   `api.anthropic.com`). That trade is not worth taking.
+
+   Revisit only if the subsystem grows substantially again, or if it starts needing
+   a refresh cadence independent of the bar's 5-minute poll.
+
+After (3) and (4), the package drops from 3231 to roughly 3100. `collectors.py`
+stays around 1500 lines, and the AI subsystem stays where it is.
 
 ### Changeset 2 — Go port, gated
 
@@ -181,8 +189,11 @@ If it proceeds, port in this order, each stage keeping the daemon shippable:
    transliterate to Go table tests directly).
 4. The subprocess-calling collectors, using `var runText = func(...)` so the ~30
    `mock.patch` tests retrofit without call-site churn.
-5. The extracted AI subsystem last, or never — it can stay Python behind its own
-   binary, since `map[string]any` gains nothing over dicts.
+5. The AI-usage subsystem last, and it is the natural place to stop. `map[string]any`
+   gains nothing over dicts on liberal multi-schema parsing, so porting these 699
+   lines is pure transliteration risk for no type-safety return. A Go daemon can
+   keep shelling out to a Python AI helper if it ever needs to, but the cheaper
+   answer is to leave the subsystem alone and accept a mixed-language backend.
 
 **Equivalence gate.** The port must emit byte-compatible JSON. Run both daemons
 side by side and diff emitted state. Known hazards to pin with tests before

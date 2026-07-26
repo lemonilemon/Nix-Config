@@ -350,9 +350,28 @@ def quota_default(key, name, status="waiting"):
 
 # Codex and Antigravity quotas come from openusage-cli (OpenUsage Community).
 # Its plugins read the same CLI logins but ship their own client creds, so no
-# OAuth plumbing (or ai-usage.env) is needed here. Claude stays on the native
-# collector below: openusage's Claude plugin refreshes and rewrites the Claude
-# Code token, which the read-only rule there deliberately avoids.
+# OAuth plumbing (or ai-usage.env) is needed here.
+#
+# Claude is deliberately NOT in this list, and stays on the native read-only
+# collector below. Checked against the pinned rev (eadcfe50, see the
+# openusage-community flake input), its plugins/claude/plugin.js:
+#   :399  performs a full OAuth refresh against platform.claude.com
+#   :450  stores a ROTATED refresh token, spending the previous one
+#   :362  writes ~/.claude/.credentials.json back via host.fs.writeText,
+#         which is a bare std::fs::write (truncate-then-write, not atomic)
+# and `openusage-cli probe` has no --read-only/--no-refresh flag, so there is no
+# way to take its Claude number without granting it that write access.
+#
+# Rotation is the actual hazard, not the write: a spent refresh token replayed
+# by Claude Code is exactly the signal OAuth 2.1 tells providers to treat as a
+# breach, and the documented response is revoking the whole token family. The
+# cost of losing that bet is re-authenticating Claude Code mid-session; the
+# benefit would be deleting ~100 lines here. Note this used to be a closer call
+# — routing Claude through openusage would once have kept urllib out of the
+# eww-barctl click path, but ctl.py fixed that at the entry point instead, so
+# the daemon importing urllib now costs nothing measurable.
+#
+# Re-evaluate only if openusage grows a read-only probe mode.
 OPENUSAGE_PROVIDERS = (
     ("codex", "Codex"),
     ("antigravity", "Antigravity"),

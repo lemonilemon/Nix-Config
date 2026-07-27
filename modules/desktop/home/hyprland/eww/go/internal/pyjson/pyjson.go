@@ -17,6 +17,17 @@ import (
 // CPython byte-for-byte means the equivalence gate against the Python client is
 // a plain diff rather than a decode-and-compare, which is worth ~30 lines.
 func String(s string) string {
+	return encodeString(s, true)
+}
+
+// StringRaw renders s the way json.dumps(s, ensure_ascii=False) does: the same
+// escaping of quotes, backslashes and control characters, but non-ASCII passes
+// through as UTF-8. This is what the state emitter uses.
+func StringRaw(s string) string {
+	return encodeString(s, false)
+}
+
+func encodeString(s string, ascii bool) string {
 	var b strings.Builder
 	b.Grow(len(s) + 2)
 	b.WriteByte('"')
@@ -42,6 +53,10 @@ func String(s string) string {
 				b.WriteString(`\u`)
 				b.WriteString(hex4(uint16(r)))
 			case r < 0x7f:
+				b.WriteRune(r)
+			case !ascii:
+				// ensure_ascii=False: everything above ASCII goes out as UTF-8,
+				// including U+007F, which the ASCII path escapes.
 				b.WriteRune(r)
 			case r == utf8.RuneError:
 				// A lone surrogate or invalid byte. CPython's encoder would

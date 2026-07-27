@@ -19,6 +19,7 @@ import (
 	"sort"
 
 	"ewwbar/internal/collect"
+	"ewwbar/internal/pyjson"
 )
 
 type call struct {
@@ -403,6 +404,46 @@ func dispatch(c call) (any, error) {
 		}
 		internal, external := collect.SplitMonitors(monitors)
 		return []any{internal, external}, nil
+
+	case "EncodeJSON":
+		// The argument is decoded to the same generic shapes the daemon will
+		// hold, then re-encoded, so this compares the ENCODER against
+		// json.dumps rather than a Go struct against a Python dict.
+		if len(c.Args) != 2 {
+			return nil, fmt.Errorf("EncodeJSON: want 2 args")
+		}
+		var ensureASCII bool
+		if err := json.Unmarshal(c.Args[1], &ensureASCII); err != nil {
+			return nil, err
+		}
+		// DecodeOrdered, not Unmarshal: object key order is the property being
+		// checked, and a map would discard it before the encoder ever saw it.
+		value, err := pyjson.DecodeOrdered(c.Args[0])
+		if err != nil {
+			return nil, err
+		}
+		encoded, err := pyjson.Encode(value, ensureASCII)
+		if err != nil {
+			return nil, err
+		}
+		return encoded, nil
+
+	case "EncodeFloat":
+		var f float64
+		var ensureASCII bool
+		if err := args(c, &f, &ensureASCII); err != nil {
+			return nil, err
+		}
+		return pyjson.Encode(f, ensureASCII)
+
+	case "EncodeNilSlice":
+		// There is no way to send a Go nil slice over the wire, so build one
+		// here: the point is that it must render as [] and not null.
+		var nilSlice []string
+		return pyjson.Encode(struct {
+			Sinks  []string `json:"sinks"`
+			Groups []string `json:"groups"`
+		}{Sinks: nilSlice, Groups: []string{}}, false)
 
 	case "VolumeEventIsRelevant":
 		var line string

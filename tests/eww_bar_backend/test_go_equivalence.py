@@ -747,6 +747,79 @@ class GoEquivalenceTests(unittest.TestCase):
         )
 
 
+    # -- the state encoder: the daemon's entire output contract ----------------
+
+    ENCODE_VALUES = [
+        None, True, False, 0, 1, -1, 42, "", "plain",
+        [], {}, [1, 2, 3], ["a", "b"], [[]], [{}],
+        {"a": 1}, {"a": {"b": {"c": []}}},
+        # The shapes the real snapshot has.
+        {"text": "", "tooltip": "", "class": ""},
+        {"sinks": [], "percent": 0, "muted": "false"},
+        {"groups": [{"app": "kitty", "count": 2, "items": [{"id": 1}]}]},
+        # Escaping: quotes, backslashes, control characters, and the tab and
+        # newline the bluetooth tooltip is built from.
+        "quote\"inside", "back\\slash", "tab\there", "nl\nhere",
+        "ctrl\x01\x1f", "\x7f",
+        "AA:BB\tCC\n\n2 connected",
+        # CPython leaves these literal; encoding/json escapes them.
+        "a<b>c&d", "slash/here",
+        # Non-ASCII: raw under ensure_ascii=False, escaped under True. Every
+        # glyph the bar actually emits.
+        "\uf001", "\uf017", "\uf10c", "\uf111", "\U000f0084", "\U000f00af",
+        "\U000f075f", "\U000f0674", "\u26a0", "\u2014",
+        "caf\u00e9", "\u4e2d\u6587", "\U0001f600",
+        "\U000f0084 mixed \u4e2d ascii",
+        # Nested, with glyphs inside lists inside dicts.
+        {"battery": {"text": "\U000f0084", "capacity": 100},
+         "quotas": [{"key": "claude", "windows": []}]},
+    ]
+
+    def test_encoder_matches_json_dumps(self):
+        for ensure_ascii in (False, True):
+            cases = [(v, ensure_ascii) for v in self.ENCODE_VALUES]
+            with self.subTest(ensure_ascii=ensure_ascii):
+                self._compare(
+                    "EncodeJSON",
+                    cases,
+                    lambda v, a: json.dumps(v, separators=(",", ":"), ensure_ascii=a),
+                )
+
+    def test_encoder_matches_the_live_snapshot_shape(self):
+        # The real thing: build BarState and round-trip its snapshot through the
+        # Go encoder. This is the contract eww consumes.
+        from eww_bar_backend.state import BarState
+
+        snapshot = BarState().snapshot()
+        decoded = json.loads(snapshot)
+        answers = self._ask_go([{"fn": "EncodeJSON", "args": [decoded, False]}])
+        self.assertTrue(answers[0]["ok"], answers[0].get("error"))
+        # Key order cannot survive the json.loads round trip through Go's
+        # generic map, so compare decoded values; the byte-level ordering
+        # guarantee is what the struct-based state model will carry.
+        self.assertEqual(json.loads(answers[0]["value"]), decoded)
+
+    def test_encoder_float_formatting(self):
+        values = [
+            0.0, -0.0, 1.0, 100.0, 0.5, 1.5, -2.25, 0.1, 1e-4, 1e-5, 1e-7,
+            1e15, 1e16, 1e17, 1.5e20, 123456789012345.0, 1234567890123456.0,
+            3.141592653589793, 2.5e-10, 1e300, 5e-324,
+        ]
+        self._compare(
+            "EncodeFloat",
+            [(v, False) for v in values],
+            lambda v, _a: json.dumps(v, separators=(",", ":")),
+        )
+
+    def test_nil_slice_encodes_as_empty_array_not_null(self):
+        # eww.yuck runs nine (for ...) loops and eight arraylength() calls over
+        # these fields, and its . index operator hard-errors on null. Python has
+        # no nil slice to get this wrong with; Go does, and encoding/json would.
+        answers = self._ask_go([{"fn": "EncodeNilSlice", "args": []}])
+        self.assertTrue(answers[0]["ok"], answers[0].get("error"))
+        self.assertEqual(answers[0]["value"], '{"sinks":[],"groups":[]}')
+
+
 class DecimalHazardTests(unittest.TestCase):
     """Documents why DecimalTimes100HalfUp does not go through float64.
 

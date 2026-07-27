@@ -369,8 +369,8 @@ def quota_default(key, name, status="waiting"):
 # cost of losing that bet is re-authenticating Claude Code mid-session; the
 # benefit would be deleting ~100 lines here. Note this used to be a closer call
 # — routing Claude through openusage would once have kept urllib out of the
-# eww-barctl click path, but ctl.py fixed that at the entry point instead, so
-# the daemon importing urllib now costs nothing measurable.
+# eww-barctl click path, but that path is a compiled binary now, so the
+# daemon importing urllib costs nothing measurable.
 #
 # Re-evaluate only if openusage grows a read-only probe mode.
 OPENUSAGE_PROVIDERS = (

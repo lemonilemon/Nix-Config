@@ -1,8 +1,8 @@
-"""Runtime path helpers shared by the daemon and the eww-barctl click path.
+"""Runtime path helpers for the daemon.
 
-Deliberately dependency-free — only os and pathlib — so ctl.py can import
-control_socket_path from here without pulling in common.py (and through it
-subprocess).
+The control socket path is duplicated in the Go client (client/ctl.go); these
+two are the only definitions, and client/ctl_test.go pins the value. Keep them
+in step or eww-barctl talks to a socket nobody is listening on.
 """
 
 import os

@@ -14,6 +14,9 @@ let
     )
   );
 
+  # The state daemon. Stays Python: measured on this host, 93% of its CPU is the
+  # child processes its collectors fork (pactl, nmcli, hyprctl, ...), and those
+  # cost the same in any language — the interpreter itself is 0.64% of one core.
   ewwBarTools = pkgs.stdenvNoCC.mkDerivation {
     pname = "eww-bar-tools";
     version = "0";
@@ -24,10 +27,38 @@ let
     installPhase = ''
       install -Dm755 ${./scripts/backend} $out/bin/eww-bar-backend
       cp -R ${./scripts/eww_bar_backend} $out/bin/eww_bar_backend
-      cp $out/bin/eww-bar-backend $out/bin/eww-barctl
-      cp $out/bin/eww-bar-backend $out/bin/eww-popup
       patchShebangs $out/bin
     '';
+  };
+
+  # eww-barctl and eww-popup. Compiled, because eww.yuck invokes them from 39
+  # handlers including :onscroll and they do almost no work: the daemon answers
+  # a ping in 0.06 ms, against ~45 ms of CPython startup spent asking it.
+  # Measured here: 45.4 ms -> 3.3 ms for eww-barctl, 50.8 ms -> 3.3 ms for
+  # eww-popup.
+  ewwBarClient = pkgs.buildGoModule {
+    pname = "eww-bar-client";
+    version = "0";
+
+    src = ./client;
+
+    # Every import is stdlib, so there is nothing to vendor. vendorHash = null
+    # creates no fetch derivation at all, which is the point: no hash to keep in
+    # step with a dependency set that does not exist.
+    vendorHash = null;
+
+    # buildGoModule runs `go test ./...` in checkPhase, so the client's table
+    # tests gate every rebuild that touches it.
+
+    postInstall = ''
+      mv $out/bin/ewwbarclient $out/bin/eww-bar-client
+      # argv[0] dispatch, as the Python entry point used to do: exec'ing a
+      # symlink leaves argv[0] as the name the caller typed.
+      ln -s eww-bar-client $out/bin/eww-barctl
+      ln -s eww-bar-client $out/bin/eww-popup
+    '';
+
+    meta.mainProgram = "eww-bar-client";
   };
 
   runtimePackages =
@@ -66,7 +97,10 @@ let
       # the native read-only collector.
       openusage-cli
     ])
-    ++ [ ewwBarTools ];
+    ++ [
+      ewwBarTools
+      ewwBarClient
+    ];
 
   runtimePath = lib.makeBinPath runtimePackages;
 
@@ -119,6 +153,7 @@ in
     home.packages = with pkgs; [
       eww
       ewwBarTools
+      ewwBarClient
       gsimplecal
       htop
       libappindicator

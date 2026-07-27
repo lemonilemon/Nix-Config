@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Entry point for eww-bar-backend, eww-barctl and eww-popup.
+"""Entry point for eww-bar-backend, the eww bar's state daemon.
 
-Dispatch happens before any package import so the two CLI paths never load the
-daemon. Every import below is deliberately function-local.
+Only the daemon lives here. eww-barctl and eww-popup are a compiled Go binary
+(../client): they are invoked from 39 eww.yuck handlers including :onscroll, and
+essentially all of their latency was CPython startup -- the daemon answers a
+ping in 0.06 ms, against ~45 ms of interpreter and imports spent asking it.
+
+The daemon stays in Python because 93% of its CPU is the child processes its
+collectors fork, and those cost the same in any language.
 """
 import sys
 from pathlib import Path
@@ -14,32 +19,15 @@ if str(SCRIPT_DIR) not in sys.path:
 
 
 def main():
-    invoked = Path(sys.argv[0]).name
-    if invoked == "eww-barctl":
-        from eww_bar_backend.ctl import run_ctl
-
-        return run_ctl(sys.argv[1:])
-    if invoked == "eww-popup":
-        from eww_bar_backend.popups import run_popup
-
-        return run_popup(sys.argv[1:])
-
     mode = sys.argv[1] if len(sys.argv) > 1 else "bar"
-    if mode == "ctl":
-        from eww_bar_backend.ctl import run_ctl
+    if mode != "bar":
+        print(f"unknown backend mode: {mode}", file=sys.stderr)
+        return 1
 
-        return run_ctl(sys.argv[2:])
-    if mode == "popup":
-        from eww_bar_backend.popups import run_popup
+    from eww_bar_backend.app import run_bar
 
-        return run_popup(sys.argv[2:])
-    if mode == "bar":
-        from eww_bar_backend.app import run_bar
-
-        run_bar()
-        return 0
-    print(f"unknown backend mode: {mode}", file=sys.stderr)
-    return 1
+    run_bar()
+    return 0
 
 
 if __name__ == "__main__":

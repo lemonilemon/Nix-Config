@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import unittest
+import unittest.mock
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
@@ -818,6 +819,273 @@ class GoEquivalenceTests(unittest.TestCase):
         answers = self._ask_go([{"fn": "EncodeNilSlice", "args": []}])
         self.assertTrue(answers[0]["ok"], answers[0].get("error"))
         self.assertEqual(answers[0]["value"], '{"sinks":[],"groups":[]}')
+
+
+    # -- impure collectors, both sides fed the same subprocess output ----------
+
+    SEP = "\x1f"
+
+    def _fixture_compare(self, fn, fixtures, python_fn, extra_args=()):
+        """Run fn on both sides with each fixture standing in for run_text."""
+        calls = [{"fn": fn, "args": [f, *extra_args]} for f in fixtures]
+        answers = self._ask_go(calls)
+        mismatches = []
+        for fixture, answer in zip(fixtures, answers):
+            self.assertTrue(answer["ok"], f"{fn} errored in Go: {answer.get('error')}")
+
+            def fake_run_text(command, **_kwargs):
+                return fixture.get(self.SEP.join(command), "")
+
+            # network_connection_state reads /proc/net/wireless through
+            # collectors.Path, with no run_text seam. Without this the Python
+            # side reads the REAL file while Go reads the fixture, and the two
+            # disagree for a reason that has nothing to do with either
+            # implementation -- which is exactly how it failed the first time.
+            fixture_files = {
+                key[len("file") + len(self.SEP):]: value
+                for key, value in fixture.items()
+                if key.startswith("file" + self.SEP)
+            }
+
+            class FakePath:
+                def __init__(self, path):
+                    self._path = str(path)
+
+                def read_text(self, *_a, **_k):
+                    if self._path in fixture_files:
+                        return fixture_files[self._path]
+                    raise FileNotFoundError(self._path)
+
+            patches = [
+                unittest.mock.patch.object(collectors, "run_text", side_effect=fake_run_text),
+                unittest.mock.patch.object(collectors, "Path", FakePath),
+            ]
+            for patcher in patches:
+                patcher.start()
+            try:
+                collectors.reset_volume_sinks_cache()
+                expected = python_fn()
+            finally:
+                for patcher in patches:
+                    patcher.stop()
+                collectors.reset_volume_sinks_cache()
+
+            if answer["value"] != expected:
+                mismatches.append((fixture, expected, answer["value"]))
+        if mismatches:
+            detail = "\n".join(
+                f"  fixture={list(f)!r}\n    python={p!r}\n    go    ={g!r}"
+                for f, p, g in mismatches[:4]
+            )
+            self.fail(f"{len(mismatches)}/{len(fixtures)} disagreed:\n{detail}")
+
+    def test_collect_active_window(self):
+        key = self.SEP.join(["hyprctl", "activewindow", "-j"])
+        fixtures = [
+            {},
+            {key: ""},
+            {key: "not json"},
+            {key: "{}"},
+            {key: '{"class": "kitty", "title": "vim"}'},
+            {key: '{"class": "zen", "title": "A page"}'},
+            {key: '{"class": "unknown-app", "title": "t"}'},
+            {key: '{"class": "code", "title": ""}'},
+            {key: '{"class": "", "title": "only title"}'},
+            {key: '{"class": "kitty", "title": "' + "x" * 90 + '"}'},
+        ]
+        self._fixture_compare(
+            "CollectActiveWindow", fixtures, collectors.active_window_state
+        )
+
+    def test_collect_workspace(self):
+        a = self.SEP.join(["hyprctl", "activeworkspace", "-j"])
+        w = self.SEP.join(["hyprctl", "workspaces", "-j"])
+        c = self.SEP.join(["hyprctl", "clients", "-j"])
+        fixtures = [
+            {},
+            {a: '{"id": 2}', w: '[{"id": 2, "windows": 1}]', c: "[]"},
+            {a: '{"id": 1}', w: '[{"id": 3, "windows": 4}]',
+             c: '[{"urgent": true, "workspace": {"id": 3}}]'},
+        ]
+        self._fixture_compare("CollectWorkspace", fixtures, collectors.workspace_state)
+
+    def test_collect_media(self):
+        st = self.SEP.join(["playerctl", "status"])
+        md = self.SEP.join(["playerctl", "metadata", "--format", "{{artist}} - {{title}}"])
+        fixtures = [
+            {},
+            {st: "Playing\n", md: "Artist - Song\n"},
+            {st: "Paused\n", md: "Artist - Song\n"},
+            {st: "Stopped\n", md: "A - B\n"},
+            {st: "Weird\n", md: "A - B\n"},
+            {st: "Playing\n", md: "\n"},
+        ]
+        self._fixture_compare("CollectMedia", fixtures, collectors.media_state)
+
+    def test_collect_tray_count(self):
+        key = self.SEP.join([
+            "busctl", "--user", "get-property",
+            "org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher",
+            "org.kde.StatusNotifierWatcher", "RegisteredStatusNotifierItems",
+        ])
+        fixtures = [{}, {key: "as 0"}, {key: 'as 3 "a" "b" "c"'}, {key: "garbage"}]
+        self._fixture_compare("CollectTrayCount", fixtures, collectors.tray_count)
+
+    def test_collect_bluetooth(self):
+        show = self.SEP.join(["bluetoothctl", "show"])
+        devs = self.SEP.join(["bluetoothctl", "devices", "Connected"])
+        info = lambda mac: self.SEP.join(["bluetoothctl", "info", mac])
+        fixtures = [
+            {},
+            {show: "Controller AA:BB\n\tPowered: no\n", devs: ""},
+            {show: "Controller AA:BB\n\tAlias: MyBT\n\tPowered: yes\n", devs: ""},
+            {
+                show: "Controller AA:BB\n\tAlias: MyBT\n\tPowered: yes\n",
+                devs: "Device 80:99:E7 Buds\n",
+                info("80:99:E7"): "\tAlias: Buds Pro\n\tBattery Percentage: 0x55 (85)\n",
+            },
+            {
+                show: "Controller AA:BB\n\tPowered: yes\n",
+                devs: "Device 11:22 Other\nDevice 33:44 ugreen_1 Set\n",
+                info("11:22"): "\tAlias: Other Thing\n",
+                info("33:44"): "\tAlias: UGreen Buds\n\tBattery Percentage: 0x32 (50)\n",
+            },
+        ]
+        self._fixture_compare("CollectBluetooth", fixtures, collectors.bluetooth_state)
+
+    def test_collect_volume(self):
+        vol = self.SEP.join(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
+        dflt = self.SEP.join(["pactl", "get-default-sink"])
+        js = self.SEP.join(["pactl", "-f", "json", "list", "sinks"])
+        short = self.SEP.join(["pactl", "list", "short", "sinks"])
+        fixtures = [
+            {},
+            {vol: "Volume: 0.42\n", dflt: "alsa_out\n",
+             js: '[{"name":"alsa_out","description":"Speakers"}]'},
+            {vol: "Volume: 0.42 [MUTED]\n", dflt: "bt\n",
+             js: '[{"name":"alsa_out","description":"Speakers"},{"name":"bt","description":""}]'},
+            # JSON empty -> the short-format fallback path.
+            {vol: "Volume: 1.00\n", dflt: "alsa_out\n", js: "",
+             short: "56\talsa_out\tPipeWire\ts32le\tRUNNING\n"},
+            # A description past the 30-character truncation limit. Without
+            # this no fixture was long enough to notice truncation at all.
+            {vol: "Volume: 0.50\n", dflt: "alsa_out\n",
+             js: '[{"name":"alsa_out",'
+                 '"description":"Built-in Audio Analog Stereo (HDMI 2, rear panel)"}]'},
+            # Second TAB field containing spaces. pactl's short format is
+            # tab-separated; splitting on whitespace would take "alsa" here and
+            # no other fixture distinguishes the two.
+            {vol: "Volume: 0.50\n", dflt: "x\n", js: "",
+             short: "56\talsa out device\tPipeWire\ts32le\tRUNNING\n"},
+            # Too few fields, and an empty name field: both must be skipped.
+            {vol: "Volume: 0.50\n", dflt: "x\n", js: "",
+             short: "56\n56\t\tPipeWire\n"},
+        ]
+        for refresh in (True, False):
+            with self.subTest(refresh_sinks=refresh):
+                self._fixture_compare(
+                    "CollectVolume",
+                    fixtures,
+                    lambda r=refresh: collectors.volume_state(refresh_sinks=r),
+                    extra_args=(refresh,),
+                )
+
+    def test_volume_sink_cache_survives_a_refresh_false_call(self):
+        """The cache is only observable across two calls.
+
+        Single-call testing resets it every time, so refresh=False always took
+        the cold path and a mutation removing the cache entirely changed
+        nothing. Here the second call gets a fixture with no pactl output: if
+        the cache works the sinks survive, if not they vanish.
+        """
+        vol = self.SEP.join(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
+        dflt = self.SEP.join(["pactl", "get-default-sink"])
+        js = self.SEP.join(["pactl", "-f", "json", "list", "sinks"])
+        first = {vol: "Volume: 0.42\n", dflt: "alsa_out\n",
+                 js: '[{"name":"alsa_out","description":"Speakers"}]'}
+        second = {vol: "Volume: 0.42\n"}  # no pactl at all
+
+        answers = self._ask_go([{"fn": "CollectVolumeSequence", "args": [first, second]}])
+        self.assertTrue(answers[0]["ok"], answers[0].get("error"))
+        go_first, go_second = answers[0]["value"]
+
+        def fake(command, **_kw):
+            return self._current.get(self.SEP.join(command), "")
+
+        with unittest.mock.patch.object(collectors, "run_text", side_effect=fake):
+            collectors.reset_volume_sinks_cache()
+            self._current = first
+            py_first = collectors.volume_state(refresh_sinks=True)
+            self._current = second
+            py_second = collectors.volume_state(refresh_sinks=False)
+            collectors.reset_volume_sinks_cache()
+
+        self.assertEqual(go_first, py_first)
+        self.assertEqual(go_second, py_second)
+        # And the property the cache exists for, asserted directly so this
+        # cannot pass by both sides being equally broken.
+        self.assertEqual(py_second["sinks"], py_first["sinks"])
+        self.assertNotEqual(py_second["sinks"], [])
+
+    def test_network_radio_enabled(self):
+        key = self.SEP.join(["nmcli", "radio", "wifi"])
+        fixtures = [{}, {key: "enabled\n"}, {key: "disabled\n"}, {key: " enabled "}, {key: "x"}]
+        self._fixture_compare(
+            "NetworkRadioEnabled", fixtures, collectors.network_radio_enabled
+        )
+
+    def test_collect_link_fallback(self):
+        route = self.SEP.join(["ip", "route"])
+        addr = self.SEP.join(["ip", "-o", "-4", "addr", "show"])
+        fixtures = [
+            {},
+            {route: "default via 192.168.0.1 dev eno1 metric 100\n",
+             addr: "2: eno1    inet 192.168.0.88/24 scope global eno1\n"},
+            {route: "default via 192.168.0.1 dev eno1 metric 100\n"},
+            {route: "192.168.0.0/24 dev eno1 scope link\n"},
+        ]
+        self._fixture_compare(
+            "CollectLinkFallback", fixtures, collectors.link_fallback_state
+        )
+
+    def test_collect_network_connection(self):
+        status = self.SEP.join(["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "dev", "status"])
+        route = self.SEP.join(["ip", "route"])
+        addr = self.SEP.join(["ip", "-o", "-4", "addr", "show"])
+        wifi = self.SEP.join(["nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi"])
+        wshow = lambda d: self.SEP.join(
+            ["nmcli", "-t", "-f", "GENERAL.CONNECTION,IP4.ADDRESS", "dev", "show", d])
+        eshow = lambda d: self.SEP.join(["nmcli", "-t", "-f", "IP4.ADDRESS", "dev", "show", d])
+        wireless = "file" + self.SEP + "/proc/net/wireless"
+        fixtures = [
+            # Nothing connected and no route -> disconnected.
+            {},
+            # Ethernet with an address.
+            {status: "eno1:ethernet:connected:Wired\n",
+             eshow("eno1"): "IP4.ADDRESS[1]:192.168.0.88/24\n"},
+            # Ethernet, linked but no address.
+            {status: "eno1:ethernet:connected:Wired\n", eshow("eno1"): ""},
+            # Wifi with /proc/net/wireless present.
+            {status: "wlan0:wifi:connected:Net\n",
+             wshow("wlan0"): "GENERAL.CONNECTION:MyNet\nIP4.ADDRESS[1]:10.0.0.5/24\n",
+             wireless: " wlan0: 0000   49.  -40.  -256\n"},
+            # Wifi, no /proc/net/wireless -> falls back to asking nmcli.
+            {status: "wlan0:wifi:connected:Net\n",
+             wshow("wlan0"): "GENERAL.CONNECTION:MyNet\nIP4.ADDRESS[1]:10.0.0.5/24\n",
+             wifi: "yes:MyNet:72\n"},
+            # Both up, ethernet owns the default route -> wifi is dropped.
+            {status: "wlan0:wifi:connected:Net\neno1:ethernet:connected:Wired\n",
+             route: "default via 192.168.0.1 dev eno1 metric 100\n",
+             eshow("eno1"): "IP4.ADDRESS[1]:192.168.0.88/24\n"},
+            # nmcli says nothing, but the kernel still has a route: degraded,
+            # not disconnected. This is the dead-NetworkManager workaround.
+            {route: "default via 192.168.0.1 dev eno1 metric 100\n",
+             addr: "2: eno1    inet 192.168.0.88/24 scope global eno1\n"},
+        ]
+        self._fixture_compare(
+            "CollectNetworkConnection", fixtures, collectors.network_connection_state
+        )
+        self._fixture_compare("CollectNetwork", fixtures, collectors.network_state)
 
 
 class DecimalHazardTests(unittest.TestCase):

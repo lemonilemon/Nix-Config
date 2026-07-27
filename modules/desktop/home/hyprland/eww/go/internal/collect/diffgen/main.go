@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
+	"time"
 
 	"ewwbar/internal/collect"
 	"ewwbar/internal/pyjson"
@@ -445,6 +447,44 @@ func dispatch(c call) (any, error) {
 			Groups []string `json:"groups"`
 		}{Sinks: nilSlice, Groups: []string{}}, false)
 
+	// --- impure collectors, driven from a command -> output fixture ---------
+	//
+	// The first argument is a map keyed by the argv joined with \x1f, standing
+	// in for run_text. The Python side patches collectors.run_text with the
+	// same map, so both implementations see identical subprocess output and any
+	// difference is theirs, not the machine's.
+
+	case "CollectActiveWindow", "CollectWorkspace", "CollectMedia",
+		"CollectTrayCount", "CollectBluetooth", "CollectVolume",
+		"NetworkRadioEnabled", "CollectLinkFallback", "CollectNetworkConnection",
+		"CollectNetwork":
+		return withFixture(c)
+
+	case "CollectVolumeSequence":
+		// Two calls under two fixtures, sharing one warm cache. The second
+		// fixture has no pactl output at all, so if the cache is working the
+		// sinks survive and if it is not they vanish -- which single-call
+		// testing cannot distinguish, because the cache starts cold every time.
+		var first, second map[string]string
+		if err := args(c, &first, &second); err != nil {
+			return nil, err
+		}
+		savedRun := collect.RunText
+		defer func() { collect.RunText = savedRun }()
+		collect.ResetVolumeSinksCache()
+
+		fixtureRunner := func(fixture map[string]string) func(time.Duration, string, ...string) string {
+			return func(_ time.Duration, name string, argv ...string) string {
+				return fixture[strings.Join(append([]string{name}, argv...), "\x1f")]
+			}
+		}
+		collect.RunText = fixtureRunner(first)
+		a := collect.CollectVolume(true)
+		collect.RunText = fixtureRunner(second)
+		b := collect.CollectVolume(false)
+		collect.ResetVolumeSinksCache()
+		return []any{a, b}, nil
+
 	case "VolumeEventIsRelevant":
 		var line string
 		if err := args(c, &line); err != nil {
@@ -453,6 +493,68 @@ func dispatch(c call) (any, error) {
 		return collect.VolumeEventIsRelevant(line), nil
 	}
 	return nil, fmt.Errorf("unknown fn: %s", c.Fn)
+}
+
+// withFixture installs a fake RunText/ReadTextFile for the duration of one
+// call, then restores them. Not concurrent-safe, and does not need to be:
+// diffgen answers one line at a time.
+func withFixture(c call) (any, error) {
+	if len(c.Args) < 1 {
+		return nil, fmt.Errorf("%s: want a fixture map", c.Fn)
+	}
+	fixture := map[string]string{}
+	if err := json.Unmarshal(c.Args[0], &fixture); err != nil {
+		return nil, fmt.Errorf("%s fixture: %w", c.Fn, err)
+	}
+
+	savedRun, savedRead := collect.RunText, collect.ReadTextFile
+	defer func() { collect.RunText, collect.ReadTextFile = savedRun, savedRead }()
+
+	collect.RunText = func(_ time.Duration, name string, argv ...string) string {
+		return fixture[strings.Join(append([]string{name}, argv...), "\x1f")]
+	}
+	collect.ReadTextFile = func(path string) (string, bool) {
+		value, ok := fixture["file\x1f"+path]
+		return value, ok
+	}
+
+	// The sink cache is process-global; a stale entry from a previous case
+	// would make this one pass for the wrong reason.
+	collect.ResetVolumeSinksCache()
+
+	switch c.Fn {
+	case "CollectActiveWindow":
+		return collect.CollectActiveWindow(), nil
+	case "CollectWorkspace":
+		return collect.CollectWorkspace(), nil
+	case "CollectMedia":
+		return collect.CollectMedia(), nil
+	case "CollectTrayCount":
+		return collect.CollectTrayCount(), nil
+	case "CollectBluetooth":
+		return collect.CollectBluetooth(), nil
+	case "CollectVolume":
+		var refresh bool
+		if len(c.Args) > 1 {
+			if err := json.Unmarshal(c.Args[1], &refresh); err != nil {
+				return nil, err
+			}
+		}
+		return collect.CollectVolume(refresh), nil
+	case "NetworkRadioEnabled":
+		return collect.NetworkRadioEnabled(), nil
+	case "CollectLinkFallback":
+		state, ok := collect.CollectLinkFallback()
+		if !ok {
+			return nil, nil // Python's None
+		}
+		return state, nil
+	case "CollectNetworkConnection":
+		return collect.CollectNetworkConnection(), nil
+	case "CollectNetwork":
+		return collect.CollectNetwork(), nil
+	}
+	return nil, fmt.Errorf("unknown fixture fn: %s", c.Fn)
 }
 
 func args(c call, targets ...any) error {

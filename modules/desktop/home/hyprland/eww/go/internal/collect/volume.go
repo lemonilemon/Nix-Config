@@ -99,3 +99,60 @@ func VolumeStateFromText(text string, sinks []Sink) VolumeState {
 func VolumeEventIsRelevant(line string) bool {
 	return !strings.Contains(line, " on client #")
 }
+
+// SinksFromPactlJSON mirrors collectors.sinks_from_pactl_json.
+func SinksFromPactlJSON(jsonText, defaultName string) []Sink {
+	var data []any
+	sinks := []Sink{}
+	if !ParseJSON(jsonText, &data) {
+		return sinks
+	}
+	for _, raw := range data {
+		entry, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, ok := entry["name"].(string)
+		if !ok || name == "" {
+			continue
+		}
+		label := name
+		if description, ok := entry["description"].(string); ok && description != "" {
+			label = description
+		}
+		sinks = append(sinks, Sink{
+			Name:        name,
+			Description: TruncateText(label, 30),
+			Active:      boolText(name == defaultName),
+		})
+	}
+	return sinks
+}
+
+// SinksFromPactlShort mirrors collectors.sinks_from_pactl_short.
+//
+// Splits on tab, not whitespace: pactl's short format is tab-separated and a
+// sink description can contain spaces.
+func SinksFromPactlShort(shortText, defaultName string) []Sink {
+	sinks := []Sink{}
+	for _, line := range SplitLines(shortText) {
+		fields := strings.Split(line, "\t")
+		if len(fields) < 2 || fields[1] == "" {
+			continue
+		}
+		name := fields[1]
+		sinks = append(sinks, Sink{
+			Name:        name,
+			Description: TruncateText(name, 30),
+			Active:      boolText(name == defaultName),
+		})
+	}
+	return sinks
+}
+
+func boolText(value bool) string {
+	if value {
+		return "true"
+	}
+	return "false"
+}

@@ -22,6 +22,7 @@ import (
 
 	"ewwbar/internal/collect"
 	"ewwbar/internal/pyjson"
+	"ewwbar/internal/state"
 )
 
 type call struct {
@@ -484,6 +485,37 @@ func dispatch(c call) (any, error) {
 		b := collect.CollectVolume(false)
 		collect.ResetVolumeSinksCache()
 		return []any{a, b}, nil
+
+	case "DefaultSnapshot":
+		// The bytes BarState() emits before a single collector has run. This is
+		// what eww.yuck's :initial literal has to match, and what the whole
+		// encoder chain has to reproduce.
+		return state.New().Snapshot()
+
+	case "CPUStateFromSamples":
+		var first, second string
+		if err := args(c, &first, &second); err != nil {
+			return nil, err
+		}
+		return collect.CPUStateFromSamples(first, second), nil
+
+	case "TemperatureStateFromReadings":
+		var millidegrees []int64
+		if err := args(c, &millidegrees); err != nil {
+			return nil, err
+		}
+		return collect.TemperatureStateFromReadings(millidegrees), nil
+
+	case "BatteryStateFromFiles":
+		var files map[string]string
+		if err := args(c, &files); err != nil {
+			return nil, err
+		}
+		battery, ok := collect.BatteryStateFromFiles(files)
+		if !ok {
+			return collect.BatteryDefault(), nil
+		}
+		return battery, nil
 
 	case "VolumeEventIsRelevant":
 		var line string

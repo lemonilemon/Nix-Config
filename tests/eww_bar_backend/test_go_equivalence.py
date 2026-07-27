@@ -12,6 +12,7 @@ cases run inside the derivation.
 """
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -1086,6 +1087,149 @@ class GoEquivalenceTests(unittest.TestCase):
             "CollectNetworkConnection", fixtures, collectors.network_connection_state
         )
         self._fixture_compare("CollectNetwork", fixtures, collectors.network_state)
+
+
+    # -- file-reading collectors ----------------------------------------------
+
+    def test_cpu_state_from_samples(self):
+        def stat(user, nice, system, idle, iowait, irq, softirq):
+            return f"cpu  {user} {nice} {system} {idle} {iowait} {irq} {softirq} 0 0 0\n"
+        pairs = [
+            ("", ""),
+            ("garbage\n", "garbage\n"),
+            ("cpu 1 2\n", "cpu 1 2\n"),
+            (stat(100, 0, 50, 800, 50, 0, 0), stat(100, 0, 50, 800, 50, 0, 0)),   # no delta
+            (stat(100, 0, 50, 800, 50, 0, 0), stat(200, 0, 100, 1600, 100, 0, 0)),
+            (stat(0, 0, 0, 0, 0, 0, 0), stat(100, 0, 0, 0, 0, 0, 0)),             # 100%
+            (stat(0, 0, 0, 0, 0, 0, 0), stat(0, 0, 0, 100, 0, 0, 0)),             # 0%
+            (stat(0, 0, 0, 0, 0, 0, 0), stat(1, 0, 0, 1, 0, 0, 0)),               # 50%
+            (stat(0, 0, 0, 0, 0, 0, 0), stat(1, 0, 0, 3, 0, 0, 0)),               # 25%
+            (stat(200, 0, 100, 1600, 100, 0, 0), stat(100, 0, 50, 800, 50, 0, 0)), # backwards
+        ]
+
+        def python_cpu(first, second):
+            # cpu_state reads /proc/stat twice around a sleep; feed it the two
+            # samples through collectors.Path and neutralise the sleep.
+            samples = iter([first, second])
+
+            class FakePath:
+                def __init__(self, _p): pass
+                def read_text(self, *_a, **_k): return next(samples)
+
+            with unittest.mock.patch.object(collectors, "Path", FakePath):
+                with unittest.mock.patch.object(collectors.time, "sleep", lambda _s: None):
+                    return collectors.cpu_state()
+
+        self._compare("CPUStateFromSamples", pairs, python_cpu)
+
+    def test_temperature_state_from_readings(self):
+        readings = [
+            [], [0], [45000], [45400], [45500], [45600], [89000], [89500], [90000],
+            [30000, 62000, 41000], [95000, 20000], [-5000], [100499], [100500],
+        ]
+
+        def python_temp(values):
+            # temperature_state globs /sys/class/hwmon; drive it with a fake
+            # Path whose glob yields one entry per reading.
+            class FakeInput:
+                def __init__(self, value): self._value = value
+                def read_text(self, *_a, **_k): return f"{self._value}\n"
+
+            class FakePath:
+                def __init__(self, _p): pass
+                def glob(self, _pattern): return [FakeInput(v) for v in values]
+
+            with unittest.mock.patch.object(collectors, "Path", FakePath):
+                return collectors.temperature_state()
+
+        self._compare(
+            "TemperatureStateFromReadings", [(r,) for r in readings], python_temp
+        )
+
+    def test_battery_state_from_files(self):
+        base = {"capacity": "72\n", "status": "Discharging\n"}
+        energy = {"energy_now": "36000000", "power_now": "9000000",
+                  "energy_full": "50000000", "energy_full_design": "60000000"}
+        charge = {"charge_now": "3000000", "current_now": "900000",
+                  "charge_full": "4000000", "charge_full_design": "5000000",
+                  "voltage_now": "11000000"}
+        cases = [
+            {},                                        # no capacity -> default
+            {"capacity": "notanumber"},                # unparsable -> default
+            base,                                      # capacity only
+            {**base, **energy},
+            {**base, **charge},
+            {**base, "status": "Charging\n", **energy},
+            {**base, "status": "Charging\n", **charge},
+            {**base, "status": "Full\n", **energy},
+            {**base, "capacity": "15\n"},              # critical
+            {**base, "capacity": "25\n"},              # warning
+            {**base, "capacity": "5\n", **energy},
+            # Every icon boundary, on both sides. Without 42 here, shifting the
+            # 40%% threshold to 45%% changed no result and the mutation passed.
+            {**base, "capacity": "19\n"}, {**base, "capacity": "20\n"},
+            {**base, "capacity": "39\n"}, {**base, "capacity": "40\n"},
+            {**base, "capacity": "42\n"}, {**base, "capacity": "44\n"},
+            {**base, "capacity": "59\n"}, {**base, "capacity": "60\n"},
+            {**base, "capacity": "79\n"}, {**base, "capacity": "80\n"},
+            {**base, "capacity": "29\n"}, {**base, "capacity": "30\n"},
+            {**base, "capacity": "35\n"}, {**base, "capacity": "55\n"},
+            {**base, "capacity": "75\n"}, {**base, "capacity": "95\n"},
+            # BOTH families present. The original tries energy_* first and stops,
+            # so which one wins is observable only here -- no other fixture has
+            # more than one, and swapping the order passed.
+            {**base, **energy, **charge},
+            {**base, "status": "Charging\n", **energy, **charge},
+            {**base, "capacity": "100\n", "status": "Charging\n", **energy},
+            {**base, **energy, "power_now": "0"},      # zero rate
+            {**base, **energy, "energy_full_design": "0"},
+            {**base, **charge, "voltage_now": "0"},
+            {**base, "energy_now": "1", "power_now": "1"},  # incomplete family
+        ]
+
+        def python_battery(files):
+            class FakeFile:
+                def __init__(self, name, store): self._name, self._store = name, store
+                def exists(self): return self._name in self._store
+                def read_text(self, *_a, **_k):
+                    if self._name not in self._store:
+                        raise FileNotFoundError(self._name)
+                    return self._store[self._name]
+
+            class FakeBattery:
+                def __init__(self, store): self._store = store
+                def __truediv__(self, name): return FakeFile(name, self._store)
+
+            class FakeRoot:
+                def glob(self, _pattern): return [FakeBattery(files)]
+
+            return collectors.battery_state(root=FakeRoot())
+
+        self._compare("BatteryStateFromFiles", [(c,) for c in cases], python_battery)
+
+    # -- BarState: the bytes eww reads before any collector has run ------------
+
+    def test_default_snapshot_is_byte_identical(self):
+        from eww_bar_backend.state import BarState
+
+        answers = self._ask_go([{"fn": "DefaultSnapshot", "args": []}])
+        self.assertTrue(answers[0]["ok"], answers[0].get("error"))
+        self.assertEqual(answers[0]["value"], BarState().snapshot())
+
+    def test_default_snapshot_matches_the_yuck_initial_literal(self):
+        """The Go snapshot must satisfy the same drift guard the Python does.
+
+        test_state_defaults.py pins eww.yuck's :initial literal to
+        BarState().snapshot(); this pins the Go side to the same literal, so the
+        three cannot drift apart in any pairing.
+        """
+        first_line = (EWW_DIR / "eww.yuck").read_text().splitlines()[0]
+        match = re.search(r":initial \'(.*?)\' \"eww-bar-backend bar\"\)", first_line)
+        self.assertIsNotNone(match, "could not find the deflisten :initial literal")
+
+        answers = self._ask_go([{"fn": "DefaultSnapshot", "args": []}])
+        self.assertTrue(answers[0]["ok"], answers[0].get("error"))
+        self.assertEqual(json.loads(answers[0]["value"]), json.loads(match.group(1)))
 
 
 class DecimalHazardTests(unittest.TestCase):

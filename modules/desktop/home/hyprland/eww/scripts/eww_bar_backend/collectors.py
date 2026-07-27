@@ -1,3 +1,4 @@
+import itertools
 import json
 import os
 import re
@@ -461,7 +462,11 @@ def quota_from_openusage(snapshot, key, name, now_epoch=None):
 def openusage_quota_states(now_epoch=None):
     report = run_text(
         ["openusage-cli", "probe"] + [key for key, _ in OPENUSAGE_PROVIDERS],
-        timeout=45.0,
+        # Measured on this host: 41.6 s wall, 43.6 CPU-seconds. The old 45 s
+        # left three seconds of headroom, and a timeout here costs the full
+        # probe and returns nothing. It is off the 5-minute poll now (see
+        # quota_states), so a generous ceiling costs nothing.
+        timeout=120.0,
     )
     snapshots = parse_json(report, [])
     if not isinstance(snapshots, list):
@@ -826,10 +831,51 @@ def ai_usage_state_from_json(report_json, now_epoch=None):
     return state
 
 
+_QUOTA_LOCK = threading.Lock()
+_CACHED_QUOTAS = None
+
+
+def reset_quota_cache():
+    """Drop the cached quota cards. For tests."""
+    global _CACHED_QUOTAS
+    with _QUOTA_LOCK:
+        _CACHED_QUOTAS = None
+
+
+def quota_states(refresh=True):
+    """The per-provider quota cards the AI popup renders.
+
+    Cached, and deliberately kept off the background poll. Measured on this
+    host, `openusage-cli probe` costs 43.6 CPU-seconds and 41.6 s of wall clock
+    per call, against 0.85 for the ccusage report beside it -- it was the single
+    largest consumer in the whole backend, by an order of magnitude.
+
+    None of what it produces reaches the bar face: eww.yuck:80-83 renders only
+    ai_usage.text, which comes from ccusage. The quota cards live inside
+    ai_usage_popup, and eww.yuck:81 already sends `eww-barctl ai refresh` when
+    that popup opens (as does the refresh button at :491). So the probe now runs
+    when someone is actually looking, plus a slow backstop (ai_refresh_cycle),
+    instead of every five minutes into an empty room.
+
+    A cold cache always probes, so startup does not leave the popup blank until
+    the first backstop half an hour later.
+    """
+    global _CACHED_QUOTAS
+    if not refresh:
+        with _QUOTA_LOCK:
+            if _CACHED_QUOTAS is not None:
+                return deepcopy(_CACHED_QUOTAS)
+
+    quotas = [claude_quota_state(), *openusage_quota_states()]
+    with _QUOTA_LOCK:
+        _CACHED_QUOTAS = deepcopy(quotas)
+    return quotas
+
+
 _LAST_AI_USAGE = None
 
 
-def ai_usage_state():
+def ai_usage_state(refresh_quotas=True):
     global _LAST_AI_USAGE
 
     since = time.strftime("%Y%m%d", time.localtime(time.time() - 45 * 86400))
@@ -848,7 +894,7 @@ def ai_usage_state():
         timeout=20.0,
     )
     value = ai_usage_state_from_json(report)
-    apply_quotas(value, [claude_quota_state(), *openusage_quota_states()])
+    apply_quotas(value, quota_states(refresh=refresh_quotas))
     if value.get("source") == "missing" and _LAST_AI_USAGE is not None:
         stale = deepcopy(_LAST_AI_USAGE)
         stale["class"] = "stale"
@@ -861,10 +907,16 @@ def ai_usage_state():
     return value
 
 
-def refresh_ai_usage(state):
+def refresh_ai_usage(state, refresh_quotas=True):
     # Flag the refresh immediately so the popup can show a loading indicator over
     # the existing (still valid) data rather than blanking or sitting silent while
     # the combined ccusage + quota fetch runs in the background.
+    #
+    # refresh_quotas defaults to True because the callers that pass nothing are
+    # the explicit ones -- control.queue_ai_refresh, behind eww.yuck's
+    # `eww-barctl ai refresh` -- and those fire when the popup is opening, which
+    # is exactly when the expensive probe is worth paying for. Only the
+    # background poll opts out, via ai_refresh_cycle.
     current = state.get("ai_usage")
     pending = deepcopy(current) if isinstance(current, dict) else deepcopy(AI_USAGE_DEFAULT)
     meta = pending.get("meta") if isinstance(pending.get("meta"), dict) else {}
@@ -873,7 +925,7 @@ def refresh_ai_usage(state):
         state.update(ai_usage=pending)
 
     try:
-        fresh = ai_usage_state()
+        fresh = ai_usage_state(refresh_quotas=refresh_quotas)
         fresh["meta"]["refreshing"] = "false"
     except Exception:
         # Never leave the popup indicator pulsing on a transient failure; keep the
@@ -882,6 +934,24 @@ def refresh_ai_usage(state):
         fresh["meta"] = {**fresh.get("meta", {}), "refreshing": "false"}
     state.update(ai_usage=fresh)
     return fresh
+
+
+def ai_refresh_cycle(quota_every=6):
+    """Build the callable the background AI poll runs.
+
+    Splits the refresh by cost. The ccusage report (0.85 CPU-seconds) drives the
+    bar face and runs every cycle; the openusage probe (43.6) only feeds the
+    popup and runs every `quota_every`-th, starting with the first so startup
+    has quota cards. At the caller's 300 s period that is a probe every 30
+    minutes instead of every 5, on top of the on-demand refresh the popup
+    already sends.
+    """
+    counter = itertools.count()
+
+    def refresh(state):
+        refresh_ai_usage(state, refresh_quotas=next(counter) % quota_every == 0)
+
+    return refresh
 
 
 def cpu_state():

@@ -3,6 +3,7 @@ import threading
 
 from .collectors import (
     active_window_state,
+    ai_refresh_cycle,
     battery_state,
     bluetooth_state,
     clock_state,
@@ -10,7 +11,6 @@ from .collectors import (
     media_state,
     memory_state,
     network_state,
-    refresh_ai_usage,
     temperature_state,
     tray_count,
     volume_event_is_relevant,
@@ -67,7 +67,11 @@ def run_bar():
         threading.Thread(target=periodic, args=(state, 60), kwargs={"clock": clock_state}, daemon=True),
         threading.Thread(
             target=periodic_refresh,
-            args=(state, 300, refresh_ai_usage),
+            # ai_refresh_cycle, not refresh_ai_usage directly: the ccusage
+            # report behind the bar label runs every 300 s, but the openusage
+            # probe behind the popup's quota cards is 50x more expensive and
+            # only runs every 6th pass. The popup refreshes itself on open.
+            args=(state, 300, ai_refresh_cycle()),
             daemon=True,
         ),
         threading.Thread(

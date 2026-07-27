@@ -1,4 +1,5 @@
 import atexit
+import concurrent.futures
 import json
 import os
 import socket
@@ -29,6 +30,11 @@ from .wallpaper import set_wallpaper, wallpaper_state
 
 
 _AI_REFRESH_LOCK = threading.Lock()
+
+# Enough to absorb a scroll gesture without letting a stuck handler (every one
+# of them shells out) spawn threads without bound. Excess connections queue in
+# the pool rather than being refused by the kernel.
+CONTROL_WORKERS = 8
 
 
 def write_backend_pidfile():
@@ -266,6 +272,15 @@ def handle_control_command(state, payload):
     raise ValueError("unknown control command")
 
 
+def serve_control_connection(state, conn):
+    with conn:
+        try:
+            response = handle_control_command(state, read_control_payload(conn))
+        except Exception as exc:
+            response = {"ok": False, "error": str(exc)}
+        write_control_response(conn, response)
+
+
 def read_control_payload(conn):
     chunks = []
     while True:
@@ -318,12 +333,21 @@ def control_server(state):
             os.chmod(socket_path, 0o600)
         except Exception:
             pass
-        server.listen(8)
-        while True:
-            conn, _addr = server.accept()
-            with conn:
+        # Deep backlog and a worker pool, because accept() must never wait on a
+        # handler. eww.yuck binds eww-barctl to :onscroll, and a scroll wheel
+        # delivers ticks far faster than a command that shells out can be
+        # served; the old serve-then-accept loop let the backlog fill and the
+        # kernel then refused the rest with EAGAIN, which the client reports as a
+        # failed command and --quiet swallows entirely. Measured against a
+        # 40-client burst before this change: 30 dropped.
+        server.listen(128)
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=CONTROL_WORKERS, thread_name_prefix="eww-control"
+        ) as pool:
+            while True:
                 try:
-                    response = handle_control_command(state, read_control_payload(conn))
-                except Exception as exc:
-                    response = {"ok": False, "error": str(exc)}
-                write_control_response(conn, response)
+                    conn, _addr = server.accept()
+                except OSError as exc:
+                    print(f"eww-bar control server: accept failed: {exc}", file=sys.stderr, flush=True)
+                    continue
+                pool.submit(serve_control_connection, state, conn)

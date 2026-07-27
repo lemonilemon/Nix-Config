@@ -13,6 +13,7 @@ from .collectors import (
     refresh_ai_usage,
     temperature_state,
     tray_count,
+    volume_event_is_relevant,
     volume_state,
     workspace_state,
 )
@@ -102,6 +103,7 @@ def run_bar():
         threading.Thread(
             target=watch_command,
             args=(state, "volume", volume_state, ["pactl", "subscribe"]),
+            kwargs={"line_filter": volume_event_is_relevant},
             daemon=True,
         ),
         threading.Thread(

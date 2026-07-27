@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -1260,11 +1261,56 @@ def sinks_from_pactl_short(short_text, default_name):
     return sinks
 
 
-def volume_sinks():
+def volume_event_is_relevant(line):
+    """Should this `pactl subscribe` line trigger a volume re-collect?
+
+    `volume_state` forks wpctl and pactl, and every one of those children
+    connects to PulseAudio as a client -- which emits new/change/remove for that
+    client straight back onto the stream the volume watcher is reading. So the
+    watcher is its own event source. Measured at rest on this host, with nothing
+    touching audio: 1902 events in 90 s, 634 client lifecycles, 100% `client`,
+    driving ~7% of one core in forks that nothing asked for.
+
+    Nothing the bar renders -- level, mute, or the sink list -- can change
+    because some application connected to PulseAudio, so drop those. Anything
+    unrecognized still collects: a spurious collect costs one round of forks, a
+    missed sink event leaves the bar stale until the 60 s poll.
+    """
+    return " on client #" not in line
+
+
+_SINKS_LOCK = threading.Lock()
+_CACHED_SINKS = None
+
+
+def reset_volume_sinks_cache():
+    """Drop the cached sink list. For tests."""
+    global _CACHED_SINKS
+    with _SINKS_LOCK:
+        _CACHED_SINKS = None
+
+
+def volume_sinks(refresh=True):
+    """The output devices the volume popup lists.
+
+    Cached, because `volume_state` runs on every scroll tick and every relevant
+    pactl event while enumerating sinks costs two more forks. Only a sink
+    appearing/disappearing or the default sink changing can alter this list, and
+    both arrive as events -- so the callers that cannot have changed it pass
+    refresh=False. A cold cache always refreshes, whatever the caller asked for.
+    """
+    global _CACHED_SINKS
+    if not refresh:
+        with _SINKS_LOCK:
+            if _CACHED_SINKS is not None:
+                return [dict(sink) for sink in _CACHED_SINKS]
+
     default_name = run_text(["pactl", "get-default-sink"]).strip()
     sinks = sinks_from_pactl_json(run_text(["pactl", "-f", "json", "list", "sinks"]), default_name)
     if not sinks:
         sinks = sinks_from_pactl_short(run_text(["pactl", "list", "short", "sinks"]), default_name)
+    with _SINKS_LOCK:
+        _CACHED_SINKS = [dict(sink) for sink in sinks]
     return sinks
 
 
@@ -1285,10 +1331,10 @@ def volume_state_from_text(text, sinks=None):
     }
 
 
-def volume_state():
+def volume_state(refresh_sinks=True):
     return volume_state_from_text(
         run_text(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]),
-        sinks=volume_sinks(),
+        sinks=volume_sinks(refresh=refresh_sinks),
     )
 
 

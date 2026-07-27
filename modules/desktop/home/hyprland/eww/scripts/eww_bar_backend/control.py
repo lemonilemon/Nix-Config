@@ -64,7 +64,10 @@ def adjust_volume(direction):
         stderr=subprocess.DEVNULL,
         check=False,
     )
-    return volume_state()
+    # refresh_sinks=False: a level nudge cannot add, remove or re-default a
+    # sink, and this is the :onscroll path where the two extra pactl forks are
+    # the whole cost.
+    return volume_state(refresh_sinks=False)
 
 
 def set_volume(value):
@@ -76,7 +79,7 @@ def set_volume(value):
         ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{level}%"],
         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
     )
-    return volume_state()
+    return volume_state(refresh_sinks=False)
 
 
 def toggle_mute():
@@ -84,7 +87,7 @@ def toggle_mute():
         ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"],
         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
     )
-    return volume_state()
+    return volume_state(refresh_sinks=False)
 
 
 def set_sink(name):

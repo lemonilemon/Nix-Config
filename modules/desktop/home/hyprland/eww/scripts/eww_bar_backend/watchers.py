@@ -177,7 +177,13 @@ def watch_hyprland(state):
             time.sleep(2)
 
 
-def watch_command(state, key, collector, command):
+def watch_command(state, key, collector, command, line_filter=None):
+    """Re-collect `key` whenever `command` prints a line.
+
+    `line_filter` drops lines that cannot have changed anything the bar renders.
+    Without one, a watcher whose collector shells out to the same subsystem it
+    is watching becomes its own event source -- see volume_event_is_relevant.
+    """
     state.update(**{key: collector()})
     while True:
         proc = None
@@ -190,6 +196,8 @@ def watch_command(state, key, collector, command):
             )
             assert proc.stdout is not None
             for _line in proc.stdout:
+                if line_filter is not None and not line_filter(_line):
+                    continue
                 time.sleep(0.2)
                 while True:
                     readable, _, _ = select.select([proc.stdout], [], [], 0.2)

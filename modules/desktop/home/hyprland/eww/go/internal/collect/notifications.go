@@ -90,6 +90,15 @@ func pyTruthy(value any) bool {
 			return f != 0
 		}
 		return typed.String() != ""
+	case float64:
+		// Reachable whenever a caller decoded without UseNumber. Without this
+		// case the switch fell through to `return true`, so a JSON 0 read as
+		// truthy -- which made SplitMonitors treat `"disabled": 0` as disabled.
+		return typed != 0
+	case int:
+		return typed != 0
+	case int64:
+		return typed != 0
 	case []any:
 		return len(typed) > 0
 	case map[string]any:

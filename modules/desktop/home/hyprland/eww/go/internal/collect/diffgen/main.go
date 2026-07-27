@@ -12,6 +12,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -367,6 +368,42 @@ func dispatch(c call) (any, error) {
 		}
 		return collect.RowsFromItems(items, columns), nil
 
+	case "WorkspaceStateFromJSON":
+		var activeJSON, workspacesJSON, clientsJSON string
+		if err := args(c, &activeJSON, &workspacesJSON, &clientsJSON); err != nil {
+			return nil, err
+		}
+		return collect.WorkspaceStateFromJSON(activeJSON, workspacesJSON, clientsJSON), nil
+
+	case "MissingBarMonitors":
+		var monitorsJSON, activeWindows string
+		if err := args(c, &monitorsJSON, &activeWindows); err != nil {
+			return nil, err
+		}
+		return collect.MissingBarMonitors(monitorsJSON, activeWindows), nil
+
+	case "ParseAwwwQuery":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		return collect.ParseAwwwQuery(text), nil
+
+	case "IsInternalMonitor":
+		var name string
+		if err := args(c, &name); err != nil {
+			return nil, err
+		}
+		return collect.IsInternalMonitor(name), nil
+
+	case "SplitMonitors":
+		var monitors []map[string]any
+		if err := args(c, &monitors); err != nil {
+			return nil, err
+		}
+		internal, external := collect.SplitMonitors(monitors)
+		return []any{internal, external}, nil
+
 	case "VolumeEventIsRelevant":
 		var line string
 		if err := args(c, &line); err != nil {
@@ -382,7 +419,12 @@ func args(c call, targets ...any) error {
 		return fmt.Errorf("%s: want %d args, got %d", c.Fn, len(targets), len(c.Args))
 	}
 	for i, target := range targets {
-		if err := json.Unmarshal(c.Args[i], target); err != nil {
+		// UseNumber, matching how the daemon will decode: it keeps 5 distinct
+		// from 5.0 for str(), and keeps every number a json.Number so the
+		// truthiness and equality helpers see one type rather than two.
+		decoder := json.NewDecoder(bytes.NewReader(c.Args[i]))
+		decoder.UseNumber()
+		if err := decoder.Decode(target); err != nil {
 			return fmt.Errorf("%s arg %d: %w", c.Fn, i, err)
 		}
 	}

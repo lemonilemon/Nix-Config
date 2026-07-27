@@ -25,7 +25,7 @@ SCRIPTS_DIR = EWW_DIR / "scripts"
 GO_DIR = EWW_DIR / "go"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from eww_bar_backend import collectors, notifications, wallpaper, watchers  # noqa: E402
+from eww_bar_backend import collectors, display, notifications, wallpaper, watchers  # noqa: E402
 from eww_bar_backend.common import truncate_text  # noqa: E402
 
 
@@ -674,6 +674,76 @@ class GoEquivalenceTests(unittest.TestCase):
                 cases.append(([item(i) for i in range(count)], columns))
         self._compare(
             "RowsFromItems", cases, lambda items, columns: wallpaper.rows_from_items(items, columns)
+        )
+
+
+    # -- workspaces, monitors, wallpaper query ---------------------------------
+
+    def test_workspace_state_from_json(self):
+        actives = ["", "{}", '{"id": 1}', '{"id": 3}', '{"id": 9}', '{"id": "2"}', "not json"]
+        workspaces = [
+            "", "[]",
+            '[{"id": 1, "windows": 2}]',
+            '[{"id": 1, "windows": 0}, {"id": 2, "windows": 5}]',
+            '[{"id": 4, "windows": 1}, "junk", {"no": "id"}]',
+            '[{"id": "3", "windows": "2"}]',
+        ]
+        clients = [
+            "", "[]",
+            '[{"urgent": true, "workspace": {"id": 2}}]',
+            # urgent is compared with `is True`, so 1 must NOT count.
+            '[{"urgent": 1, "workspace": {"id": 2}}]',
+            '[{"urgent": true, "workspace": {"id": 1}}]',
+            '[{"urgent": true}]',
+            '[{"urgent": true, "workspace": "notadict"}]',
+        ]
+        cases = [(a, w, c) for a in actives for w in workspaces for c in clients]
+        self._compare(
+            "WorkspaceStateFromJSON", cases, collectors.workspace_state_from_json
+        )
+
+    def test_missing_bar_monitors(self):
+        monitors = [
+            "", "[]", "not json", '{"name": "eDP-1"}',
+            '[{"name": "eDP-1"}]',
+            '[{"name": "eDP-1"}, {"name": "HDMI-A-1"}]',
+            '[{"name": ""}, {"noname": 1}, "junk", {"name": "DP-3"}]',
+        ]
+        windows = ["", "bar-eDP-1: bar\n", "bar-eDP-1: bar\nbar-HDMI-A-1: bar\n", "junk\n"]
+        cases = [(m, w) for m in monitors for w in windows]
+        self._compare("MissingBarMonitors", cases, watchers.missing_bar_monitors)
+
+    def test_parse_awww_query(self):
+        texts = [
+            "",
+            "eDP-1: 1920x1200, scale: 2, currently displaying: image: /w/a.png\n",
+            "eDP-1: ... image: /w/a.png\nHDMI-A-1: ... image: /w/b.png\n",
+            "eDP-1: ... color: #000000\n",
+            "image: \n",
+            "image: /w/trailing spaces   \n",
+            "no match here\n",
+        ]
+        self._compare("ParseAwwwQuery", [(t,) for t in texts], wallpaper.parse_awww_query)
+
+    def test_is_internal_monitor(self):
+        names = ["eDP-1", "eDP-2", "LVDS-1", "HDMI-A-1", "DP-3", "", "eDP", "edp-1", "XLVDS-1"]
+        self._compare("IsInternalMonitor", [(n,) for n in names], display.is_internal_monitor)
+
+    def test_split_monitors(self):
+        monitor_sets = [
+            [],
+            [{"name": "eDP-1"}],
+            [{"name": "eDP-1"}, {"name": "HDMI-A-1"}],
+            [{"name": "eDP-1", "disabled": True}, {"name": "HDMI-A-1"}],
+            [{"name": "eDP-1", "disabled": False}, {"name": "HDMI-A-1", "disabled": True}],
+            [{"noname": 1}, {"name": "LVDS-1"}],
+            # `not m.get("disabled", False)` -- any truthy value disables.
+            [{"name": "eDP-1", "disabled": 1}, {"name": "DP-3", "disabled": 0}],
+        ]
+        self._compare(
+            "SplitMonitors",
+            [(m,) for m in monitor_sets],
+            lambda m: [list(part) for part in display.split_monitors(m)],
         )
 
 

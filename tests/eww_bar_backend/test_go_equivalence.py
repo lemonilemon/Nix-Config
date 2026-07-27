@@ -25,7 +25,7 @@ SCRIPTS_DIR = EWW_DIR / "scripts"
 GO_DIR = EWW_DIR / "go"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from eww_bar_backend import collectors  # noqa: E402
+from eww_bar_backend import collectors, notifications, watchers  # noqa: E402
 from eww_bar_backend.common import truncate_text  # noqa: E402
 
 
@@ -194,6 +194,194 @@ class GoEquivalenceTests(unittest.TestCase):
             "VolumeEventIsRelevant",
             [(line,) for line in lines],
             collectors.volume_event_is_relevant,
+        )
+
+
+    # -- Python string semantics, which the parsers all rest on ---------------
+
+    WEIRD_LINES = [
+        "",
+        "a",
+        "a\n",
+        "a\nb",
+        "a\nb\n",
+        "a\r\nb",
+        "a\rb",
+        "a\n\nb",
+        "\na",
+        # The eight boundaries strings.Split(s, "\n") does not know about.
+        "a\vb",
+        "a\fb",
+        "a\x1cb",
+        "a\x1db",
+        "a\x1eb",
+        "a\x85b",
+        "a\u2028b",
+        "a\u2029b",
+        "trailing\r\n",
+        "Controller AA:BB\r\n\tPowered: yes\r\n",
+    ]
+
+    def test_split_lines(self):
+        self._compare("SplitLines", [(t,) for t in self.WEIRD_LINES], lambda t: t.splitlines())
+
+    def test_split_whitespace_n(self):
+        texts = [
+            "",
+            "   ",
+            "one",
+            "  one  ",
+            "a b c",
+            "a  b   c",
+            "Device 80:99:E7 My Speaker",
+            "Device 80:99:E7  Two  Spaces  Inside ",
+            "\ta\tb\tc\t",
+            "a\u00a0b",
+            "a\u3000b",
+        ]
+        cases = [(t, n) for t in texts for n in (-1, 0, 1, 2, 3)]
+        self._compare(
+            "SplitWhitespaceN",
+            cases,
+            lambda t, n: t.split() if n < 0 else t.split(maxsplit=n),
+        )
+
+    def test_strip(self):
+        texts = ["", " ", "  a  ", "\ta\t", "\x1ca\x1c", "\u00a0a\u00a0", "\u3000a\u3000", "a"]
+        self._compare("Strip", [(t,) for t in texts], lambda t: t.strip())
+
+    # -- bluetooth -------------------------------------------------------------
+
+    CONTROLLERS = [
+        "",
+        "Controller AA:BB:CC\n\tPowered: yes\n",
+        "Controller AA:BB:CC\n\tPowered: no\n",
+        "Controller AA:BB:CC\n\tAlias: MyBT\n\tPowered: yes\n",
+        "Controller AA:BB:CC\n\tAlias:   Spaced Name  \n\tPowered: whatever\n",
+        "Controller\n\tPowered: yes\n",
+        "\tPowered: yes\n",
+        "Controller AA:BB:CC\r\n\tPowered: yes\r\n",
+    ]
+
+    def test_parse_controller(self):
+        self._compare(
+            "ParseController",
+            [(t,) for t in self.CONTROLLERS],
+            lambda t: list(collectors.parse_controller(t)),
+        )
+
+    def test_parse_device_info(self):
+        infos = [
+            "",
+            "\tAlias: Buds Pro\n",
+            "\tAlias: Buds Pro\n\tBattery Percentage: 0x55 (85)\n",
+            "\tBattery Percentage: 0x64 (100)\n",
+            "\tBattery Percentage: nonsense\n",
+            "\tAlias:\n",
+        ]
+        cases = [(i, f) for i in infos for f in ("fallback", "")]
+        self._compare(
+            "ParseDeviceInfo",
+            cases,
+            lambda i, f: list(collectors.parse_device_info(i, f)),
+        )
+
+    def test_bluetooth_state_from_text(self):
+        devices = [
+            "",
+            "Device 80:99:E7 Buds\n",
+            "Device 80:99:E7 My Long Speaker Name That Runs Past The Limit\n",
+            "Device AA:11 ugreen_1 Headset\nDevice BB:22 Other\n",
+            "Device BB:22 Other\nDevice AA:11 UGREEN_2\n",
+            "Device\n",
+            "   \n",
+        ]
+        infos = [{}, {"80:99:E7": "\tAlias: Renamed\n\tBattery Percentage: 0x55 (85)\n"}]
+        cases = [(c, d, i) for c in self.CONTROLLERS[:5] for d in devices for i in infos]
+        answers = self._ask_go([{"fn": "BluetoothStateFromText", "args": list(a)} for a in cases])
+        mismatches = []
+        for args, answer in zip(cases, answers):
+            self.assertTrue(answer["ok"], f"errored in Go: {answer.get('error')}")
+            expected = collectors.bluetooth_state_from_text(*args)
+            if answer["value"] != expected:
+                mismatches.append((args, expected, answer["value"]))
+        if mismatches:
+            detail = "\n".join(f"  {a}: python={p!r} go={g!r}" for a, p, g in mismatches[:6])
+            self.fail(f"{len(mismatches)}/{len(cases)} disagreed:\n{detail}")
+
+    # -- the small text collectors --------------------------------------------
+
+    def test_submap_from_event(self):
+        lines = ["", "submap>>", "submap>>default", "submap>>reset", "submap>>resize",
+                 "submap>>a>>b", "workspace>>1", "submap"]
+        self._compare("SubmapFromEvent", [(l,) for l in lines], collectors.submap_from_event)
+
+    def test_tray_count_from_text(self):
+        texts = ["", "as 0", "as 3 \"a\" \"b\" \"c\"", "as", "as x", "  as   7  ",
+                 "ay 2", "3", "as -1"]
+        self._compare("TrayCountFromText", [(t,) for t in texts], collectors.tray_count_from_text)
+
+    def test_memory_state_from_text(self):
+        texts = [
+            "",
+            "MemTotal: 0 kB\n",
+            "MemTotal:       16316360 kB\nMemAvailable:    8158180 kB\nSwapTotal:      8388604 kB\nSwapFree:       8388604 kB\n",
+            "MemTotal:       16316360 kB\nMemAvailable:    1000000 kB\nSwapTotal:      8388604 kB\nSwapFree:       4000000 kB\n",
+            "MemTotal:       16316360 kB\nMemAvailable:   16316360 kB\nSwapTotal:            0 kB\nSwapFree:             0 kB\n",
+            "MemTotal:       1000 kB\nMemAvailable:    200 kB\nSwapTotal: 0 kB\nSwapFree: 0 kB\n",
+            "garbage\nMemTotal: 1000 kB\nMemAvailable: 500 kB\nSwapTotal: 0 kB\nSwapFree: 0 kB\n",
+        ]
+        self._compare(
+            "MemoryStateFromText", [(t,) for t in texts], collectors.memory_state_from_text
+        )
+
+    def test_media_state_from_text(self):
+        statuses = ["", "Playing\n", "playing", "Paused\n", "Stopped\n", "Weird\n", "  Playing  \n"]
+        metadata = [
+            "",
+            "\n",
+            "   \n",
+            "Artist - Title\n",
+            "A" * 90 + "\n",
+            "\U000f00af Glyphy - " + "b" * 70 + "\n",
+            "中文歌手 - 中文歌名\n",
+        ]
+        cases = [(s, m) for s in statuses for m in metadata]
+        self._compare(
+            "MediaStateFromText", cases, collectors.media_state_from_text
+        )
+
+    # -- watcher helpers -------------------------------------------------------
+
+    def test_monitor_event(self):
+        lines = [
+            "", "monitoradded>>", "monitoradded>>HDMI-A-1", "monitoraddedv2>>1,HDMI-A-1",
+            "monitorremoved>>eDP-1", "monitorremovedv2>>0,eDP-1", "monitoradded>>  DP-3  ",
+            "workspace>>1", "monitoradded",
+        ]
+        self._compare(
+            "MonitorEvent",
+            [(l,) for l in lines],
+            lambda l: (list(watchers.monitor_event(l)) if watchers.monitor_event(l) else None),
+        )
+
+    def test_bar_window_command(self):
+        cases = [(a, n) for a in ("added", "removed", "other") for n in ("eDP-1", "HDMI-A-1", "")]
+        self._compare("BarWindowCommand", cases, watchers.bar_window_command)
+
+    def test_open_bar_names(self):
+        texts = [
+            "",
+            "bar-eDP-1: bar\n",
+            "bar-eDP-1: bar\nbar-HDMI-A-1: bar\nvolume_popup: volume_popup\n",
+            "garbage\n",
+            "  bar-DP-3  : bar\n",
+            "bar-: bar\n",
+        ]
+        self._compare(
+            "OpenBarNames",
+            [(t,) for t in texts],
+            lambda t: sorted(watchers.open_bar_names(t)),
         )
 
 

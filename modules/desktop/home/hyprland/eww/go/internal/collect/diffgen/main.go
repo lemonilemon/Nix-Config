@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 
 	"ewwbar/internal/collect"
 )
@@ -122,6 +123,122 @@ func dispatch(c call) (any, error) {
 			return nil, err
 		}
 		return collect.VolumeStateFromText(text, nil), nil
+
+	case "SplitLines":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		lines := collect.SplitLines(text)
+		if lines == nil {
+			lines = []string{}
+		}
+		return lines, nil
+
+	case "SplitWhitespaceN":
+		var text string
+		var n int
+		if err := args(c, &text, &n); err != nil {
+			return nil, err
+		}
+		fields := collect.SplitWhitespaceN(text, n)
+		if fields == nil {
+			fields = []string{}
+		}
+		return fields, nil
+
+	case "Strip":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		return collect.Strip(text), nil
+
+	case "ParseController":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		alias, address, powered := collect.ParseController(text)
+		return []any{alias, address, powered}, nil
+
+	case "ParseDeviceInfo":
+		var infoText, fallback string
+		if err := args(c, &infoText, &fallback); err != nil {
+			return nil, err
+		}
+		alias, battery := collect.ParseDeviceInfo(infoText, fallback)
+		return []any{alias, battery}, nil
+
+	case "BluetoothStateFromText":
+		var controllerText, devicesText string
+		var info map[string]string
+		if err := args(c, &controllerText, &devicesText, &info); err != nil {
+			return nil, err
+		}
+		return collect.BluetoothStateFromText(controllerText, devicesText, info), nil
+
+	case "SubmapFromEvent":
+		var line string
+		if err := args(c, &line); err != nil {
+			return nil, err
+		}
+		value, ok := collect.SubmapFromEvent(line)
+		if !ok {
+			return nil, nil // Python's None
+		}
+		return value, nil
+
+	case "TrayCountFromText":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		return collect.TrayCountFromText(text), nil
+
+	case "MemoryStateFromText":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		return collect.MemoryStateFromText(text), nil
+
+	case "MediaStateFromText":
+		var statusText, metadataText string
+		if err := args(c, &statusText, &metadataText); err != nil {
+			return nil, err
+		}
+		return collect.MediaStateFromText(statusText, metadataText), nil
+
+	case "MonitorEvent":
+		var line string
+		if err := args(c, &line); err != nil {
+			return nil, err
+		}
+		action, name, ok := collect.MonitorEvent(line)
+		if !ok {
+			return nil, nil // Python's None
+		}
+		return []any{action, name}, nil
+
+	case "BarWindowCommand":
+		var action, name string
+		if err := args(c, &action, &name); err != nil {
+			return nil, err
+		}
+		return collect.BarWindowCommand(action, name), nil
+
+	case "OpenBarNames":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		names := []string{}
+		for name := range collect.OpenBarNames(text) {
+			names = append(names, name)
+		}
+		sort.Strings(names) // the Python side is a set; compare sorted
+		return names, nil
 
 	case "VolumeEventIsRelevant":
 		var line string

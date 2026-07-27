@@ -137,7 +137,14 @@
           in
           pkgs.runCommand "eww-backend-tests"
             {
-              nativeBuildInputs = [ pkgs.python3 ];
+              # go is here for test_go_equivalence, which runs the ported
+              # collectors against the Python they came from. Without it that
+              # test skips, and a port gate that only runs on the porter's
+              # machine is not a gate.
+              nativeBuildInputs = [
+                pkgs.python3
+                pkgs.go
+              ];
               PYTHONDONTWRITEBYTECODE = "1";
             }
             ''
@@ -145,6 +152,15 @@
               cp -R ${./tests} tests
               cp -R ${./modules/desktop/home/hyprland/eww/scripts} \
                 modules/desktop/home/hyprland/eww/scripts
+              cp -R ${./modules/desktop/home/hyprland/eww/go} \
+                modules/desktop/home/hyprland/eww/go
+              chmod -R u+w modules/desktop/home/hyprland/eww/go
+
+              # The sandbox has no HOME and no network; `go run` needs a
+              # writable cache, and the module has no dependencies to fetch.
+              export HOME=$TMPDIR
+              export GOCACHE=$TMPDIR/go-cache
+              export GOFLAGS=-mod=mod
               # test_state_defaults asserts eww.yuck's :initial literal against
               # BarState(), so the sandbox needs the yuck file too, not just
               # the Python package.

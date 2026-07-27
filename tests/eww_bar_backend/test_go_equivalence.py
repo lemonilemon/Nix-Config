@@ -25,7 +25,7 @@ SCRIPTS_DIR = EWW_DIR / "scripts"
 GO_DIR = EWW_DIR / "go"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from eww_bar_backend import collectors, notifications, watchers  # noqa: E402
+from eww_bar_backend import collectors, notifications, wallpaper, watchers  # noqa: E402
 from eww_bar_backend.common import truncate_text  # noqa: E402
 
 
@@ -516,6 +516,165 @@ class GoEquivalenceTests(unittest.TestCase):
         if mismatches:
             detail = "\n".join(f"  {a}: python={p!r} go={g!r}" for a, p, g in mismatches[:6])
             self.fail(f"{len(mismatches)}/{len(cases)} disagreed:\n{detail}")
+
+
+    # -- notifications ---------------------------------------------------------
+
+    def _dunst(self, entries):
+        """Wrap entries the way `dunstctl history` does."""
+        return json.dumps({"type": "aa{sv}", "data": [entries]})
+
+    def _wrap(self, **fields):
+        return {k: {"type": "s", "data": v} for k, v in fields.items()}
+
+    def test_parse_history_items(self):
+        payloads = [
+            "",
+            "not json",
+            "[]",
+            '{"data": []}',
+            '{"data": [[]]}',
+            '{"data": "wrong"}',
+            '{"data": [["not a dict"]]}',
+            self._dunst([self._wrap(id=1, timestamp=1000, appname="kitty",
+                                    summary="Hi", body="There", urgency="NORMAL")]),
+            # Falsy fields fall back: "" -> unknown / NORMAL.
+            self._dunst([self._wrap(id=2, timestamp=2000, appname="",
+                                    summary="", body="", urgency="")]),
+            # Missing wrappers entirely.
+            self._dunst([{"id": {"type": "i", "data": 3}}]),
+            # A bare (unwrapped) field reads as absent -- _field returns the
+            # default unless the value is a {"type","data"} dict.
+            self._dunst([{"id": {"type": "i", "data": 4}, "appname": "bare"}]),
+            # int() truncates a float id and parses a numeric string.
+            self._dunst([self._wrap(id=5.9, timestamp=5000, appname="a")]),
+            self._dunst([self._wrap(id="6", timestamp="6000", appname="a")]),
+            # Non-numeric id: the whole entry is skipped.
+            self._dunst([self._wrap(id="abc", timestamp=7000, appname="a")]),
+            # str() distinguishes 5 from 5.0 -- Go loses that without UseNumber.
+            self._dunst([self._wrap(id=8, timestamp=8000, appname=5)]),
+            self._dunst([self._wrap(id=9, timestamp=9000, appname=5.0)]),
+            # Stable sort: equal timestamps must keep input order. Twenty of
+            # them, not three -- Go's sort.Slice falls back to insertion sort
+            # below a dozen elements, which happens to be stable, so a small
+            # fixture cannot tell sort.Slice from sort.SliceStable.
+            self._dunst([
+                self._wrap(id=100 + n, timestamp=500, appname=f"app{n:02d}")
+                for n in range(20)
+            ]),
+            # Interleaved ties: two timestamps, ten entries each.
+            self._dunst([
+                self._wrap(id=200 + n, timestamp=500 if n % 2 else 900,
+                           appname=f"mix{n:02d}")
+                for n in range(20)
+            ]),
+            self._dunst([
+                self._wrap(id=13, timestamp=100, appname="old"),
+                self._wrap(id=14, timestamp=900, appname="new"),
+                self._wrap(id=15, timestamp=500, appname="mid"),
+            ]),
+        ]
+        self._compare(
+            "ParseHistoryItems",
+            [(p,) for p in payloads],
+            notifications.parse_history_items,
+        )
+
+    def test_format_age(self):
+        values = [0.0, 0.4, 9.0, 9.999, 10.0, 10.5, 59.9, 60.0, 61.0, 3599.0,
+                  3600.0, 3661.0, 86399.0, 86400.0, 172800.0, 1000000.0]
+        self._compare("FormatAge", [(v,) for v in values], notifications.format_age)
+
+    def test_notifications_state_from_parts(self):
+        def items(*specs):
+            return [
+                {"id": i, "app": a, "summary": s, "body": b, "urgency": u, "timestamp": t}
+                for (i, a, s, b, u, t) in specs
+            ]
+        cases = [
+            ([], "", 0.0, [], 0),
+            (items((1, "kitty", "Sum", "Body", "NORMAL", 0)), "true\n", 5_000_000.0, [], 0),
+            (items((1, "kitty", "Sum", "Body", "NORMAL", 0)), " true ", 5_000_000.0, ["kitty"], 0),
+            (items((1, "kitty", "S", "B", "NORMAL", 0)), "false", 5_000_000.0, [], 0),
+            # Grouping keeps first-appearance order, not sorted order.
+            (items((1, "zed", "a", "b", "LOW", 300),
+                   (2, "alpha", "c", "d", "NORMAL", 200),
+                   (3, "zed", "e", "f", "CRITICAL", 100)), "", 1_000_000.0, [], 0),
+            # `new` counts strictly-greater than last seen.
+            (items((1, "a", "s", "b", "NORMAL", 100),
+                   (2, "a", "s", "b", "NORMAL", 200),
+                   (3, "a", "s", "b", "NORMAL", 300)), "", 1_000_000.0, [], 200),
+            # A future timestamp must clamp the age to 0, not go negative.
+            (items((1, "a", "s", "b", "NORMAL", 9_000_000)), "", 1_000_000.0, [], 0),
+            # Truncation at each of the three limits, and newlines flattened.
+            (items((1, "a" * 40, "s" * 80, "line1\nline2\n" + "b" * 80, "NORMAL", 0)),
+             "", 1_000_000.0, [], 0),
+            # Group names are the TRUNCATED app, so two long names collapse into one.
+            (items((1, "x" * 30, "s", "b", "NORMAL", 200),
+                   (2, "x" * 31, "s", "b", "NORMAL", 100)), "", 1_000_000.0, [], 0),
+        ]
+        answers = self._ask_go([
+            {"fn": "NotificationsStateFromParts", "args": [i, p, n, c, l]}
+            for (i, p, n, c, l) in cases
+        ])
+        mismatches = []
+        for (i, p, n, c, l), answer in zip(cases, answers):
+            self.assertTrue(answer["ok"], f"errored in Go: {answer.get('error')}")
+            expected = notifications.notifications_state_from_parts(i, p, n, set(c), l)
+            if answer["value"] != expected:
+                mismatches.append(((i, p, n, c, l), expected, answer["value"]))
+        if mismatches:
+            detail = "\n".join(f"  python={p!r}\n  go    ={g!r}" for _a, p, g in mismatches[:4])
+            self.fail(f"{len(mismatches)}/{len(cases)} disagreed:\n{detail}")
+
+    # -- wallpaper --------------------------------------------------------------
+
+    def test_path_stem(self):
+        paths = [
+            "/w/a.png", "/w/a.tar.gz", "/w/noext", "/w/.bashrc", "/w/.hidden.png",
+            "a.png", "/w/", "", "/w/name with spaces.jpeg", "/w/\u4e2d\u6587.png",
+            # The shapes where filepath.Base and pathlib disagree.
+            ".", "..", "/", "//", "/w/.", "/w/..", "./a.png", "/w//a.png",
+            # Dot handling: pathlib ignores leading dots when finding the
+            # suffix boundary, and 3.14 changed what a TRAILING dot means.
+            "a.", "a..", ".a", "..a", "...", "....", ".a.b", "..a.b", "a.b..", "a.b.c",
+        ]
+        self._compare("PathStem", [(p,) for p in paths], lambda p: Path(p).stem)
+
+    def test_wallpaper_items(self):
+        files = ["/w/a.png", "/w/b.GIF", "/w/c.gif", "/w/" + "d" * 40 + ".jpg", "/w/e"]
+        # realBy stands in for Path.resolve(): the seed is a store symlink, so
+        # the literal strings differ and only the resolved paths match.
+        real_by = {"/w/a.png": "/nix/store/xxx-seed.png"}
+        currents = ["", "/w/a.png", "/nix/store/xxx-seed.png", "/w/c.gif", "/w/missing"]
+        cases = [(files, cur, real_by) for cur in currents]
+
+        def python_side(files, current, real_by):
+            def real(p):
+                return real_by.get(p, p)
+            import eww_bar_backend.wallpaper as wp
+            saved = wp._real_path
+            wp._real_path = real
+            try:
+                return wp.wallpaper_items(
+                    [Path(f) for f in files], current, thumb_fn=lambda p: "thumb:" + str(p)
+                )
+            finally:
+                wp._real_path = saved
+
+        self._compare("WallpaperItems", cases, python_side)
+
+    def test_rows_from_items(self):
+        def item(n):
+            return {"name": f"n{n}", "path": f"/w/{n}.png", "thumb": "t",
+                    "animated": "false", "active": "false"}
+        cases = []
+        for count in (0, 1, 2, 3, 4, 6, 7):
+            for columns in (1, 2, 3, 4):
+                cases.append(([item(i) for i in range(count)], columns))
+        self._compare(
+            "RowsFromItems", cases, lambda items, columns: wallpaper.rows_from_items(items, columns)
+        )
 
 
 class DecimalHazardTests(unittest.TestCase):

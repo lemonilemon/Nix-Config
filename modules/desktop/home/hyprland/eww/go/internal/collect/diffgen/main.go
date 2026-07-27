@@ -305,6 +305,68 @@ func dispatch(c call) (any, error) {
 		}
 		return collect.NetworkStateFromText(statusText, wifiText, ipByDevice), nil
 
+	case "ParseHistoryItems":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		return collect.ParseHistoryItems(text), nil
+
+	case "FormatAge":
+		var seconds float64
+		if err := args(c, &seconds); err != nil {
+			return nil, err
+		}
+		return collect.FormatAge(seconds), nil
+
+	case "NotificationsStateFromParts":
+		var items []collect.HistoryItem
+		var pausedText string
+		var nowUS float64
+		var collapsed []string
+		var lastSeen int64
+		if err := args(c, &items, &pausedText, &nowUS, &collapsed, &lastSeen); err != nil {
+			return nil, err
+		}
+		collapsedSet := map[string]bool{}
+		for _, app := range collapsed {
+			collapsedSet[app] = true
+		}
+		return collect.NotificationsStateFromParts(items, pausedText, nowUS, collapsedSet, lastSeen), nil
+
+	case "PathStem":
+		var path string
+		if err := args(c, &path); err != nil {
+			return nil, err
+		}
+		return collect.PathStem(path), nil
+
+	case "WallpaperItems":
+		var files []string
+		var current string
+		var realBy map[string]string
+		if err := args(c, &files, &current, &realBy); err != nil {
+			return nil, err
+		}
+		// realBy stands in for Path.resolve(); the test supplies the mapping so
+		// neither side touches the filesystem.
+		realPath := func(p string) string {
+			if mapped, ok := realBy[p]; ok {
+				return mapped
+			}
+			return p
+		}
+		thumb := func(p string) string { return "thumb:" + p }
+		return collect.WallpaperItems(files, current, realPath, thumb), nil
+
+	case "RowsFromItems":
+		var items []collect.WallpaperItem
+		var columns int
+		if err := args(c, &items, &columns); err != nil {
+			return nil, err
+		}
+		return collect.RowsFromItems(items, columns), nil
+
 	case "VolumeEventIsRelevant":
 		var line string
 		if err := args(c, &line); err != nil {

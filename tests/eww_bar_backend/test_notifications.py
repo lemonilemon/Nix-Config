@@ -1,6 +1,8 @@
 import json
 import sys
+import time
 import unittest
+import unittest.mock
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -142,6 +144,51 @@ class NotifActionTests(unittest.TestCase):
     def test_dismiss_requires_numeric_id(self):
         with self.assertRaises(ValueError):
             notifications.dismiss_notification("abc")
+
+
+class DunstClockTests(unittest.TestCase):
+    """notifications.py:73-76 -- dunst stamps history with CLOCK_BOOTTIME.
+
+    The two clocks are identical until the machine suspends, and then they
+    diverge by exactly the accumulated suspend time. So a rewrite that reaches
+    for the more familiar CLOCK_MONOTONIC passes every test, works all day, and
+    then shows every notification age as "now" after the first lid close --
+    a bug that needs a suspend cycle to reproduce and looks like nothing in a
+    diff.
+    """
+
+    def test_it_asks_for_boottime_not_monotonic(self):
+        with unittest.mock.patch.object(
+            notifications.time, "clock_gettime", return_value=123.0
+        ) as clock:
+            self.assertEqual(notifications.boottime_seconds(), 123.0)
+        clock.assert_called_once_with(time.CLOCK_BOOTTIME)
+
+    def test_boottime_is_never_behind_monotonic_on_this_platform(self):
+        # The property the choice rests on, asserted against the real clocks:
+        # BOOTTIME counts suspend, MONOTONIC does not, so BOOTTIME >= MONOTONIC.
+        # Sample MONOTONIC first -- the two reads are ~500 ns apart, which is
+        # enough to invert the comparison on a machine that has never slept.
+        monotonic = time.clock_gettime(time.CLOCK_MONOTONIC)
+        boottime = time.clock_gettime(time.CLOCK_BOOTTIME)
+        self.assertGreaterEqual(boottime, monotonic)
+
+    def test_falls_back_to_monotonic_when_boottime_is_unavailable(self):
+        def only_monotonic(clock_id):
+            if clock_id == time.CLOCK_BOOTTIME:
+                raise OSError("no BOOTTIME here")
+            return 42.0
+
+        with unittest.mock.patch.object(
+            notifications.time, "clock_gettime", side_effect=only_monotonic
+        ):
+            self.assertEqual(notifications.boottime_seconds(), 42.0)
+
+    def test_returns_zero_rather_than_raising_when_no_clock_works(self):
+        with unittest.mock.patch.object(
+            notifications.time, "clock_gettime", side_effect=OSError
+        ):
+            self.assertEqual(notifications.boottime_seconds(), 0.0)
 
 
 if __name__ == "__main__":

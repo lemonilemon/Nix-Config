@@ -177,6 +177,18 @@ def watch_hyprland(state):
             time.sleep(2)
 
 
+def collect_once(state, key, collector):
+    # The seed reading, before any event arrives. Guarded because a raise here
+    # runs on the watcher's own thread with nothing above it: the thread dies
+    # and that bar module is frozen for the rest of the session, where the
+    # identical call inside the loop below is caught and simply retried. The
+    # module keeps its default until the first event instead.
+    try:
+        state.update(**{key: collector()})
+    except Exception:
+        pass
+
+
 def watch_command(state, key, collector, command, line_filter=None):
     """Re-collect `key` whenever `command` prints a line.
 
@@ -184,7 +196,7 @@ def watch_command(state, key, collector, command, line_filter=None):
     Without one, a watcher whose collector shells out to the same subsystem it
     is watching becomes its own event source -- see volume_event_is_relevant.
     """
-    state.update(**{key: collector()})
+    collect_once(state, key, collector)
     while True:
         proc = None
         try:
@@ -216,7 +228,7 @@ def watch_command(state, key, collector, command, line_filter=None):
 
 
 def watch_bluetooth(state):
-    state.update(bluetooth=bluetooth_state())
+    collect_once(state, "bluetooth", bluetooth_state)
     while True:
         proc = None
         try:

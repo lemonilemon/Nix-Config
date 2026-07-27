@@ -1,4 +1,4 @@
-package main
+package ipc
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"ewwbar/internal/pyjson"
 )
 
 // TestControlPayloadFromArgs carries forward the cases that
@@ -55,12 +57,12 @@ func TestControlPayloadFromArgs(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := controlPayloadFromArgs(tc.args)
+			got, err := ControlPayloadFromArgs(tc.args)
 			if err != nil {
-				t.Fatalf("controlPayloadFromArgs(%q) errored: %v", tc.args, err)
+				t.Fatalf("ControlPayloadFromArgs(%q) errored: %v", tc.args, err)
 			}
 			if got.JSON() != tc.want {
-				t.Errorf("controlPayloadFromArgs(%q)\n got %s\nwant %s", tc.args, got.JSON(), tc.want)
+				t.Errorf("ControlPayloadFromArgs(%q)\n got %s\nwant %s", tc.args, got.JSON(), tc.want)
 			}
 		})
 	}
@@ -84,16 +86,16 @@ func TestControlPayloadRejections(t *testing.T) {
 		{"nonsense"},
 	}
 	for _, args := range rejected {
-		if _, err := controlPayloadFromArgs(args); err == nil {
-			t.Errorf("controlPayloadFromArgs(%q) should have been rejected", args)
+		if _, err := ControlPayloadFromArgs(args); err == nil {
+			t.Errorf("ControlPayloadFromArgs(%q) should have been rejected", args)
 		}
 	}
 }
 
-// TestJSONStringMatchesCPython pins the encoding against literals produced by
+// TestPyjsonStringMatchesCPython pins the encoding against literals produced by
 // json.dumps(s, separators=(",", ":")) — the ensure_ascii and no-HTML-escaping
 // behaviour encoding/json would get wrong.
-func TestJSONStringMatchesCPython(t *testing.T) {
+func TestPyjsonStringMatchesCPython(t *testing.T) {
 	cases := []struct{ in, want string }{
 		{"plain", `"plain"`},
 		{"", `""`},
@@ -118,8 +120,8 @@ func TestJSONStringMatchesCPython(t *testing.T) {
 		{"\U0001f600", `"\ud83d\ude00"`},
 	}
 	for _, tc := range cases {
-		if got := jsonString(tc.in); got != tc.want {
-			t.Errorf("jsonString(%q) = %s, want %s", tc.in, got, tc.want)
+		if got := pyjson.String(tc.in); got != tc.want {
+			t.Errorf("pyjson.String(%q) = %s, want %s", tc.in, got, tc.want)
 		}
 	}
 }
@@ -153,7 +155,7 @@ func TestRunCtlAgainstAStubDaemon(t *testing.T) {
 	}()
 
 	stdout, restore := captureStdout(t)
-	code := runCtl([]string{"ping"})
+	code := Run([]string{"ping"})
 	restore()
 
 	if code != 0 {
@@ -172,7 +174,7 @@ func TestRunCtlQuietPrintsNothingButStillReportsFailure(t *testing.T) {
 	t.Setenv("XDG_RUNTIME_DIR", dir) // no socket in it
 
 	stdout, restore := captureStdout(t)
-	code := runCtl([]string{"--quiet", "ping"})
+	code := Run([]string{"--quiet", "ping"})
 	restore()
 
 	if code != 1 {
@@ -185,7 +187,7 @@ func TestRunCtlQuietPrintsNothingButStillReportsFailure(t *testing.T) {
 
 func TestRunCtlReportsUsageAsAFailedResponse(t *testing.T) {
 	stdout, restore := captureStdout(t)
-	code := runCtl([]string{"--help"})
+	code := Run([]string{"--help"})
 	restore()
 
 	if code != 1 {
@@ -198,19 +200,19 @@ func TestRunCtlReportsUsageAsAFailedResponse(t *testing.T) {
 	if decoded["ok"] != false {
 		t.Errorf("ok = %v, want false", decoded["ok"])
 	}
-	if decoded["error"] != controlUsage {
+	if decoded["error"] != Usage {
 		t.Errorf("error = %v, want the usage string", decoded["error"])
 	}
 }
 
 func TestControlSocketPathFallsBackToTmp(t *testing.T) {
 	t.Setenv("XDG_RUNTIME_DIR", "")
-	if got := controlSocketPath(); got != "/tmp/eww-backend.sock" {
-		t.Errorf("controlSocketPath() = %q, want /tmp/eww-backend.sock", got)
+	if got := SocketPath(); got != "/tmp/eww-backend.sock" {
+		t.Errorf("SocketPath() = %q, want /tmp/eww-backend.sock", got)
 	}
 	t.Setenv("XDG_RUNTIME_DIR", "/run/user/1000")
-	if got := controlSocketPath(); got != "/run/user/1000/eww-backend.sock" {
-		t.Errorf("controlSocketPath() = %q", got)
+	if got := SocketPath(); got != "/run/user/1000/eww-backend.sock" {
+		t.Errorf("SocketPath() = %q", got)
 	}
 }
 

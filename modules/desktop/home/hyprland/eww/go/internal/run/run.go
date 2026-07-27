@@ -1,4 +1,5 @@
-package main
+// Package run wraps the subprocess calls the bar makes.
+package run
 
 import (
 	"context"
@@ -6,13 +7,11 @@ import (
 	"time"
 )
 
-const second = time.Second
-
-// runText mirrors common.run_text: capture stdout, discard stderr, and return
+// Text mirrors common.run_text: capture stdout, discard stderr, and return
 // the empty string on any failure -- timeout, non-zero exit, or missing binary.
 // Callers parse the result and fall back to a default, so an error string here
 // would only be re-flattened to "".
-func runText(timeout time.Duration, name string, args ...string) string {
+func Text(timeout time.Duration, name string, args ...string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -26,10 +25,10 @@ func runText(timeout time.Duration, name string, args ...string) string {
 	return string(out)
 }
 
-// runEww mirrors popups._run_eww: fire-and-forget, all three streams detached,
+// Eww mirrors popups._run_eww: fire-and-forget, all three streams detached,
 // exit status ignored. `eww close` on a window that is not open is a normal,
 // expected non-zero.
-func runEww(args []string) {
+func Eww(args []string) {
 	cmd := exec.Command("eww", args...)
 	cmd.Stdin = nil
 	cmd.Stdout = nil

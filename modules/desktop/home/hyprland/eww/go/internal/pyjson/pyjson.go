@@ -1,4 +1,5 @@
-package main
+// Package pyjson renders JSON the way CPython's json module does.
+package pyjson
 
 import (
 	"strings"
@@ -6,7 +7,7 @@ import (
 	"unicode/utf8"
 )
 
-// jsonString renders s the way CPython's
+// String renders s the way CPython's
 // json.dumps(s, ensure_ascii=True, separators=(",", ":")) does.
 //
 // encoding/json is deliberately not used for this. It differs from CPython in
@@ -15,7 +16,7 @@ import (
 // (CPython escapes it to \uXXXX). Both are decode-identical, but matching
 // CPython byte-for-byte means the equivalence gate against the Python client is
 // a plain diff rather than a decode-and-compare, which is worth ~30 lines.
-func jsonString(s string) string {
+func String(s string) string {
 	var b strings.Builder
 	b.Grow(len(s) + 2)
 	b.WriteByte('"')
@@ -73,26 +74,34 @@ func hex4(v uint16) string {
 	})
 }
 
-// field is one key/value pair. Payloads are ordered slices rather than maps
+// Payloads are ordered slices rather than maps
 // because encoding/json sorts map keys, and the Python client emits them in
 // insertion order -- another difference that would show up in a byte diff.
-type field struct {
+// Field is one key/value pair.
+type Field struct {
 	Key   string
 	Value string
 }
 
-type payload []field
+// F is shorthand for a Field. The payload tables in package ipc mirror the
+// Python dict literals they were ported from, and keyed struct literals would
+// bury the shape those tables exist to make obvious.
+func F(key, value string) Field { return Field{Key: key, Value: value} }
 
-func (p payload) JSON() string {
+// Payload is an ordered set of fields.
+type Payload []Field
+
+// JSON renders the payload with compact separators, keys in insertion order.
+func (p Payload) JSON() string {
 	var b strings.Builder
 	b.WriteByte('{')
 	for i, f := range p {
 		if i > 0 {
 			b.WriteByte(',')
 		}
-		b.WriteString(jsonString(f.Key))
+		b.WriteString(String(f.Key))
 		b.WriteByte(':')
-		b.WriteString(jsonString(f.Value))
+		b.WriteString(String(f.Value))
 	}
 	b.WriteByte('}')
 	return b.String()

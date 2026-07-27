@@ -13,14 +13,17 @@ package main
 import (
 	"os"
 	"path/filepath"
+
+	"ewwbar/internal/ipc"
+	"ewwbar/internal/popup"
 )
 
 func main() {
 	switch filepath.Base(os.Args[0]) {
 	case "eww-barctl":
-		os.Exit(runCtl(os.Args[1:]))
+		os.Exit(ipc.Run(os.Args[1:]))
 	case "eww-popup":
-		os.Exit(runPopup(os.Args[1:]))
+		os.Exit(popup.Run(os.Args[1:]))
 	}
 
 	// Invoked under any other name (the multi-call binary itself, or a test
@@ -28,9 +31,9 @@ func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "ctl":
-			os.Exit(runCtl(os.Args[2:]))
+			os.Exit(ipc.Run(os.Args[2:]))
 		case "popup":
-			os.Exit(runPopup(os.Args[2:]))
+			os.Exit(popup.Run(os.Args[2:]))
 		}
 	}
 	os.Stderr.WriteString("usage: eww-bar-client ctl <args> | popup <args>\n")

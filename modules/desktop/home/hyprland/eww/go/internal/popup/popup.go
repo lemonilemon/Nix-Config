@@ -1,4 +1,5 @@
-package main
+// Package popup drives eww's popup windows for eww-popup.
+package popup
 
 import (
 	"encoding/json"
@@ -6,6 +7,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
+
+	"ewwbar/internal/run"
 )
 
 // popupWindows is the full set of popup windows the helper manages. `eww close`
@@ -133,12 +137,12 @@ func runPopupWith(argv []string, deps popupDeps) int {
 	return 0
 }
 
-func runPopup(argv []string) int {
+func Run(argv []string) int {
 	return runPopupWith(argv, popupDeps{
 		// The 2 s timeout mirrors the Python client's run_text default: if the
 		// eww daemon is up but wedged, a bar click must still return.
-		activeWindows: func() string { return runText(2*second, "eww", "active-windows") },
-		focusedMon:    func() string { return focusedMonitorFromJSON(runText(2*second, "hyprctl", "monitors", "-j")) },
-		runEww:        func(args []string) { runEww(args) },
+		activeWindows: func() string { return run.Text(2*time.Second, "eww", "active-windows") },
+		focusedMon:    func() string { return focusedMonitorFromJSON(run.Text(2*time.Second, "hyprctl", "monitors", "-j")) },
+		runEww:        func(args []string) { run.Eww(args) },
 	})
 }

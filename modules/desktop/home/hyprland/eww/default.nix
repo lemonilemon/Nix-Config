@@ -40,18 +40,18 @@ let
     pname = "eww-bar-client";
     version = "0";
 
-    src = ./client;
+    src = ./go;
 
     # Every import is stdlib, so there is nothing to vendor. vendorHash = null
     # creates no fetch derivation at all, which is the point: no hash to keep in
     # step with a dependency set that does not exist.
     vendorHash = null;
 
-    # buildGoModule runs `go test ./...` in checkPhase, so the client's table
-    # tests gate every rebuild that touches it.
+    # No subPackages: it would narrow checkPhase to cmd/, which holds no tests,
+    # and silently skip every internal package. Building ./... installs the one
+    # main package under cmd/ and runs `go test ./...` over the rest.
 
     postInstall = ''
-      mv $out/bin/ewwbarclient $out/bin/eww-bar-client
       # argv[0] dispatch, as the Python entry point used to do: exec'ing a
       # symlink leaves argv[0] as the name the caller typed.
       ln -s eww-bar-client $out/bin/eww-barctl

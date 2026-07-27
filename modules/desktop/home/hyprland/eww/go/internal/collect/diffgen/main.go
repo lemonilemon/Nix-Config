@@ -240,6 +240,71 @@ func dispatch(c call) (any, error) {
 		sort.Strings(names) // the Python side is a set; compare sorted
 		return names, nil
 
+	case "ConnectedDevice":
+		var statusText, deviceType string
+		if err := args(c, &statusText, &deviceType); err != nil {
+			return nil, err
+		}
+		return collect.ConnectedDevice(statusText, deviceType), nil
+
+	case "NmcliValue":
+		var text, key string
+		if err := args(c, &text, &key); err != nil {
+			return nil, err
+		}
+		return collect.NmcliValue(text, key), nil
+
+	case "FirstIP":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		return collect.FirstIP(text), nil
+
+	case "WirelessSignalPercent":
+		var text, iface string
+		if err := args(c, &text, &iface); err != nil {
+			return nil, err
+		}
+		value, ok := collect.WirelessSignalPercent(text, iface)
+		if !ok {
+			return nil, nil // Python's None
+		}
+		return value, nil
+
+	case "DefaultRouteDevice":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		return collect.DefaultRouteDevice(text), nil
+
+	case "DeviceIPv4":
+		var addrText, device string
+		if err := args(c, &addrText, &device); err != nil {
+			return nil, err
+		}
+		return collect.DeviceIPv4(addrText, device), nil
+
+	case "LinkStateFromText":
+		var routeText, addrText string
+		if err := args(c, &routeText, &addrText); err != nil {
+			return nil, err
+		}
+		state, ok := collect.LinkStateFromText(routeText, addrText)
+		if !ok {
+			return nil, nil // Python's None
+		}
+		return state, nil
+
+	case "NetworkStateFromText":
+		var statusText, wifiText string
+		var ipByDevice map[string]string
+		if err := args(c, &statusText, &wifiText, &ipByDevice); err != nil {
+			return nil, err
+		}
+		return collect.NetworkStateFromText(statusText, wifiText, ipByDevice), nil
+
 	case "VolumeEventIsRelevant":
 		var line string
 		if err := args(c, &line); err != nil {

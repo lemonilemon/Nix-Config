@@ -385,6 +385,139 @@ class GoEquivalenceTests(unittest.TestCase):
         )
 
 
+    # -- network: the densest workaround in the package -----------------------
+
+    ROUTE_TEXTS = [
+        "",
+        "default via 192.168.0.1 dev eno1 proto dhcp src 192.168.0.88 metric 100\n",
+        # Docked: two default routes, lowest metric wins.
+        "default via 192.168.0.1 dev wlan0 proto dhcp metric 600\n"
+        "default via 192.168.0.1 dev eno1 proto dhcp metric 100\n",
+        # Reversed order: the winner must not depend on line order.
+        "default via 192.168.0.1 dev eno1 proto dhcp metric 100\n"
+        "default via 192.168.0.1 dev wlan0 proto dhcp metric 600\n",
+        # No metric at all means 0, which beats an explicit 100.
+        "default via 192.168.0.1 dev wlan0 proto dhcp metric 100\n"
+        "default via 192.168.0.1 dev eno1 proto dhcp\n",
+        # Tied metrics: Python keeps the FIRST, because its comparison is
+        # strictly less-than. A <= would silently prefer the last, and no other
+        # fixture here distinguishes them -- the mutation check found that gap.
+        "default via 192.168.0.1 dev wlan0 proto dhcp metric 100\n"
+        "default via 192.168.0.1 dev eno1 proto dhcp metric 100\n",
+        # Both metric-less, so both 0: the same tie, reached a different way.
+        "default via 192.168.0.1 dev wlan0 proto dhcp\n"
+        "default via 192.168.0.1 dev eno1 proto dhcp\n",
+        "default via 192.168.0.1 dev eno1 metric notanumber\n",
+        "default via 192.168.0.1 dev\n",
+        "default via 192.168.0.1\n",
+        "192.168.0.0/24 dev eno1 proto kernel scope link src 192.168.0.88\n",
+        # ECMP: deliberately unhandled, must yield "".
+        "default proto static\n\tnexthop via 10.0.0.1 dev eno1 weight 1\n",
+        "\n\n",
+    ]
+
+    ADDR_TEXTS = [
+        "",
+        "2: eno1    inet 192.168.0.88/24 brd 192.168.0.255 scope global dynamic eno1\n",
+        "1: lo    inet 127.0.0.1/8 scope host lo\n"
+        "2: eno1    inet 192.168.0.88/24 brd 192.168.0.255 scope global dynamic eno1\n"
+        "3: wlan0    inet 10.0.0.5/24 scope global dynamic wlan0\n",
+        "2: eno1 inet\n",
+        "garbage\n",
+    ]
+
+    def test_default_route_device(self):
+        self._compare(
+            "DefaultRouteDevice",
+            [(t,) for t in self.ROUTE_TEXTS],
+            collectors.default_route_device,
+        )
+
+    def test_device_ipv4(self):
+        cases = [(t, d) for t in self.ADDR_TEXTS for d in ("eno1", "wlan0", "lo", "missing")]
+        self._compare("DeviceIPv4", cases, collectors.device_ipv4)
+
+    def test_link_state_from_text(self):
+        # The dead-NetworkManager workaround. None vs a value is the whole
+        # point: None means believe nmcli, a value means the kernel still has a
+        # route so we are online and nmcli is simply not reporting.
+        cases = [(r, a) for r in self.ROUTE_TEXTS for a in self.ADDR_TEXTS]
+        self._compare("LinkStateFromText", cases, collectors.link_state_from_text)
+
+    def test_connected_device(self):
+        statuses = [
+            "",
+            "eno1:ethernet:connected:Wired connection 1\n",
+            "wlan0:wifi:connected:MyNet\nen1:ethernet:connected:Wired\n",
+            "wlan0:wifi:disconnected:\n",
+            "malformed\n",
+            "a:b\n",
+        ]
+        cases = [(s, t) for s in statuses for t in ("wifi", "ethernet", "bridge")]
+        self._compare("ConnectedDevice", cases, collectors.connected_device)
+
+    def test_nmcli_value_and_first_ip(self):
+        texts = [
+            "",
+            "GENERAL.CONNECTION:MyNet\nIP4.ADDRESS[1]:10.0.0.5/24\n",
+            "IP4.ADDRESS[1]:10.0.0.5/24\n",
+            "GENERAL.CONNECTION:\n",
+            "no colon here\n",
+            "GENERAL.CONNECTION:has:colons:inside\n",
+        ]
+        self._compare(
+            "NmcliValue",
+            [(t, k) for t in texts for k in ("GENERAL.CONNECTION", "IP4.ADDRESS[1]", "MISSING")],
+            collectors.nmcli_value,
+        )
+        self._compare("FirstIP", [(t,) for t in texts], collectors.first_ip)
+
+    def test_wireless_signal_percent(self):
+        texts = [
+            "",
+            "Inter-| sta-|   Quality        |   Discarded packets\n"
+            " face | tus | link level noise |  nwid  crypt   frag\n"
+            " wlan0: 0000   70.  -40.  -256        0      0      0\n",
+            " wlan0: 0000   35.  -40.  -256\n",
+            " wlan0: 0000   0.  -40.  -256\n",
+            " wlan0: 0000   105.  -40.  -256\n",
+            " wlan0: 0000   notanumber  -40.\n",
+            " wlan0: 0000\n",
+            " wlan1: 0000   70.  -40.\n",
+        ]
+        cases = [(t, i) for t in texts for i in ("wlan0", "wlan1", "eno1")]
+        self._compare(
+            "WirelessSignalPercent", cases, collectors.wireless_signal_percent
+        )
+
+    def test_network_state_from_text(self):
+        statuses = [
+            "",
+            "wlan0:wifi:connected:MyNet\n",
+            "eno1:ethernet:connected:Wired\n",
+            "wlan0:wifi:connected:MyNet\neno1:ethernet:connected:Wired\n",
+            "wlan0:wifi:disconnected:\neno1:ethernet:disconnected:\n",
+        ]
+        wifis = ["", "yes:MyNet:72\n", "no:Other:30\nyes:MyNet:72\n", "yes::0\n", "yes:Net\n"]
+        ips = [
+            {},
+            {"wlan0": "IP4.ADDRESS[1]:10.0.0.5/24\n"},
+            {"eno1": "IP4.ADDRESS[1]:192.168.0.88/24\n"},
+            {"wlan0": "", "eno1": ""},
+        ]
+        cases = [(s, w, i) for s in statuses for w in wifis for i in ips]
+        answers = self._ask_go([{"fn": "NetworkStateFromText", "args": list(a)} for a in cases])
+        mismatches = []
+        for args, answer in zip(cases, answers):
+            self.assertTrue(answer["ok"], f"errored in Go: {answer.get('error')}")
+            expected = collectors.network_state_from_text(*args)
+            if answer["value"] != expected:
+                mismatches.append((args, expected, answer["value"]))
+        if mismatches:
+            detail = "\n".join(f"  {a}: python={p!r} go={g!r}" for a, p, g in mismatches[:6])
+            self.fail(f"{len(mismatches)}/{len(cases)} disagreed:\n{detail}")
+
+
 class DecimalHazardTests(unittest.TestCase):
     """Documents why DecimalTimes100HalfUp does not go through float64.
 

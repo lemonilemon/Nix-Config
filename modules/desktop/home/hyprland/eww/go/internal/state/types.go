@@ -9,19 +9,12 @@ package state
 
 import "ewwbar/internal/collect"
 
-// Clock is collectors.clock_state's shape.
-type Clock struct {
-	Time    string `json:"time"`
-	Date    string `json:"date"`
-	Tooltip string `json:"tooltip"`
-}
-
 // Bar is the whole state the daemon emits, in emit order.
 type Bar struct {
 	ActiveWindow   collect.ActiveWindowState  `json:"active_window"`
 	WorkspaceState collect.WorkspaceState     `json:"workspace_state"`
 	Submap         string                     `json:"submap"`
-	Clock          Clock                      `json:"clock"`
+	Clock          collect.Clock              `json:"clock"`
 	Media          collect.MediaState         `json:"media"`
 	AiUsage        collect.AiUsage            `json:"ai_usage"`
 	CPU            string                     `json:"cpu"`

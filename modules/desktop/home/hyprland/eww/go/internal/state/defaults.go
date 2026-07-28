@@ -26,7 +26,7 @@ func Default() Bar {
 			Ws5Class: "empty", Ws5Text: "\uF10C",
 		},
 		Submap: "",
-		Clock: Clock{
+		Clock: collect.Clock{
 			Time: "\uF017 --:--", Date: "\uF073 ----", Tooltip: "",
 		},
 		Media: collect.MediaState{

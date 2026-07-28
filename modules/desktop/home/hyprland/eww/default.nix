@@ -52,6 +52,12 @@ let
     # main package under cmd/ and runs `go test ./...` over the rest.
 
     postInstall = ''
+      # The Go daemon is BUILT -- which is how `go test ./...` above covers it
+      # -- but not shipped yet. ewwBarTools still installs eww-bar-backend, and
+      # two packages providing the same name collide in the profile. Deleting
+      # this line, and the Python package, is the cutover.
+      rm -f $out/bin/eww-bar-backend
+
       # argv[0] dispatch, as the Python entry point used to do: exec'ing a
       # symlink leaves argv[0] as the name the caller typed.
       ln -s eww-bar-client $out/bin/eww-barctl

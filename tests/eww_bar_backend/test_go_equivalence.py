@@ -33,6 +33,7 @@ from eww_bar_backend import (  # noqa: E402
     display,
     inhibitors,
     notifications,
+    paths,
     wallpaper,
     watchers,
 )
@@ -2094,6 +2095,79 @@ class GoEquivalenceTests(unittest.TestCase):
             DEVNULL = real_subprocess.DEVNULL
             run = staticmethod(fake_subprocess_run)
 
+        class FakeWallPath:
+            """A pathlib stand-in for the wallpaper picker, backed by fixture.
+
+            The picker needs metadata and symlink resolution, not contents, so
+            it cannot go through the FakePath used for /proc reads.
+            """
+
+            def __init__(self, path, is_file=True, mtime=0, size=0):
+                self._p = str(path)
+                self._is_file, self._mtime, self._size = is_file, mtime, size
+
+            def __str__(self):
+                return self._p
+
+            __repr__ = __str__
+
+            def __lt__(self, other):
+                return self._p < str(other)
+
+            def __eq__(self, other):
+                return self._p == str(other)
+
+            def __hash__(self):
+                return hash(self._p)
+
+            def __truediv__(self, other):
+                return FakeWallPath(self._p.rstrip("/") + "/" + str(other))
+
+            @property
+            def suffix(self):
+                name = self._p.rsplit("/", 1)[-1]
+                return "." + name.rsplit(".", 1)[1] if "." in name[1:] else ""
+
+            @property
+            def stem(self):
+                name = self._p.rsplit("/", 1)[-1]
+                return name[: -len(self.suffix)] if self.suffix else name
+
+            @property
+            def parent(self):
+                return FakeWallPath(self._p.rsplit("/", 1)[0] or "/")
+
+            def is_file(self):
+                return self._is_file
+
+            def exists(self):
+                return fixture.get("exists\x1f" + self._p) == "1"
+
+            def resolve(self):
+                return FakeWallPath(fixture.get("resolve\x1f" + self._p, self._p))
+
+            def stat(self):
+                class Stat:
+                    st_mtime_ns = self._mtime
+                    st_size = self._size
+                return Stat()
+
+            def iterdir(self):
+                key = "dir\x1f" + self._p
+                if key not in fixture:
+                    raise FileNotFoundError(self._p)
+                out = []
+                for line in fixture[key].splitlines():
+                    parts = line.split("|")
+                    if len(parts) != 4:
+                        continue
+                    out.append(FakeWallPath(self._p + "/" + parts[0],
+                                            parts[1] == "1", int(parts[2]), int(parts[3])))
+                return out
+
+            def mkdir(self, *_a, **_k):
+                """No-op; the Go seam creates directories internally."""
+
         class FakeModePath:
             """Stands in for paths.display_mode_path()."""
 
@@ -2162,6 +2236,19 @@ class GoEquivalenceTests(unittest.TestCase):
             unittest.mock.patch.object(display, "run_text", fake_run_text),
             unittest.mock.patch.object(display, "subprocess", FakeSubprocess),
             unittest.mock.patch.object(inhibitors, "subprocess", FakeSubprocess),
+            unittest.mock.patch.object(notifications, "run_text", fake_run_text),
+            unittest.mock.patch.object(notifications, "subprocess", FakeSubprocess),
+            unittest.mock.patch.object(wallpaper, "run_text", fake_run_text),
+            unittest.mock.patch.object(wallpaper, "subprocess", FakeSubprocess),
+            unittest.mock.patch.object(wallpaper, "Path", FakeWallPath),
+            unittest.mock.patch.object(
+                wallpaper, "WALLPAPER_DIR",
+                FakeWallPath(fixture.get("wallpaper.dir", "/w"))),
+            unittest.mock.patch.object(
+                wallpaper, "THUMB_DIR",
+                FakeWallPath(fixture.get("wallpaper.thumbdir", "/t"))),
+            unittest.mock.patch.object(notifications, "boottime_seconds",
+                                       lambda: float(fixture.get("boottime", "0"))),
             unittest.mock.patch.object(display, "display_mode_path",
                                        lambda: FakeModePath(mode_path)),
             unittest.mock.patch.dict(os.environ, env, clear=False),
@@ -2648,6 +2735,238 @@ class GoEquivalenceTests(unittest.TestCase):
             "SetDisplayMode", cases,
             lambda action: self._catching(lambda: display.set_display_mode(action)),
             with_journal=True)
+
+
+    # -- notification actions and the wallpaper picker ------------------------
+
+    _HIST = "dunstctl\x1fhistory"
+    _PAUSED = "dunstctl\x1fis-paused"
+
+    def _history(self, *items):
+        """dunstctl history's nested {"type":..,"data":..} envelope."""
+        def field(value):
+            return {"type": "s", "data": value}
+        return json.dumps({"type": "aa{sv}", "data": [[
+            {"id": field(i), "appname": field(app), "summary": field(sm),
+             "body": field(""), "urgency": field("NORMAL"),
+             "timestamp": field(ts)}
+            for i, app, sm, ts in items
+        ]]})
+
+    def _notif_base(self, **extra):
+        base = {"boottime": "1000", self._PAUSED: "false"}
+        base.update(extra)
+        return base
+
+    def _notif_fixtures(self):
+        two = self._history((1, "Firefox", "Hello", 900_000_000),
+                            (2, "Spotify", "Track", 950_000_000))
+        return [
+            self._notif_base(),
+            self._notif_base(**{self._HIST: "not json"}),
+            self._notif_base(**{self._HIST: self._history()}),
+            self._notif_base(**{self._HIST: two}),
+            self._notif_base(**{self._HIST: two, self._PAUSED: "true"}),
+            # An app name past the 20-char group cap, so the group name is
+            # truncated and clear-group has to truncate to match.
+            self._notif_base(**{self._HIST: self._history(
+                (3, "an-extremely-long-application-name", "S", 900_000_000))}),
+        ]
+
+    def test_collect_notifications(self):
+        self._compare_fixture(
+            "CollectNotifications", [(f,) for f in self._notif_fixtures()],
+            notifications.notifications_state)
+
+    def _notif_python(self, action, arg=""):
+        actions = {
+            "toggle-group": lambda: notifications.toggle_group(arg),
+            "dismiss": lambda: notifications.dismiss_notification(arg),
+            "clear-group": lambda: notifications.clear_group(arg),
+            "clear-all": notifications.clear_all_notifications,
+            "dnd-toggle": notifications.toggle_dnd,
+            "mark-seen": notifications.mark_seen,
+        }
+        notifications._COLLAPSED.clear()
+        notifications._LAST_SEEN_US = 0
+        return self._catching(actions[action])
+
+    def test_notif_actions(self):
+        two = self._history((1, "Firefox", "Hello", 900_000_000),
+                            (2, "Spotify", "Track", 950_000_000))
+        long_app = self._history((3, "an-extremely-long-application-name", "S", 900_000_000))
+        cases = []
+        for fixture in self._notif_fixtures():
+            for action, arg in (("clear-all", ""), ("dnd-toggle", ""),
+                                ("mark-seen", ""), ("toggle-group", "Firefox"),
+                                ("toggle-group", ""), ("dismiss", "7"),
+                                ("dismiss", ""), ("dismiss", "notanumber"),
+                                ("dismiss", " 8 "), ("clear-group", "Firefox"),
+                                ("clear-group", "")):
+                cases.append((fixture, action, arg))
+        # clear-group against a truncated group name: the id must still be found.
+        cases.append((self._notif_base(**{self._HIST: long_app}),
+                      "clear-group", "an-extremely-long..."))
+        # ...and the untruncated name, which must NOT match.
+        cases.append((self._notif_base(**{self._HIST: long_app}),
+                      "clear-group", "an-extremely-long-application-name"))
+        cases.append((self._notif_base(**{self._HIST: two}), "clear-group", "Firefox"))
+        self._compare_fixture(
+            "NotifAction", cases,
+            lambda action, arg: self._notif_python(action, arg), with_journal=True)
+
+    def test_notif_toggle_group_is_a_toggle(self):
+        """Collapse state only shows across two calls."""
+        two = self._history((1, "Firefox", "Hello", 900_000_000))
+        cases = [(self._notif_base(**{self._HIST: two}), "Firefox")]
+
+        def python_call(app):
+            notifications._COLLAPSED.clear()
+            notifications._LAST_SEEN_US = 0
+            first = self._catching(lambda: notifications.toggle_group(app))
+            second = self._catching(lambda: notifications.toggle_group(app))
+            return [first, second]
+
+        answers = self._ask_go([{"fn": "NotifToggleGroupTwice", "args": [f, a]}
+                                for f, a in cases])
+        for (fixture, app), answer in zip(cases, answers):
+            self.assertTrue(answer["ok"], answer.get("error"))
+            journal = []
+            expected = self._python_under_fixture(
+                fixture, lambda a=app: python_call(a), journal=journal)
+            # Both halves carry the running journal, so compare the results and
+            # assert the collapse actually flipped.
+            self.assertEqual([e["result"] for e in answer["value"]],
+                             [e["result"] for e in expected])
+            self.assertNotEqual(answer["value"][0]["result"],
+                                answer["value"][1]["result"],
+                                "toggling twice should not be a no-op")
+
+    _WDIR = "/home/tester/Pictures/wallpapers"
+    _TDIR = "/home/tester/.cache/eww-bar/wallpaper-thumbs"
+
+    def _wall_base(self, listing=(), **extra):
+        base = {"env.HOME": "/home/tester",
+                "wallpaper.dir": self._WDIR, "wallpaper.thumbdir": self._TDIR,
+                "dir\x1f" + self._WDIR: "\n".join(listing)}
+        base.update(extra)
+        return base
+
+    def test_scan_wallpaper_files(self):
+        cases = [
+            (self._wall_base(),),
+            ({"env.HOME": "/home/tester", "wallpaper.dir": self._WDIR,
+              "wallpaper.thumbdir": self._TDIR},),  # unreadable directory
+            (self._wall_base(["a.png|1|100|10", "b.jpg|1|200|20"]),),
+            # Out of order on disk: the scan has to sort.
+            (self._wall_base(["z.png|1|100|10", "a.png|1|200|20"]),),
+            # Extensions: case-insensitive, and .jxl is excluded on purpose.
+            (self._wall_base(["a.PNG|1|1|1", "b.JPEG|1|1|1", "c.jxl|1|1|1",
+                              "d.txt|1|1|1", "e.tiff|1|1|1"]),),
+            # A directory entry, not a file -- and one NAMED like a wallpaper,
+            # since a bare "sub" is already excluded by the extension filter and
+            # so proves nothing about the is-file check.
+            (self._wall_base(["sub|0|1|1", "a.png|1|1|1"]),),
+            (self._wall_base(["album.png|0|1|1", "a.png|1|1|1"]),),
+            (self._wall_base(["noext|1|1|1"]),),
+        ]
+        self._compare_fixture(
+            "ScanWallpaperFiles", [(f, self._WDIR) for f, in cases],
+            lambda d: [str(p) for p in wallpaper.scan_wallpaper_files(d)])
+
+    def test_thumb_cache_path(self):
+        """The digest input, byte for byte.
+
+        A mismatch here does not fail loudly -- it silently invalidates every
+        cached thumbnail and re-runs magick once per wallpaper at up to 15 s
+        each, which reads as "the picker is slow now".
+        """
+        import hashlib
+
+        cases = [
+            (self._wall_base(), "/w/a.png", 12345, 678),
+            (self._wall_base(), "/w/a.png", 0, 0),
+            (self._wall_base(), "/w/spaced name.png", 1, 2),
+            (self._wall_base(), "/w/uni\u00e9.png", 999999999999, 4),
+            (self._wall_base(), "", 1, 1),
+        ]
+
+        def python_call(path, mtime, size):
+            digest = hashlib.sha1(f"{path}:{mtime}:{size}".encode()).hexdigest()
+            return str(wallpaper.THUMB_DIR / f"{digest}.png")
+
+
+        self._compare_fixture("ThumbCachePath", cases, python_call)
+
+    def test_wallpaper_state(self):
+        listing = ["a.png|1|100|10", "b.gif|1|200|20"]
+        query = "awww\x1fquery"
+        line = "eDP-1: 1920x1200, scale: 2, currently displaying: image: "
+        cases = [
+            (self._wall_base(listing),),
+            (self._wall_base(listing, **{query: line + self._WDIR + "/a.png"}),),
+            (self._wall_base(listing, **{query: "no image here"}),),
+            (self._wall_base(),),
+            # A symlinked current wallpaper, which is why realPath exists.
+            (self._wall_base(listing, **{
+                query: line + "/link.png",
+                "resolve\x1f/link.png": self._WDIR + "/b.gif"}),),
+        ]
+
+        self._compare_fixture("CollectWallpaper", cases, wallpaper.wallpaper_state)
+
+    def test_set_wallpaper(self):
+        listing = ["a.png|1|100|10"]
+        cases = [(self._wall_base(listing), path)
+                 for path in ("", self._WDIR + "/a.png", "/elsewhere/x.png")]
+        self._compare_fixture(
+            "SetWallpaper", cases,
+            lambda path: self._catching(lambda: wallpaper.set_wallpaper(path)),
+            with_journal=True)
+
+    def test_mark_seen_never_moves_the_badge_backwards(self):
+        """Needs THREE calls, not two.
+
+        With an empty or older second history the returned state is the same
+        either way, because `new` counts items against lastSeen and there are
+        none to count. And the third step has to be a plain READ rather than a
+        third mark, because mark_seen updates the high-water mark before
+        reading state back and would repair the rewind before anyone saw it.
+        """
+        recent = self._history((1, "Firefox", "Hello", 900_000_000))
+        older = self._history((2, "Spotify", "Old", 100_000_000))
+        histories = [recent, older, recent]
+        fixture = self._notif_base(**{self._HIST: recent, "boottime": "0.5"})
+
+        def python_call():
+            notifications._COLLAPSED.clear()
+            notifications._LAST_SEEN_US = 0
+            out = []
+            for i, body in enumerate(histories):
+                with unittest.mock.patch.object(
+                        notifications, "run_text",
+                        lambda argv, b=body, **k: b
+                        if argv[:2] == ["dunstctl", "history"]
+                        else fixture.get("\x1f".join(argv), "")):
+                    # The last step is a plain READ: mark_seen updates the
+                    # high-water mark before reading state back, so a third
+                    # mark would repair the rewind before it could be seen.
+                    if i == len(histories) - 1:
+                        out.append({"result": notifications.notifications_state(),
+                                    "error": None})
+                    else:
+                        out.append(self._catching(notifications.mark_seen))
+            return out
+
+        answers = self._ask_go(
+            [{"fn": "NotifMarkSeenRewind", "args": [fixture, histories]}])
+        self.assertTrue(answers[0]["ok"], answers[0].get("error"))
+        expected = self._python_under_fixture(fixture, python_call, journal=[])
+        self.assertEqual([e["result"] for e in answers[0]["value"]],
+                         [e["result"] for e in expected])
+        # The third read must show nothing new: the 900 ms item was already
+        # marked seen by the first call and the second must not have undone it.
+        self.assertEqual(answers[0]["value"][2]["result"]["new"], 0)
 
 
 def _contiguous_runs(chars):

@@ -464,6 +464,9 @@ func dispatch(c call) (any, error) {
 		"OpenusageQuotaStates", "QuotaStates", "QuotaStatesSequence",
 		"AiUsageState", "AiUsageStateStaleSequence", "AiUsageStateGoodTwice",
 		"RefreshAiUsage",
+		"CollectNotifications", "NotifAction", "NotifToggleGroupTwice",
+		"ScanWallpaperFiles", "ThumbCachePath", "EnsureThumbnail",
+		"CollectWallpaper", "SetWallpaper", "NotifMarkSeenRewind",
 		"IdleInhibitedState", "LidInhibitedState", "ToggleIdleInhibited",
 		"SetIdleInhibited", "SetLidInhibited", "ReadDisplayMode",
 		"WriteDisplayMode", "DisplayState", "MonitorState", "SetDisplayMode",
@@ -997,6 +1000,113 @@ func withFixture(c call) (any, error) {
 		return map[string]any{"result": result, "error": errText(err),
 			"journal": collect.FixtureJournal()}, nil
 
+	// -- notification actions and the wallpaper picker ---------------------
+
+	case "CollectNotifications":
+		collect.ResetNotifyUIState()
+		return collect.CollectNotifications(), nil
+
+	case "NotifAction":
+		var action, arg string
+		if err := json.Unmarshal(c.Args[1], &action); err != nil {
+			return nil, err
+		}
+		if len(c.Args) > 2 {
+			if err := json.Unmarshal(c.Args[2], &arg); err != nil {
+				return nil, err
+			}
+		}
+		collect.ResetNotifyUIState()
+		return notifAction(action, arg), nil
+
+	case "NotifToggleGroupTwice":
+		// Collapse state only shows across two calls: the first collapses the
+		// group and the second expands it again.
+		var app string
+		if err := json.Unmarshal(c.Args[1], &app); err != nil {
+			return nil, err
+		}
+		collect.ResetNotifyUIState()
+		first := notifAction("toggle-group", app)
+		second := notifAction("toggle-group", app)
+		return []any{first, second}, nil
+
+	case "NotifMarkSeenRewind":
+		// The badge must never move BACKWARDS, and that takes THREE calls to
+		// see. Mark against a recent history, mark again against an older one
+		// (where an unguarded update would rewind lastSeen), then read the
+		// recent history back: only the third call's `new` count differs, and
+		// only because the second either kept or lost the high-water mark.
+		var histKeys []string
+		if err := json.Unmarshal(c.Args[1], &histKeys); err != nil {
+			return nil, err
+		}
+		collect.ResetNotifyUIState()
+		inner := collect.RunText
+		swap := func(body string) {
+			collect.RunText = func(t time.Duration, name string, argv ...string) string {
+				if name == "dunstctl" && len(argv) > 0 && argv[0] == "history" {
+					return body
+				}
+				return inner(t, name, argv...)
+			}
+		}
+		// The last entry is a PLAIN READ, not another mark. mark_seen updates
+		// the high-water mark before it reads state back, so a third mark
+		// would repair the rewind before anyone could observe it.
+		results := []any{}
+		for i, body := range histKeys {
+			swap(body)
+			if i == len(histKeys)-1 {
+				results = append(results, map[string]any{
+					"result": collect.CollectNotifications(), "error": nil})
+				continue
+			}
+			results = append(results, notifAction("mark-seen", ""))
+		}
+		return results, nil
+
+	case "ScanWallpaperFiles":
+		var dir string
+		if err := json.Unmarshal(c.Args[1], &dir); err != nil {
+			return nil, err
+		}
+		return collect.ScanWallpaperFiles(dir), nil
+
+	case "ThumbCachePath":
+		var path string
+		var mtime, size int64
+		if err := json.Unmarshal(c.Args[1], &path); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(c.Args[2], &mtime); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(c.Args[3], &size); err != nil {
+			return nil, err
+		}
+		return collect.ThumbCachePath(path, mtime, size), nil
+
+	case "EnsureThumbnail":
+		var path string
+		if err := json.Unmarshal(c.Args[1], &path); err != nil {
+			return nil, err
+		}
+		return map[string]any{"result": collect.EnsureThumbnail(path),
+			"journal": collect.FixtureJournal()}, nil
+
+	case "CollectWallpaper":
+		return collect.CollectWallpaper(), nil
+
+	case "SetWallpaper":
+		var path string
+		if err := json.Unmarshal(c.Args[1], &path); err != nil {
+			return nil, err
+		}
+		value, err := collect.SetWallpaper(path)
+		return map[string]any{"result": okOrNil(value, err), "error": errText(err),
+			"journal": collect.FixtureJournal()}, nil
+
 	case "AiRefreshCycleProbeTicks":
 		// Which ticks actually run the expensive probe. Observable only across
 		// a run of ticks, and only because a non-refreshing tick hits the warm
@@ -1026,6 +1136,29 @@ func withFixture(c call) (any, error) {
 		return probed, nil
 	}
 	return nil, fmt.Errorf("unknown fixture fn: %s", c.Fn)
+}
+
+// notifAction runs one of the six popup actions and reports it the way the
+// Python side does, with the side-effect journal beside the result.
+func notifAction(action, arg string) map[string]any {
+	var value collect.NotificationsState
+	var err error
+	switch action {
+	case "toggle-group":
+		value, err = collect.ToggleGroup(arg)
+	case "dismiss":
+		value, err = collect.DismissNotification(arg)
+	case "clear-group":
+		value, err = collect.ClearGroup(arg)
+	case "clear-all":
+		value = collect.ClearAllNotifications()
+	case "dnd-toggle":
+		value = collect.ToggleDND()
+	case "mark-seen":
+		value = collect.MarkSeen()
+	}
+	return map[string]any{"result": okOrNil(value, err), "error": errText(err),
+		"journal": collect.FixtureJournal()}
 }
 
 // okOrNil drops a Go zero value on the error path. Python raises there and the

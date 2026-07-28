@@ -24,6 +24,11 @@ import (
 //	http.body                     the HTTP body to answer with
 //	http.error                    non-empty for a transport failure
 //	status\x1f<name>\x1f<arg>...   the exit code of that command, default 0
+//	dir\x1f<path>                  a directory listing, one entry per line as
+//	                              "<name>|<isfile>|<mtime_ns>|<size>"
+//	exists\x1f<path>               "1" if the path exists
+//	boottime                      CLOCK_BOOTTIME seconds
+//	resolve\x1f<path>              what that path resolves to
 //	env.<NAME>                    an environment variable
 //
 // A command or file with no key reads as absent, which is what a missing
@@ -35,6 +40,8 @@ func InstallFixture(fixture map[string]string) func() {
 	savedRun, savedRead := RunText, ReadTextFile
 	savedStatus, savedWrite, savedRemove := RunStatus, WriteTextFile, RemoveFile
 	savedHTTP, savedNow := httpGetText, timeNow
+	savedList, savedResolve, savedExists := ListDir, ResolvePath, FileExists
+	savedBoottime := BoottimeSeconds
 	savedEnv := map[string]*string{}
 	fixtureJournal = nil
 
@@ -77,6 +84,42 @@ func InstallFixture(fixture map[string]string) func() {
 		}
 		return status, fixture["http.body"], nil
 	}
+	ListDir = func(dir string) ([]DirEntryInfo, bool) {
+		raw, present := fixture["dir\x1f"+dir]
+		if !present {
+			return nil, false
+		}
+		listing := []DirEntryInfo{}
+		for _, line := range SplitLines(raw) {
+			parts := strings.Split(line, "|")
+			if len(parts) != 4 {
+				continue
+			}
+			mtime, _ := strconv.ParseInt(parts[2], 10, 64)
+			size, _ := strconv.ParseInt(parts[3], 10, 64)
+			listing = append(listing, DirEntryInfo{
+				Path:    dir + "/" + parts[0],
+				IsFile:  parts[1] == "1",
+				MtimeNS: mtime,
+				Size:    size,
+			})
+		}
+		return listing, true
+	}
+	ResolvePath = func(path string) (string, bool) {
+		if resolved, present := fixture["resolve\x1f"+path]; present {
+			return resolved, true
+		}
+		// Absent means "resolves to itself", which is what an ordinary
+		// non-symlink file does and keeps the fixtures short.
+		return path, true
+	}
+	FileExists = func(path string) bool { return fixture["exists\x1f"+path] == "1" }
+	if raw, present := fixture["boottime"]; present {
+		if seconds, err := strconv.ParseFloat(raw, 64); err == nil {
+			BoottimeSeconds = func() float64 { return seconds }
+		}
+	}
 	if raw, present := fixture["now"]; present {
 		if seconds, err := strconv.ParseFloat(raw, 64); err == nil {
 			frozen := time.Unix(int64(seconds), int64((seconds-float64(int64(seconds)))*1e9))
@@ -96,6 +139,8 @@ func InstallFixture(fixture map[string]string) func() {
 		RunText, ReadTextFile = savedRun, savedRead
 		RunStatus, WriteTextFile, RemoveFile = savedStatus, savedWrite, savedRemove
 		httpGetText, timeNow = savedHTTP, savedNow
+		ListDir, ResolvePath, FileExists = savedList, savedResolve, savedExists
+		BoottimeSeconds = savedBoottime
 		for name, previous := range savedEnv {
 			restoreEnv(name, previous)
 		}

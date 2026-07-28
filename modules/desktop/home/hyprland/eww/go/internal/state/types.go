@@ -16,13 +16,6 @@ type Clock struct {
 	Tooltip string `json:"tooltip"`
 }
 
-// Wallpaper is wallpaper.wallpaper_state's shape.
-type Wallpaper struct {
-	Current string                    `json:"current"`
-	Count   int                       `json:"count"`
-	Rows    [][]collect.WallpaperItem `json:"rows"`
-}
-
 // AiPeriod is one of ai_usage.periods' three entries.
 type AiPeriod struct {
 	Label  string   `json:"label"`
@@ -78,7 +71,7 @@ type Bar struct {
 	Bluetooth      collect.BluetoothState     `json:"bluetooth"`
 	TrayCount      int                        `json:"tray_count"`
 	Notifications  collect.NotificationsState `json:"notifications"`
-	Wallpaper      Wallpaper                  `json:"wallpaper"`
+	Wallpaper      collect.Wallpaper          `json:"wallpaper"`
 	IdleInhibited  string                     `json:"idle_inhibited"`
 	Display        collect.Display            `json:"display"`
 }

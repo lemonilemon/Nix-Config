@@ -79,7 +79,7 @@ func Default() Bar {
 			Paused: "false", New: 0, Count: 0,
 			Groups: []collect.NotificationGroup{},
 		},
-		Wallpaper: Wallpaper{
+		Wallpaper: collect.Wallpaper{
 			Current: "", Count: 0,
 			Rows: [][]collect.WallpaperItem{},
 		},

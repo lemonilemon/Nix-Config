@@ -1,0 +1,74 @@
+<h2>Notification center — how should history be organized?</h2>
+<p class="subtitle">Both open from a bell module on the bar (same top-right corner as your other popups) and share the same header: do-not-disturb toggle + clear-all. The question is the list itself. Click your pick; comments in the terminal.</p>
+
+<style>
+  .ncwrap{display:flex;justify-content:center;padding:16px 10px;border-radius:10px;background:linear-gradient(135deg,#b9a4d9,#e5b4c9 55%,#8f7dc4)}
+  .nc{width:300px;border-radius:16px;background:rgba(24,24,37,.62);border:1px solid #cba6f745;box-shadow:0 0 14px #cba6f722,0 10px 28px rgba(17,17,27,.35);color:#cdd6f4;font:10.5px/1.45 "JetBrains Mono",ui-monospace,monospace;text-align:left;overflow:hidden}
+  .nchead{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.08);font-weight:700;color:#cba6f7}
+  .nchead .acts{display:flex;gap:10px;font-weight:400;color:#a6adc8}
+  .nchead .acts .dnd{color:#cba6f7}
+  .item{padding:9px 13px;display:flex;gap:9px;align-items:flex-start;position:relative}
+  .item+.item,.group+.group,.group .item{border-top:1px solid rgba(255,255,255,.06)}
+  .item .ico{font-size:13px;margin-top:1px}
+  .item .meta{display:flex;justify-content:space-between;gap:8px}
+  .item .who{font-weight:700;color:#89dceb;font-size:9.5px}
+  .item .when{color:#6c7086;font-size:9px}
+  .item .body{color:#a6adc8}
+  .item .x{position:absolute;right:9px;bottom:7px;color:#6c7086;font-size:9px}
+  .item .content{flex:1;min-width:0}
+  .ghead{display:flex;justify-content:space-between;align-items:center;padding:8px 13px;background:rgba(255,255,255,.03);font-weight:700;font-size:9.5px}
+  .ghead .cnt{background:#cba6f72e;color:#cba6f7;border-radius:999px;padding:1px 7px;font-size:8.5px}
+  .g2h .gname{color:#a6e3a1}.g1h .gname{color:#89dceb}
+  .ncfoot{padding:8px 13px;color:#6c7086;font-size:9px;text-align:center;border-top:1px solid rgba(255,255,255,.06)}
+  .card-image{padding:0 !important;background:transparent !important}
+</style>
+
+<div class="cards">
+
+  <div class="card" data-choice="timeline" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ncwrap">
+        <div class="nc">
+          <div class="nchead"><span>Notifications</span><span class="acts"><span class="dnd">⏾ DND</span><span>✕ all</span></span></div>
+          <div class="item"><div class="ico">💬</div><div class="content"><div class="meta"><span class="who">Element</span><span class="when">2m</span></div><div class="body">Alice: are we still on for tonight?</div></div><div class="x">✕</div></div>
+          <div class="item"><div class="ico">💬</div><div class="content"><div class="meta"><span class="who">Element</span><span class="when">9m</span></div><div class="body">Alice: check this out</div></div><div class="x">✕</div></div>
+          <div class="item"><div class="ico">🔋</div><div class="content"><div class="meta"><span class="who" style="color:#a6e3a1">Power</span><span class="when">31m</span></div><div class="body">Battery fully charged</div></div><div class="x">✕</div></div>
+          <div class="item"><div class="ico">📦</div><div class="content"><div class="meta"><span class="who" style="color:#f9e2af">Webcord</span><span class="when">1h</span></div><div class="body">#nixos — 5 new messages</div></div><div class="x">✕</div></div>
+          <div class="ncfoot">20 kept · oldest drop off</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>L1 · Flat timeline</h3>
+      <p>Pure chronological list, newest on top. Every entry shows app, age, and body; ✕ removes one. Simple to build, simple to read — mirrors what dunst's history actually is.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="grouped" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ncwrap">
+        <div class="nc">
+          <div class="nchead"><span>Notifications</span><span class="acts"><span class="dnd">⏾ DND</span><span>✕ all</span></span></div>
+          <div class="group">
+            <div class="ghead g1h"><span class="gname">💬 Element</span><span class="cnt">2</span></div>
+            <div class="item"><div class="content"><div class="meta"><span class="body">Alice: are we still on for tonight?</span><span class="when">2m</span></div></div></div>
+            <div class="item"><div class="content"><div class="meta"><span class="body">Alice: check this out</span><span class="when">9m</span></div></div></div>
+          </div>
+          <div class="group">
+            <div class="ghead g2h"><span class="gname">🔋 Power</span><span class="cnt">1</span></div>
+            <div class="item"><div class="content"><div class="meta"><span class="body">Battery fully charged</span><span class="when">31m</span></div></div></div>
+          </div>
+          <div class="group">
+            <div class="ghead"><span class="gname" style="color:#f9e2af">📦 Webcord</span><span class="cnt">5</span></div>
+          </div>
+          <div class="ncfoot">groups collapse · ✕ clears a group</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>L2 · Grouped by app</h3>
+      <p>Entries bucket under their app with a count badge; groups collapse/expand and clear as a unit. Tidier with chatty apps (Discord/Element bursts), but more state to manage and two clicks to reach an old item.</p>
+    </div>
+  </div>
+
+</div>

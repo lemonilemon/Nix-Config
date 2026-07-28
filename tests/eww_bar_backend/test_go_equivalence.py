@@ -45,6 +45,38 @@ from eww_bar_backend.common import truncate_text  # noqa: E402
 NERD_GLYPHS = "\U000f075f\U000f00af"
 
 
+# Recording mode. With EWW_GOLDEN_OUT set, every case the gate generates is
+# written out alongside CPython's answer. That file is what survives the
+# Python's deletion: the differential question ("does Go agree with CPython?")
+# becomes unanswerable at cutover, and what replaces it is the regression
+# question ("does Go still answer what CPython answered when we checked?").
+_GOLDEN_OUT = __import__("os").environ.get("EWW_GOLDEN_OUT", "")
+_golden_records = []
+
+
+def _record(fn, args, value):
+    """Record the answer this run VERIFIED, which is Go's.
+
+    Go's rather than CPython's, and uniformly so. Where the test asserts
+    equality the two are the same value, and where it asserts a documented
+    divergence -- the ambiguous ISO week dates, the Unicode-version skew --
+    only Go's is the behaviour that was checked and accepted. Recording
+    CPython's there would bake a known-wrong expectation into the file that
+    outlives it.
+    """
+    if _GOLDEN_OUT:
+        _golden_records.append({"fn": fn, "args": list(args), "value": value})
+
+
+def write_golden():
+    if not _GOLDEN_OUT or not _golden_records:
+        return
+    import gzip
+    with gzip.open(_GOLDEN_OUT, "at", encoding="utf-8") as handle:
+        for record in _golden_records:
+            handle.write(json.dumps(record, sort_keys=False) + "\n")
+
+
 def go_available():
     return shutil.which("go") is not None
 
@@ -93,6 +125,7 @@ class GoEquivalenceTests(unittest.TestCase):
         for args, answer in zip(cases, answers):
             self.assertTrue(answer["ok"], f"{fn}{args} errored in Go: {answer.get('error')}")
             expected = python_fn(*args)
+            _record(fn, args, answer["value"])
             if answer["value"] != expected:
                 mismatches.append((args, expected, answer["value"]))
         if mismatches:
@@ -1302,6 +1335,7 @@ class GoEquivalenceTests(unittest.TestCase):
         wrong, known = [], 0
         for digit, answer in zip(digits, answers):
             self.assertTrue(answer["ok"], answer.get("error"))
+            _record("PyFloat", [digit], answer["value"])
             parsed, bits = answer["value"]
             read[digit] = bits if parsed else None
             if not parsed:
@@ -1358,6 +1392,7 @@ class GoEquivalenceTests(unittest.TestCase):
         wrong = []
         for char, answer in zip(cased, answers):
             self.assertTrue(answer["ok"], answer.get("error"))
+            _record("PyLower", [char], answer["value"])
             if answer["value"] == char.lower():
                 continue
             if answer["value"] == char:
@@ -1423,6 +1458,7 @@ class GoEquivalenceTests(unittest.TestCase):
         mismatches, exempt = [], 0
         for (text,), answer in zip(cases, answers):
             self.assertTrue(answer["ok"], answer.get("error"))
+            _record("ParseISOEpoch", [text], answer["value"])
             expected = collectors.parse_iso_epoch(text)
             if answer["value"] == expected:
                 continue
@@ -1575,6 +1611,7 @@ class GoEquivalenceTests(unittest.TestCase):
         wrong = []
         for char, answer in zip(cased, answers):
             self.assertTrue(answer["ok"], answer.get("error"))
+            _record("PyTitle", [char], answer["value"])
             if answer["value"] in (char.title(), char):
                 continue  # equal, or a rune Go's older tables call uncased
             wrong.append((hex(ord(char)), char.title(), answer["value"]))
@@ -2311,6 +2348,7 @@ class GoEquivalenceTests(unittest.TestCase):
                 fixture, lambda f=fixture, e=extra: python_call(*e), journal=journal)
             if with_journal:
                 expected = {**expected, "journal": journal}
+            _record(fn, [fixture, *extra], answer["value"])
             if answer["value"] != expected:
                 mismatches.append((fixture, expected, answer["value"]))
         if mismatches:
@@ -3164,6 +3202,10 @@ class DecimalHazardTests(unittest.TestCase):
             raw = f"{hundredth / 100:.2f}"
             exact = int((Decimal(raw) * 100).to_integral_value(rounding=ROUND_HALF_UP))
             self.assertEqual(exact, round(float(raw) * 100), raw)
+
+
+def tearDownModule():
+    write_golden()
 
 
 if __name__ == "__main__":

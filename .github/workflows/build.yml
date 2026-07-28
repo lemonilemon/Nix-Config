@@ -1,0 +1,45 @@
+name: Build and Push
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            substituters = https://cache.nixos.org/ https://nix-community.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+            
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v12
+        with:
+          name: lemonilemon
+          # This token allows the action to push newly built configurations to your Cachix
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+          
+      - name: Run checks
+        run: nix flake check
+        
+      - name: Build NixOS-wsl configuration
+        run: |
+          echo "🔍 Building NixOS-wsl configuration..."
+          nix build .#nixosConfigurations.NixOS-wsl.config.system.build.toplevel
+          
+      - name: Build laptop configuration
+        run: |
+          echo "🔍 Building laptop configuration..."
+          nix build .#nixosConfigurations.laptop.config.system.build.toplevel
+          
+      - name: Build desktop configuration
+        run: |
+          echo "🔍 Building desktop configuration..."
+          nix build .#nixosConfigurations.desktop.config.system.build.toplevel

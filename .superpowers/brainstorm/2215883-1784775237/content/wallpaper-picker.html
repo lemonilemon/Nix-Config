@@ -1,0 +1,96 @@
+<h2>Wallpaper picker — which form?</h2>
+<p class="subtitle">All three scan the same ~/Pictures/wallpapers directory and switch via swww with an animated transition. They differ in where they appear and how you drive them. Click one; comments in the terminal.</p>
+
+<style>
+  .stage{display:flex;justify-content:center;align-items:center;padding:16px 10px;border-radius:10px;background:linear-gradient(135deg,#b9a4d9,#e5b4c9 55%,#8f7dc4);min-height:210px}
+  .glasspanel{border-radius:16px;background:rgba(24,24,37,.62);border:1px solid #cba6f745;box-shadow:0 0 14px #cba6f722,0 10px 28px rgba(17,17,27,.35);color:#cdd6f4;font:10.5px/1.4 "JetBrains Mono",ui-monospace,monospace;overflow:hidden;text-align:left}
+  .ph{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.08);font-weight:700;color:#cba6f7}
+  .ph .sub{font-weight:400;color:#a6adc8}
+  .thumb{border-radius:8px;border:1px solid rgba(255,255,255,.12)}
+  .thumb.cur{border:2px solid #cba6f7;box-shadow:0 0 8px #cba6f755}
+  .w1{background:linear-gradient(135deg,#b9a4d9,#e5b4c9,#8f7dc4)}
+  .w2{background:linear-gradient(135deg,#0f2a3f,#14526b,#7fd4c1)}
+  .w3{background:linear-gradient(135deg,#e8a87c,#d96a4f,#7c2e2e)}
+  .w4{background:linear-gradient(135deg,#16211a,#2e4a33,#87b38d)}
+  .w5{background:linear-gradient(135deg,#141420,#3a2f5e,#e8b4e0)}
+  .w6{background:linear-gradient(135deg,#3f3f46,#8f9aa8,#e0e5ec)}
+  .card-image{padding:0 !important;background:transparent !important}
+
+  /* P1 grid popup */
+  .p1 .glasspanel{width:270px}
+  .p1 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 12px}
+  .p1 .thumb{aspect-ratio:16/10}
+  .p1 .cap{padding:0 12px 9px;color:#6c7086;font-size:9px;display:flex;justify-content:space-between}
+
+  /* P2 rofi list */
+  .p2 .glasspanel{width:250px;border-color:#89dceb45;box-shadow:0 0 14px #89dceb22,0 10px 28px rgba(17,17,27,.35)}
+  .p2 .inp{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.08);color:#89dceb}
+  .p2 .row{display:flex;gap:9px;align-items:center;padding:6px 12px}
+  .p2 .row.sel{background:rgba(137,220,235,.14)}
+  .p2 .thumb{width:52px;height:30px;flex:none}
+  .p2 .nm{color:#cdd6f4}.p2 .row .dim{color:#6c7086;font-size:9px}
+
+  /* P3 fullscreen */
+  .p3 .stage{position:relative}
+  .p3 .glasspanel{width:88%;padding-bottom:4px}
+  .p3 .row{display:flex;gap:10px;padding:12px 14px 8px;justify-content:center}
+  .p3 .big{width:31%;aspect-ratio:16/9;border-radius:10px;border:1px solid rgba(255,255,255,.12)}
+  .p3 .big.cur{border:2px solid #cba6f7;box-shadow:0 0 12px #cba6f755}
+  .p3 .cap{text-align:center;color:#6c7086;font-size:9px;padding-bottom:8px}
+</style>
+
+<div class="cards">
+
+  <div class="card" data-choice="eww-grid" onclick="toggleSelect(this)">
+    <div class="card-image p1">
+      <div class="stage">
+        <div class="glasspanel">
+          <div class="ph"><span>Wallpapers</span><span class="sub">12 · 📂</span></div>
+          <div class="grid">
+            <div class="thumb cur w1"></div><div class="thumb w2"></div><div class="thumb w3"></div>
+            <div class="thumb w4"></div><div class="thumb w5"></div><div class="thumb w6"></div>
+          </div>
+          <div class="cap"><span>click to apply · fades in place</span><span>pixel_sunset ✓</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>P1 · Glass grid popup</h3>
+      <p>An eww popup like your others (bar entry + keybind, backdrop close, top-right corner). Thumbnail grid, current one highlighted, click to apply. Fully in-family with the new design language; backend scans the dir + caches thumbnails.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="rofi" onclick="toggleSelect(this)">
+    <div class="card-image p2">
+      <div class="stage">
+        <div class="glasspanel">
+          <div class="inp">🔍 sun▌</div>
+          <div class="row sel"><div class="thumb w1"></div><span class="nm">pixel_sunset</span><span class="dim">✓ current</span></div>
+          <div class="row"><div class="thumb w3"></div><span class="nm">dune_sunrise</span></div>
+          <div class="row"><div class="thumb w5"></div><span class="nm">city_sundown</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>P2 · Rofi picker</h3>
+      <p>A rofi modi script with thumbnails as row icons — keybind, type to fuzzy-filter, Enter applies. Keyboard-first and nearly free to build, but it lives outside the glass language (rofi styling is its own world, which we scoped out).</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="fullscreen" onclick="toggleSelect(this)">
+    <div class="card-image p3">
+      <div class="stage">
+        <div class="glasspanel">
+          <div class="ph"><span>Wallpapers</span><span class="sub">← → to browse · Enter to apply</span></div>
+          <div class="row"><div class="big w5"></div><div class="big cur w1"></div><div class="big w2"></div></div>
+          <div class="cap">pixel_sunset.jxl — applied live as you browse</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>P3 · Center-stage switcher</h3>
+      <p>A large centered eww window with big previews; arrow keys or clicks browse, wallpaper previews live behind it as you move. The most "experience", and the most work (keyboard grabbing, live preview/revert plumbing).</p>
+    </div>
+  </div>
+
+</div>

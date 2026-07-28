@@ -1,0 +1,157 @@
+<h2>Design-language refresh — which direction?</h2>
+<p class="subtitle">Same bar content, four moods. Each card shows the bar over your wallpaper's palette, plus a notification toast in the same language. These are rough approximations — pick the <em>feel</em>, we'll tune details later. Click a card, then tell me in the terminal (mixes welcome, e.g. "B surfaces + D colors").</p>
+
+<style>
+  .wall{border-radius:10px;padding:12px 10px 16px;overflow:hidden}
+  .mbar{display:flex;justify-content:space-between;align-items:center;gap:6px;font:600 10.5px/1 "JetBrains Mono",ui-monospace,monospace}
+  .cl{display:flex;gap:5px;align-items:center;min-width:0}
+  .isl{padding:5px 9px;border-radius:999px;white-space:nowrap;display:flex;gap:6px;align-items:center}
+  .wdot{width:6px;height:6px;border-radius:50%;display:inline-block}
+  .toast{margin:12px auto 0;max-width:82%;padding:9px 11px;border-radius:12px;font:10.5px/1.45 "JetBrains Mono",ui-monospace,monospace;display:flex;gap:9px;align-items:flex-start;text-align:left}
+  .toast .app{font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+  .card-image{padding:0 !important;background:transparent !important}
+  .palnote{font:9.5px "JetBrains Mono",monospace;text-align:center;margin-top:6px;opacity:.75}
+
+  /* A — Frosted glass */
+  .dA .wall{background:linear-gradient(135deg,#b9a4d9,#e5b4c9 55%,#8f7dc4)}
+  .dA .isl{background:rgba(24,24,37,.55);border:1px solid rgba(255,255,255,.14);color:#cdd6f4;box-shadow:0 4px 14px rgba(17,17,27,.25)}
+  .dA .wdot{background:rgba(205,214,244,.35)}.dA .wdot.on{background:#a6e3a1}
+  .dA .acc{color:#cba6f7}.dA .c2{color:#94e2d5}.dA .c3{color:#f9e2af}.dA .c4{color:#89b4fa}
+  .dA .toast{background:rgba(24,24,37,.6);border:1px solid rgba(255,255,255,.14);color:#cdd6f4;box-shadow:0 8px 24px rgba(17,17,27,.35)}
+  .dA .toast .bar-accent{color:#cba6f7}
+
+  /* B — Quiet minimal */
+  .dB .wall{background:linear-gradient(135deg,#b9a4d9,#e5b4c9 55%,#8f7dc4)}
+  .dB .isl{background:#181825;border:none;color:#9399b2}
+  .dB .wdot{background:#45475a}.dB .wdot.on{background:#cba6f7}
+  .dB .acc{color:#cdd6f4}.dB .c2,.dB .c3,.dB .c4{color:#9399b2}
+  .dB .clock{color:#cba6f7;font-weight:700}
+  .dB .toast{background:#181825;border:none;color:#cdd6f4}
+  .dB .toast .bar-accent{color:#cba6f7}
+
+  /* C — Neon accent */
+  .dC .wall{background:linear-gradient(135deg,#8f7dc4,#4a3f78 60%,#2b2447)}
+  .dC .isl{background:#0d0d15;color:#cdd6f4;border:1px solid}
+  .dC .i1{border-color:#a6e3a166;box-shadow:0 0 10px #a6e3a133}
+  .dC .i2{border-color:#f5c2e766;box-shadow:0 0 10px #f5c2e733}
+  .dC .i3{border-color:#89dceb66;box-shadow:0 0 10px #89dceb33}
+  .dC .i4{border-color:#f9e2af66;box-shadow:0 0 10px #f9e2af33}
+  .dC .i5{border-color:#89b4fa66;box-shadow:0 0 10px #89b4fa33}
+  .dC .wdot{background:#313244}.dC .wdot.on{background:#a6e3a1;box-shadow:0 0 6px #a6e3a1}
+  .dC .acc{color:#f5c2e7}.dC .c2{color:#89dceb}.dC .c3{color:#f9e2af}.dC .c4{color:#89b4fa}
+  .dC .toast{background:#0d0d15;border:1px solid #f5c2e766;box-shadow:0 0 16px #f5c2e72e;color:#cdd6f4}
+  .dC .toast .bar-accent{color:#f5c2e7}
+
+  /* D — Wallpaper-adaptive */
+  .dD .wall{background:linear-gradient(135deg,#b9a4d9,#e5b4c9 55%,#8f7dc4);margin-bottom:8px}
+  .dD .isl{background:#241f38d9;border:1px solid #ffffff1f;color:#e3dbf2}
+  .dD .wdot{background:#6f6590}.dD .wdot.on{background:#c9b6f2}
+  .dD .acc,.dD .clock{color:#c9b6f2}.dD .c2{color:#d8a8c4}.dD .c3,.dD .c4{color:#b0a4d6}
+  .dD .wall2{background:linear-gradient(135deg,#e8a87c,#d96a4f 55%,#1f4e4a)}
+  .dD .wall2 .isl{background:#14312ed9;border-color:#ffffff1f;color:#d7ece5}
+  .dD .wall2 .wdot{background:#3f6b60}.dD .wall2 .wdot.on{background:#9fe8d0}
+  .dD .wall2 .acc,.dD .wall2 .clock{color:#9fe8d0}.dD .wall2 .c2{color:#f0b98d}.dD .wall2 .c3,.dD .wall2 .c4{color:#8fc4b4}
+</style>
+
+<div class="cards">
+
+  <div class="card" data-choice="frosted" onclick="toggleSelect(this)">
+    <div class="card-image dA">
+      <div class="wall">
+        <div class="mbar">
+          <div class="cl">
+            <div class="isl"><span class="wdot on"></span><span class="wdot"></span><span class="wdot"></span></div>
+            <div class="isl acc">⏸ Soft Lipa · 關於小熊</div>
+          </div>
+          <div class="isl clock">09:46</div>
+          <div class="cl">
+            <div class="isl c2">WiFi 91%</div>
+            <div class="isl"><span class="c3">50°C</span><span class="c4">46%</span></div>
+          </div>
+        </div>
+        <div class="toast"><div>🔔</div><div><span class="app">Element</span><br><b class="bar-accent">Alice</b> are we still on for tonight?</div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · Frosted glass</h3>
+      <p>Evolution of what you have: translucent islands, heavier blur, hairline light borders, soft shadows. Keeps Catppuccin accents. Low-risk, mostly SCSS + Hyprland blur tuning.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="minimal" onclick="toggleSelect(this)">
+    <div class="card-image dB">
+      <div class="wall">
+        <div class="mbar">
+          <div class="cl">
+            <div class="isl"><span class="wdot on"></span><span class="wdot"></span><span class="wdot"></span></div>
+            <div class="isl acc">⏸ Soft Lipa · 關於小熊</div>
+          </div>
+          <div class="isl clock">09:46</div>
+          <div class="cl">
+            <div class="isl c2">WiFi 91%</div>
+            <div class="isl"><span class="c3">50°C</span><span class="c4">46%</span></div>
+          </div>
+        </div>
+        <div class="toast"><div>🔔</div><div><span class="app">Element</span><br><b class="bar-accent">Alice</b> are we still on for tonight?</div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · Quiet minimal</h3>
+      <p>Opaque flat surfaces, no borders or glow, mostly monochrome text with a single mauve accent reserved for what matters (clock, active workspace, urgent). Calm, less "dashboard".</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="neon" onclick="toggleSelect(this)">
+    <div class="card-image dC">
+      <div class="wall">
+        <div class="mbar">
+          <div class="cl">
+            <div class="isl i1"><span class="wdot on"></span><span class="wdot"></span><span class="wdot"></span></div>
+            <div class="isl i2 acc">⏸ Soft Lipa · 關於小熊</div>
+          </div>
+          <div class="isl i3 clock">09:46</div>
+          <div class="cl">
+            <div class="isl i4"><span class="c3">50°C</span></div>
+            <div class="isl i5 c4">WiFi 91%</div>
+          </div>
+        </div>
+        <div class="toast"><div>🔔</div><div><span class="app">Element</span><br><b class="bar-accent">Alice</b> are we still on for tonight?</div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · Neon accent</h3>
+      <p>Near-black surfaces, each island keyed by a vivid accent border + faint glow. High contrast, gamer/cyber energy. Most visually loud; glow needs care to not look cheap.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="adaptive" onclick="toggleSelect(this)">
+    <div class="card-image dD">
+      <div class="wall">
+        <div class="mbar">
+          <div class="cl">
+            <div class="isl"><span class="wdot on"></span><span class="wdot"></span><span class="wdot"></span></div>
+            <div class="isl acc">⏸ Soft Lipa · 關於小熊</div>
+          </div>
+          <div class="isl clock">09:46</div>
+          <div class="cl"><div class="isl"><span class="c3">50°C</span><span class="c4">46%</span></div></div>
+        </div>
+      </div>
+      <div class="wall wall2">
+        <div class="mbar">
+          <div class="cl">
+            <div class="isl"><span class="wdot on"></span><span class="wdot"></span><span class="wdot"></span></div>
+            <div class="isl acc">⏸ Soft Lipa · 關於小熊</div>
+          </div>
+          <div class="isl clock">09:46</div>
+          <div class="cl"><div class="isl"><span class="c3">50°C</span><span class="c4">46%</span></div></div>
+        </div>
+      </div>
+      <div class="palnote">same config, two wallpapers — palette regenerates automatically</div>
+    </div>
+    <div class="card-body">
+      <h3>D · Wallpaper-adaptive</h3>
+      <p>Colors are <em>generated from the current wallpaper</em> (matugen/Material-You style) and pushed to eww, dunst, hyprlock. Not a look but a color <em>source</em> — combines with A or B surfaces. Pairs perfectly with the wallpaper sub-project. Most moving parts.</p>
+    </div>
+  </div>
+
+</div>

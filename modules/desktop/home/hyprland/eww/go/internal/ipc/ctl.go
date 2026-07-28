@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
-	"path/filepath"
 	"strings"
 
+	"ewwbar/internal/paths"
 	"ewwbar/internal/pyjson"
 )
 
@@ -24,15 +23,7 @@ const Usage = "usage: eww-barctl ping | volume up|down|set <0-100>|mute|sink <na
 
 var errUsage = errors.New(Usage)
 
-func runtimeFile(name string) string {
-	dir := os.Getenv("XDG_RUNTIME_DIR")
-	if dir == "" {
-		dir = "/tmp"
-	}
-	return filepath.Join(dir, name)
-}
-
-func SocketPath() string { return runtimeFile("eww-backend.sock") }
+func SocketPath() string { return paths.ControlSocket() }
 
 // controlPayloadFromArgs mirrors ctl.control_payload_from_args exactly,
 // including which argument counts are accepted and the key order of each

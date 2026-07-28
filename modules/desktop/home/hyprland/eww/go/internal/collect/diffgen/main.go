@@ -464,6 +464,9 @@ func dispatch(c call) (any, error) {
 		"OpenusageQuotaStates", "QuotaStates", "QuotaStatesSequence",
 		"AiUsageState", "AiUsageStateStaleSequence", "AiUsageStateGoodTwice",
 		"RefreshAiUsage",
+		"IdleInhibitedState", "LidInhibitedState", "ToggleIdleInhibited",
+		"SetIdleInhibited", "SetLidInhibited", "ReadDisplayMode",
+		"WriteDisplayMode", "DisplayState", "MonitorState", "SetDisplayMode",
 		"AiRefreshCycleProbeTicks":
 		return withFixture(c)
 
@@ -924,6 +927,76 @@ func withFixture(c call) (any, error) {
 		}, refreshQuotas)
 		return map[string]any{"published": published, "result": result}, nil
 
+	// -- display and inhibitors --------------------------------------------
+	//
+	// These answer with the side-effect journal beside the return value: what
+	// set_display_mode DOES is its whole content, and a comparison of the
+	// returned Display alone would pass with the body deleted.
+
+	case "IdleInhibitedState":
+		return map[string]any{"result": collect.IdleInhibitedState(),
+			"journal": collect.FixtureJournal()}, nil
+
+	case "LidInhibitedState":
+		return map[string]any{"result": collect.LidInhibitedState(),
+			"journal": collect.FixtureJournal()}, nil
+
+	case "ToggleIdleInhibited":
+		value, err := collect.ToggleIdleInhibited()
+		return map[string]any{"result": okOrNil(value, err), "error": errText(err),
+			"journal": collect.FixtureJournal()}, nil
+
+	case "SetIdleInhibited", "SetLidInhibited":
+		var enabled bool
+		if err := json.Unmarshal(c.Args[1], &enabled); err != nil {
+			return nil, err
+		}
+		setter := collect.SetIdleInhibited
+		if c.Fn == "SetLidInhibited" {
+			setter = collect.SetLidInhibited
+		}
+		value, err := setter(enabled)
+		return map[string]any{"result": okOrNil(value, err), "error": errText(err),
+			"journal": collect.FixtureJournal()}, nil
+
+	case "ReadDisplayMode":
+		return collect.ReadDisplayMode(), nil
+
+	case "WriteDisplayMode":
+		var mode string
+		if err := json.Unmarshal(c.Args[1], &mode); err != nil {
+			return nil, err
+		}
+		collect.WriteDisplayMode(mode)
+		return map[string]any{"result": nil, "journal": collect.FixtureJournal()}, nil
+
+	case "DisplayState":
+		var status string
+		if err := json.Unmarshal(c.Args[1], &status); err != nil {
+			return nil, err
+		}
+		return collect.DisplayState(status), nil
+
+	case "MonitorState":
+		monitors := collect.MonitorState()
+		if monitors == nil {
+			monitors = []map[string]any{}
+		}
+		return monitors, nil
+
+	case "SetDisplayMode":
+		var action string
+		if err := json.Unmarshal(c.Args[1], &action); err != nil {
+			return nil, err
+		}
+		display, err := collect.SetDisplayMode(action)
+		result := any(display)
+		if err != nil {
+			result = nil
+		}
+		return map[string]any{"result": result, "error": errText(err),
+			"journal": collect.FixtureJournal()}, nil
+
 	case "AiRefreshCycleProbeTicks":
 		// Which ticks actually run the expensive probe. Observable only across
 		// a run of ticks, and only because a non-refreshing tick hits the warm
@@ -953,6 +1026,25 @@ func withFixture(c call) (any, error) {
 		return probed, nil
 	}
 	return nil, fmt.Errorf("unknown fixture fn: %s", c.Fn)
+}
+
+// okOrNil drops a Go zero value on the error path. Python raises there and the
+// caller records result=None; returning "" would be a harness difference
+// reported as a port difference.
+func okOrNil(value any, err error) any {
+	if err != nil {
+		return nil
+	}
+	return value
+}
+
+// errText renders an error the way the Python side reports one: the message
+// alone, or nil when there was none.
+func errText(err error) any {
+	if err == nil {
+		return nil
+	}
+	return err.Error()
 }
 
 func args(c call, targets ...any) error {

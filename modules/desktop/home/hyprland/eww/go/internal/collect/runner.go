@@ -1,7 +1,9 @@
 package collect
 
 import (
+	"errors"
 	"os"
+	"path/filepath"
 	"time"
 
 	"ewwbar/internal/run"
@@ -35,3 +37,29 @@ var (
 // player cannot stall the media module, and the startup reconcile gets 5 s
 // because hyprctl and eww are both slow right after a config reload.
 const defaultTimeout = 2 * time.Second
+
+// The write side of the seams. display.write_display_mode is the only thing in
+// the backend that creates or removes a file, and it does so on a path the
+// control socket can be told to change -- so it goes through a seam like
+// everything else, and the equivalence gate can assert what it wrote without
+// touching the real runtime directory.
+var (
+	RunStatus = func(timeout time.Duration, name string, args ...string) int {
+		return run.Status(timeout, name, args...)
+	}
+
+	WriteTextFile = func(path, text string) error {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(path, []byte(text), 0o644)
+	}
+
+	RemoveFile = func(path string) error {
+		err := os.Remove(path)
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+)

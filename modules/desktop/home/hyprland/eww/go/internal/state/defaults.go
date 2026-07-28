@@ -84,7 +84,7 @@ func Default() Bar {
 			Rows: [][]collect.WallpaperItem{},
 		},
 		IdleInhibited: "false",
-		Display: Display{
+		Display: collect.Display{
 			Mode: "normal", LidInhibited: "false",
 			Status: "Normal desktop mode", Class: "normal",
 		},

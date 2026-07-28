@@ -28,7 +28,14 @@ SCRIPTS_DIR = EWW_DIR / "scripts"
 GO_DIR = EWW_DIR / "go"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from eww_bar_backend import collectors, display, notifications, wallpaper, watchers  # noqa: E402
+from eww_bar_backend import (  # noqa: E402
+    collectors,
+    display,
+    inhibitors,
+    notifications,
+    wallpaper,
+    watchers,
+)
 from eww_bar_backend.common import truncate_text  # noqa: E402
 
 
@@ -2055,13 +2062,65 @@ class GoEquivalenceTests(unittest.TestCase):
     def _run_key(argv):
         return "\x1f".join(argv)
 
-    def _python_under_fixture(self, fixture, call):
-        """Run `call` with the Python's seams bound to the same fixture."""
+    def _python_under_fixture(self, fixture, call, journal=None):
+        """Run `call` with the Python's seams bound to the same fixture.
+
+        journal, when given, collects the impure operations in the same
+        encoding collect.InstallFixture uses, so a caller can compare the
+        SEQUENCE of side effects and not just the return value.
+        """
         import contextlib
         import os
+        import subprocess as real_subprocess
+
+        def note(entry):
+            if journal is not None:
+                journal.append(entry)
 
         def fake_run_text(argv, timeout=None, **_kwargs):
+            note("run\x1f" + self._run_key(argv))
             return fixture.get(self._run_key(argv), "")
+
+        class FakeCompleted:
+            def __init__(self, code):
+                self.returncode = code
+
+        def fake_subprocess_run(argv, **_kwargs):
+            key = self._run_key(argv)
+            note("status\x1f" + key)
+            return FakeCompleted(int(fixture.get("status\x1f" + key, "0")))
+
+        class FakeSubprocess:
+            DEVNULL = real_subprocess.DEVNULL
+            run = staticmethod(fake_subprocess_run)
+
+        class FakeModePath:
+            """Stands in for paths.display_mode_path()."""
+
+            def __init__(self, path):
+                self._path = path
+
+            def __str__(self):
+                return self._path
+
+            @property
+            def parent(self):
+                class Parent:
+                    def mkdir(self, *_a, **_k):
+                        """No-op: the Go seam creates directories internally."""
+                return Parent()
+
+            def read_text(self, *_a, **_k):
+                key = "file\x1f" + self._path
+                if key not in fixture:
+                    raise FileNotFoundError(self._path)
+                return fixture[key]
+
+            def write_text(self, text, *_a, **_k):
+                note("write\x1f" + self._path + "\x1f" + text)
+
+            def unlink(self, *_a, **_k):
+                note("remove\x1f" + self._path)
 
         def fake_read_text(path):
             key = "file\x1f" + str(path)
@@ -2096,9 +2155,15 @@ class GoEquivalenceTests(unittest.TestCase):
             return response()
 
         env = {k[len("env."):]: v for k, v in fixture.items() if k.startswith("env.")}
+        mode_path = fixture.get("display.mode_path", "/run/eww-display-mode")
         patches = [
             unittest.mock.patch.object(collectors, "run_text", fake_run_text),
             unittest.mock.patch.object(collectors, "Path", FakePath),
+            unittest.mock.patch.object(display, "run_text", fake_run_text),
+            unittest.mock.patch.object(display, "subprocess", FakeSubprocess),
+            unittest.mock.patch.object(inhibitors, "subprocess", FakeSubprocess),
+            unittest.mock.patch.object(display, "display_mode_path",
+                                       lambda: FakeModePath(mode_path)),
             unittest.mock.patch.dict(os.environ, env, clear=False),
         ]
         if "now" in fixture:
@@ -2121,15 +2186,18 @@ class GoEquivalenceTests(unittest.TestCase):
                 stack.enter_context(patch)
             return call()
 
-    def _compare_fixture(self, fn, cases, python_call):
+    def _compare_fixture(self, fn, cases, python_call, with_journal=False):
         """cases is a list of (fixture, *extra_args)."""
         answers = self._ask_go(
             [{"fn": fn, "args": [fixture, *extra]} for fixture, *extra in cases])
         mismatches = []
         for (fixture, *extra), answer in zip(cases, answers):
             self.assertTrue(answer["ok"], f"{fn} errored in Go: {answer.get('error')}")
+            journal = [] if with_journal else None
             expected = self._python_under_fixture(
-                fixture, lambda f=fixture, e=extra: python_call(*e))
+                fixture, lambda f=fixture, e=extra: python_call(*e), journal=journal)
+            if with_journal:
+                expected = {**expected, "journal": journal}
             if answer["value"] != expected:
                 mismatches.append((fixture, expected, answer["value"]))
         if mismatches:
@@ -2406,6 +2474,180 @@ class GoEquivalenceTests(unittest.TestCase):
             return probed
 
         self._compare_fixture("AiRefreshCycleProbeTicks", cases, python_call)
+
+
+    # -- display and inhibitors -----------------------------------------------
+
+    _MODE_PATH = "/run/eww-display-mode"
+    _IDLE_SVC = "systemctl\x1f--user\x1fis-active\x1f--quiet\x1feww-hypridle-inhibit.service"
+    _LID_SVC = "systemctl\x1f--user\x1fis-active\x1f--quiet\x1feww-lid-inhibit.service"
+
+    def _display_base(self, **extra):
+        # Go builds the path from XDG_RUNTIME_DIR at call time, so the fixture
+        # sets it; the Python side has display_mode_path patched to match.
+        base = {"display.mode_path": self._MODE_PATH, "env.XDG_RUNTIME_DIR": "/run"}
+        base.update(extra)
+        return base
+
+    def test_inhibitor_states(self):
+        cases = [
+            (self._display_base(),),
+            (self._display_base(**{"status\x1f" + self._IDLE_SVC: "0"}),),
+            (self._display_base(**{"status\x1f" + self._IDLE_SVC: "1"}),),
+            (self._display_base(**{"status\x1f" + self._IDLE_SVC: "3"}),),
+            (self._display_base(**{"status\x1f" + self._LID_SVC: "1"}),),
+        ]
+        self._compare_fixture(
+            "IdleInhibitedState", cases,
+            lambda: {"result": inhibitors.idle_inhibited_state()}, with_journal=True)
+        self._compare_fixture(
+            "LidInhibitedState", cases,
+            lambda: {"result": inhibitors.lid_inhibited_state()}, with_journal=True)
+
+    def _setter_cases(self):
+        start = "systemctl\x1f--user\x1fstart\x1feww-hypridle-inhibit.service"
+        stop = "systemctl\x1f--user\x1fstop\x1feww-hypridle-inhibit.service"
+        return [
+            # The read-back disagreeing with the request is the interesting
+            # case: systemctl can exit zero for a unit that did not come up.
+            (self._display_base(), True),
+            (self._display_base(), False),
+            (self._display_base(**{"status\x1f" + self._IDLE_SVC: "1"}), True),
+            (self._display_base(**{"status\x1f" + start: "1"}), True),
+            (self._display_base(**{"status\x1f" + stop: "1"}), False),
+            (self._display_base(**{"status\x1f" + start: "0",
+                                   "status\x1f" + self._IDLE_SVC: "1"}), True),
+        ]
+
+    def _catching(self, call):
+        """Run a Python call that may raise, in the shape diffgen reports."""
+        try:
+            return {"result": call(), "error": None}
+        except Exception as exc:  # noqa: BLE001 -- mirrors the Go error return
+            return {"result": None, "error": str(exc)}
+
+    def test_set_idle_inhibited(self):
+        self._compare_fixture(
+            "SetIdleInhibited", self._setter_cases(),
+            lambda enabled: self._catching(
+                lambda: inhibitors.set_idle_inhibited(enabled)),
+            with_journal=True)
+
+    def test_toggle_idle_inhibited(self):
+        cases = [
+            (self._display_base(),),
+            (self._display_base(**{"status\x1f" + self._IDLE_SVC: "1"}),),
+        ]
+        self._compare_fixture(
+            "ToggleIdleInhibited", cases,
+            lambda: self._catching(inhibitors.toggle_idle_inhibited),
+            with_journal=True)
+
+    def test_read_display_mode(self):
+        cases = [
+            (self._display_base(),),
+            (self._display_base(**{"file\x1f" + self._MODE_PATH: "external"}),),
+            (self._display_base(**{"file\x1f" + self._MODE_PATH: "headless\n"}),),
+            (self._display_base(**{"file\x1f" + self._MODE_PATH: "  normal  "}),),
+            (self._display_base(**{"file\x1f" + self._MODE_PATH: "bogus"}),),
+            (self._display_base(**{"file\x1f" + self._MODE_PATH: ""}),),
+            (self._display_base(**{"file\x1f" + self._MODE_PATH: "EXTERNAL"}),),
+        ]
+        self._compare_fixture("ReadDisplayMode", cases, display.read_display_mode)
+
+    def test_write_display_mode(self):
+        """"normal" is the file's ABSENCE, so it removes rather than writes."""
+        cases = [(self._display_base(), mode)
+                 for mode in ("normal", "external", "headless", "bogus")]
+        self._compare_fixture(
+            "WriteDisplayMode", cases,
+            lambda mode: {"result": display.write_display_mode(mode)},
+            with_journal=True)
+
+    def test_display_state(self):
+        cases = [(self._display_base(**{"file\x1f" + self._MODE_PATH: mode}), status)
+                 for mode in ("external", "headless", "bogus")
+                 for status in ("", "Custom status")]
+        cases += [(self._display_base(), ""), (self._display_base(), "Custom")]
+        self._compare_fixture("DisplayState", cases, display.display_state)
+
+    def test_monitor_state(self):
+        key = "hyprctl\x1fmonitors\x1f-j"
+        cases = [
+            (self._display_base(),),
+            (self._display_base(**{key: "not json"}),),
+            (self._display_base(**{key: "[]"}),),
+            (self._display_base(**{key: '[{"name": "eDP-1"}]'}),),
+            (self._display_base(**{key: '[{"name": "eDP-1"}, {"name": "DP-2"}]'}),),
+        ]
+        self._compare_fixture("MonitorState", cases, display.monitor_state)
+
+    def test_monitor_state_hardens_what_the_original_would_crash_on(self):
+        """Pins the divergence MonitorState documents.
+
+        monitor_state passes hyprctl's output straight through, so a report
+        that is not a list of objects reaches split_monitors, which calls .get
+        on each element. A JSON object yields its KEYS -- strings -- and a
+        stray non-object element is itself a string, and both raise
+        AttributeError inside the display switch. Go normalises to the objects
+        instead. Asserted here rather than reproduced, so the note in
+        display.go cannot quietly stop being true.
+        """
+        for payload in ('{"a": 1}', '[{"name": "eDP-1"}, "junk"]'):
+            monitors = collectors.parse_json(payload, [])
+            with self.assertRaises(AttributeError):
+                display.split_monitors(monitors)
+        # An EMPTY object is the one non-list that survives, because iterating
+        # it yields nothing -- which is why the guard cannot just be "is a list".
+        self.assertEqual(display.split_monitors({}), ([], []))
+
+    def test_set_display_mode(self):
+        """The side-effect SEQUENCE, which is this function's whole content."""
+        monitors = "hyprctl\x1fmonitors\x1f-j"
+        both = json.dumps([{"name": "eDP-1"}, {"name": "DP-2"}])
+        internal_only = json.dumps([{"name": "eDP-1"}])
+        two_internal = json.dumps([{"name": "eDP-1"}, {"name": "LVDS-1"},
+                                   {"name": "DP-2"}])
+        disabled_ext = json.dumps([{"name": "eDP-1"},
+                                   {"name": "DP-2", "disabled": True}])
+        unnamed = json.dumps([{"name": ""}, {"name": "DP-2"}])
+
+        cases = []
+        for action in ("status", "restore", "normal", "external", "headless",
+                       "toggle", "bogus", ""):
+            cases.append((self._display_base(**{monitors: both}), action))
+        cases += [
+            # toggle depends on the mode already recorded.
+            (self._display_base(**{"file\x1f" + self._MODE_PATH: "headless",
+                                   monitors: both}), "toggle"),
+            (self._display_base(**{"file\x1f" + self._MODE_PATH: "external",
+                                   monitors: both}), "toggle"),
+            # external with nothing to switch to, and with a disabled external.
+            (self._display_base(**{monitors: internal_only}), "external"),
+            (self._display_base(**{monitors: disabled_ext}), "external"),
+            (self._display_base(**{monitors: "not json"}), "external"),
+            # More than one internal panel: each gets its own keyword call.
+            (self._display_base(**{monitors: two_internal}), "external"),
+            # An unnamed monitor is skipped rather than disabled as "".
+            (self._display_base(**{monitors: unnamed}), "external"),
+            # A failing hyprctl must abort before the mode file is written.
+            (self._display_base(**{monitors: both,
+                                   "status\x1fhyprctl\x1freload": "1"}), "normal"),
+            (self._display_base(**{monitors: both,
+                                   "status\x1fhyprctl\x1fdispatch\x1fdpms\x1foff": "1"}),
+             "headless"),
+            (self._display_base(**{monitors: both,
+                                   "status\x1fhyprctl\x1fkeyword\x1fmonitor\x1feDP-1,disable": "1"}),
+             "external"),
+            # A failing systemctl must abort too.
+            (self._display_base(**{monitors: both,
+                                   "status\x1fsystemctl\x1f--user\x1fstart\x1feww-lid-inhibit.service": "1"}),
+             "headless"),
+        ]
+        self._compare_fixture(
+            "SetDisplayMode", cases,
+            lambda action: self._catching(lambda: display.set_display_mode(action)),
+            with_journal=True)
 
 
 def _contiguous_runs(chars):

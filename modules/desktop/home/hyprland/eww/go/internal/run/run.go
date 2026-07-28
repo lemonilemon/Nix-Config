@@ -3,6 +3,7 @@ package run
 
 import (
 	"context"
+	"errors"
 	"os/exec"
 	"time"
 )
@@ -34,4 +35,28 @@ func Eww(args []string) {
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	_ = cmd.Run()
+}
+
+// Status runs a command for its exit status alone, with all three streams
+// detached. Mirrors the subprocess.run(..., check=False) calls in inhibitors
+// and display, which look only at returncode.
+//
+// A command that cannot be started at all reports -1 where CPython raises
+// FileNotFoundError. Deliberate: the callers read this as "the service is not
+// active" or "the hyprctl failed", and a missing systemctl should degrade the
+// bar rather than kill the daemon thread.
+func Status(timeout time.Duration, name string, args ...string) int {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = nil, nil, nil
+	if err := cmd.Run(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return exitErr.ExitCode()
+		}
+		return -1
+	}
+	return 0
 }

@@ -23,6 +23,7 @@ import (
 //	http.status                   the HTTP status to answer with
 //	http.body                     the HTTP body to answer with
 //	http.error                    non-empty for a transport failure
+//	status\x1f<name>\x1f<arg>...   the exit code of that command, default 0
 //	env.<NAME>                    an environment variable
 //
 // A command or file with no key reads as absent, which is what a missing
@@ -32,15 +33,39 @@ import (
 // time, and nothing in production reassigns these.
 func InstallFixture(fixture map[string]string) func() {
 	savedRun, savedRead := RunText, ReadTextFile
+	savedStatus, savedWrite, savedRemove := RunStatus, WriteTextFile, RemoveFile
 	savedHTTP, savedNow := httpGetText, timeNow
 	savedEnv := map[string]*string{}
+	fixtureJournal = nil
 
 	RunText = func(_ time.Duration, name string, argv ...string) string {
-		return fixture[strings.Join(append([]string{name}, argv...), "\x1f")]
+		key := strings.Join(append([]string{name}, argv...), "\x1f")
+		record("run\x1f" + key)
+		return fixture[key]
 	}
 	ReadTextFile = func(path string) (string, bool) {
 		value, ok := fixture["file\x1f"+path]
 		return value, ok
+	}
+	RunStatus = func(_ time.Duration, name string, argv ...string) int {
+		key := strings.Join(append([]string{name}, argv...), "\x1f")
+		record("status\x1f" + key)
+		// Absent means SUCCESS. The display and inhibitor tests care about the
+		// ORDER of the calls, and defaulting to failure would make every
+		// fixture carry a key per command just to get past the first one.
+		code, err := strconv.Atoi(fixture["status\x1f"+key])
+		if err != nil {
+			return 0
+		}
+		return code
+	}
+	WriteTextFile = func(path, text string) error {
+		record("write\x1f" + path + "\x1f" + text)
+		return nil
+	}
+	RemoveFile = func(path string) error {
+		record("remove\x1f" + path)
+		return nil
 	}
 	httpGetText = func(string, map[string]string, time.Duration) (int, string, error) {
 		if message := fixture["http.error"]; message != "" {
@@ -69,6 +94,7 @@ func InstallFixture(fixture map[string]string) func() {
 
 	return func() {
 		RunText, ReadTextFile = savedRun, savedRead
+		RunStatus, WriteTextFile, RemoveFile = savedStatus, savedWrite, savedRemove
 		httpGetText, timeNow = savedHTTP, savedNow
 		for name, previous := range savedEnv {
 			restoreEnv(name, previous)
@@ -95,4 +121,22 @@ func restoreEnv(name string, previous *string) {
 		return
 	}
 	_ = os.Setenv(name, *previous)
+}
+
+// fixtureJournal records every impure operation InstallFixture intercepted, in
+// order. It exists because several of these collectors are defined by their
+// SIDE EFFECTS rather than their return value -- set_display_mode's whole
+// content is which hyprctl and systemctl calls it makes and in what order, and
+// a test that only compared the returned Display would pass with the body
+// deleted.
+var fixtureJournal []string
+
+func record(entry string) { fixtureJournal = append(fixtureJournal, entry) }
+
+// FixtureJournal returns the operations recorded since InstallFixture ran.
+func FixtureJournal() []string {
+	if fixtureJournal == nil {
+		return []string{}
+	}
+	return fixtureJournal
 }

@@ -16,14 +16,6 @@ type Clock struct {
 	Tooltip string `json:"tooltip"`
 }
 
-// Display is display.display_state's shape.
-type Display struct {
-	Mode         string `json:"mode"`
-	LidInhibited string `json:"lid_inhibited"`
-	Status       string `json:"status"`
-	Class        string `json:"class"`
-}
-
 // Wallpaper is wallpaper.wallpaper_state's shape.
 type Wallpaper struct {
 	Current string                    `json:"current"`
@@ -88,5 +80,5 @@ type Bar struct {
 	Notifications  collect.NotificationsState `json:"notifications"`
 	Wallpaper      Wallpaper                  `json:"wallpaper"`
 	IdleInhibited  string                     `json:"idle_inhibited"`
-	Display        Display                    `json:"display"`
+	Display        collect.Display            `json:"display"`
 }

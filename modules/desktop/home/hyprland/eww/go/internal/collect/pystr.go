@@ -1,6 +1,9 @@
 package collect
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+)
 
 // PyLower is Python's str.lower().
 //
@@ -17,8 +20,9 @@ import "strings"
 // ABOVE, which renders as one glyph and would not survive an editor that
 // normalises, or a reviewer who cannot see it.
 const (
-	capitalIWithDot = "\u0130"
-	dottedLowerI    = "i\u0307"
+	capitalIWithDot     = "\u0130"
+	capitalIWithDotRune = '\u0130'
+	dottedLowerI        = "i\u0307"
 )
 
 func PyLower(s string) string {
@@ -26,6 +30,45 @@ func PyLower(s string) string {
 		s = strings.ReplaceAll(s, capitalIWithDot, dottedLowerI)
 	}
 	return strings.ToLower(s)
+}
+
+// PyTitle is Python's str.title(), used to render the Claude plan name.
+//
+// strings.Title is deprecated and was never this anyway. The rule is a running
+// flag: each character is titlecased if the PREVIOUS character was not cased,
+// and lowercased otherwise. "Word" therefore means a run of cased characters,
+// so any digit or punctuation restarts one -- "max_5x" becomes "Max 5X", not
+// "Max 5x", and "don't" becomes "Don'T". Both are real outputs of the plan
+// formatter, and both look like bugs until you know the rule.
+// Both branches use Unicode's FULL case mappings, which are one-to-many and so
+// cannot come from unicode.ToTitle/ToLower alone: 48 code points titlecase to
+// more than one character (fullTitleCase), and one lowercases to more than one
+// (U+0130, the same rune PyLower exists for).
+func PyTitle(s string) string {
+	var out strings.Builder
+	out.Grow(len(s))
+	previousIsCased := false
+	for _, r := range s {
+		switch {
+		case previousIsCased && r == capitalIWithDotRune:
+			out.WriteString(dottedLowerI)
+		case previousIsCased:
+			out.WriteRune(unicode.ToLower(r))
+		default:
+			if full, isFull := fullTitleCase[r]; isFull {
+				out.WriteString(full)
+			} else {
+				out.WriteRune(unicode.ToTitle(r))
+			}
+		}
+		previousIsCased = isCased(r)
+	}
+	return out.String()
+}
+
+// isCased is Python's Py_UNICODE_ISCASED: upper, lower or title case.
+func isCased(r rune) bool {
+	return unicode.IsUpper(r) || unicode.IsLower(r) || unicode.IsTitle(r)
 }
 
 // SplitLines is Python's str.splitlines().

@@ -1530,6 +1530,269 @@ class GoEquivalenceTests(unittest.TestCase):
         )
 
 
+    # -- AI usage: the provider quota cards -----------------------------------
+
+    def test_py_title(self):
+        """str.title() restarts a word at any uncased character."""
+        texts = [
+            "max", "pro", "max 5x", "MAX 20X", "a b", "x1y", "don't", "",
+            "  ", "5x", "x5", "a1b2c3", "ǅungla", "straße", "ǆ", "ﬁne",
+            "İstanbul", "ÅNGSTRÖM", "ǰ", "Ǆǅǆ",
+            # U+0130 mid-word, i.e. reached by the LOWERCASE branch rather
+            # than the titlecase one -- a different mapping and a different bug.
+            "aİ", "xİy", "AİB", "ﬁ", "aﬁ", "ßx", "aß",
+        ]
+        self._compare("PyTitle", [(t,) for t in texts], str.title)
+
+    def test_py_title_matches_str_title_over_every_cased_code_point(self):
+        """Exhaustive, with the same Unicode-skew invariant as PyLower.
+
+        This is what proves the generated fullTitleCase table is complete:
+        every code point whose titlecase is longer than one character has to be
+        in it, and unicode.ToTitle cannot express any of them.
+        """
+        cased = [chr(c) for c in range(0x110000) if chr(c).title() != chr(c)]
+        self.assertGreater(len(cased), 1000, "sanity: expected many cased runes")
+
+        answers = self._ask_go([{"fn": "PyTitle", "args": [c]} for c in cased])
+        wrong = []
+        for char, answer in zip(cased, answers):
+            self.assertTrue(answer["ok"], answer.get("error"))
+            if answer["value"] in (char.title(), char):
+                continue  # equal, or a rune Go's older tables call uncased
+            wrong.append((hex(ord(char)), char.title(), answer["value"]))
+        self.assertEqual(wrong, [], "Go produced a different titlecase, not a missing one")
+
+        # The skip above tolerates version skew, so assert separately that every
+        # multi-character mapping is handled -- those are the table's whole
+        # reason to exist, and none of them may fall through to ToTitle.
+        expansions = [c for c in cased if len(c.title()) > 1]
+        self.assertGreater(len(expansions), 40, "sanity: expected ~48 expansions")
+        answers = self._ask_go([{"fn": "PyTitle", "args": [c]} for c in expansions])
+        for char, answer in zip(expansions, answers):
+            self.assertEqual(answer["value"], char.title(),
+                             f"missing fullTitleCase entry for {hex(ord(char))}")
+
+    def test_quota_window_class(self):
+        cases = [(p, r) for p in (-5, 0, 1, 79, 80, 89, 90, 91, 100, 150)
+                 for r in (True, False)]
+        self._compare("QuotaWindowClass", cases, collectors.quota_window_class)
+
+    def test_quota_card_class(self):
+        def card(window_classes, meta_classes):
+            return {
+                "key": "codex", "name": "Codex", "plan": "--", "status": "live",
+                "class": "", "updated": "",
+                "windows": [{"label": "w", "percent": 0, "value": "0%",
+                             "remaining": "--", "reset": "--", "class": c}
+                            for c in window_classes],
+                "meta": [{"label": "m", "value": "1", "tooltip": "", "class": c}
+                         for c in meta_classes],
+            }
+        combos = [
+            ([], []), (["active"], []), ([], ["active"]),
+            (["empty"], []), (["missing"], []),
+            (["active", "warning"], []), (["warning", "active"], []),
+            (["critical", "warning", "active", "empty"], []),
+            (["empty"], ["warning"]), (["missing"], ["critical"]),
+            (["unknown"], []), (["empty", "missing"], []),
+        ]
+        cases = [(card(w, m),) for w, m in combos]
+        self._compare("QuotaCardClass", cases, collectors.quota_card_class)
+
+    def test_quota_default(self):
+        cases = [
+            ("claude", "Claude", "waiting"), ("codex", "Codex", "live"),
+            ("antigravity", "Antigravity", "missing"),
+            # A known key ignores the name it is handed.
+            ("claude", "Not Claude", "waiting"),
+            # An unknown key falls through to the generic card.
+            ("gemini", "Gemini", "waiting"), ("", "", "x"),
+        ]
+        self._compare("QuotaDefault", cases,
+                      lambda k, n, s: collectors.quota_default(k, n, s))
+
+    _NOW = 1705285800.0  # 2024-01-15T10:30:00 local
+
+    def _openusage_lines(self):
+        return [
+            {}, {"used": 50, "limit": 100},
+            {"used": 0, "limit": 100}, {"used": 100, "limit": 100},
+            {"used": 95, "limit": 100}, {"used": 85, "limit": 100},
+            {"used": 1, "limit": 0}, {"used": "50", "limit": "100"},
+            {"used": True, "limit": 100},
+            {"label": "GPT-5", "used": 10, "limit": 100},
+            {"label": "", "used": 10, "limit": 100},
+            {"label": None, "used": 10, "limit": 100},
+            {"label": 0, "used": 10, "limit": 100},
+            {"label": 42, "used": 10, "limit": 100},
+            {"label": "a-very-long-window-label-past-the-cap", "used": 10, "limit": 100},
+            # resetsAt in the future, the past, malformed, and absent
+            {"used": 10, "limit": 100, "resetsAt": "2024-01-15T12:00:00"},
+            {"used": 10, "limit": 100, "resetsAt": "2024-01-15T09:00:00"},
+            {"used": 10, "limit": 100, "resetsAt": "2024-01-15T10:30:00"},
+            {"used": 0, "limit": 100, "resetsAt": "2024-01-16T00:00:00Z"},
+            {"used": 10, "limit": 100, "resetsAt": "garbage"},
+            {"used": 10, "limit": 100, "resetsAt": None},
+            {"used": 10, "limit": 100, "resetsAt": 1705285800},
+            {"used": 0, "limit": 0, "resetsAt": "2024-01-15T12:00:00"},
+            # Epoch zero and before it: parsed, but not a usable reset time.
+            {"used": 10, "limit": 100, "resetsAt": "1970-01-01T00:00:00+00:00"},
+            {"used": 10, "limit": 100, "resetsAt": "1969-01-01T00:00:00+00:00"},
+            {"used": 0, "limit": 100, "resetsAt": "1970-01-01T00:00:00+00:00"},
+        ]
+
+    def test_openusage_window(self):
+        cases = [(line, self._NOW) for line in self._openusage_lines()]
+        self._compare(
+            "OpenusageWindow", cases,
+            lambda line, now: collectors.openusage_window(line, now_epoch=now),
+        )
+
+    def test_openusage_meta(self):
+        lines = [
+            {}, {"limit": 100, "used": 40},
+            {"limit": 100, "used": 100}, {"limit": 100, "used": 150},
+            {"limit": 0, "used": 0},
+            # int() truncates each operand before subtracting.
+            {"limit": 1.9, "used": 0.9}, {"limit": 2.9, "used": 1.1},
+            {"limit": 100, "used": 40, "format": {"suffix": "credits"}},
+            {"limit": 100, "used": 40, "format": {"suffix": ""}},
+            {"limit": 100, "used": 40, "format": {"suffix": 7}},
+            {"limit": 100, "used": 40, "format": "not a dict"},
+            {"limit": 100, "used": 40, "format": {}},
+            {"label": "Balance", "limit": 100, "used": 40},
+            {"label": "", "limit": 100, "used": 40},
+            {"label": None, "limit": 100, "used": 40},
+        ]
+        self._compare("OpenusageMeta", [(line,) for line in lines],
+                      collectors.openusage_meta)
+
+    def _openusage_snapshots(self):
+        def progress(label, used, limit, kind="percent", **extra):
+            line = {"type": "progress", "label": label, "used": used,
+                    "limit": limit, "format": {"kind": kind}}
+            line.update(extra)
+            return line
+
+        return [
+            None, "not a dict", 42, [],
+            {}, {"lines": []}, {"lines": "not a list"},
+            {"lines": [{"type": "text", "label": "Error", "value": "boom"}]},
+            {"lines": [{"type": "text", "label": "Error", "value": ""}]},
+            {"lines": [{"type": "text", "label": "Error"}]},
+            {"lines": [{"type": "text", "label": "Error",
+                        "value": "a failure message far longer than the forty-eight character cap"}]},
+            {"lines": [{"type": "text", "label": "Note", "value": "hi"}]},
+            {"lines": [progress("Session", 50, 100)]},
+            {"lines": [progress("Session", 50, 100), progress("Credits", 10, 100, kind="count")]},
+            {"lines": [progress("Credits", 100, 100, kind="count")]},
+            {"lines": [progress("Session", 95, 100)], "plan": "Pro"},
+            {"lines": [progress("Session", 95, 100)], "plan": "  Pro  "},
+            {"lines": [progress("Session", 95, 100)], "plan": "   "},
+            {"lines": [progress("Session", 95, 100)], "plan": 7},
+            {"lines": [progress("S", 50, 100)], "plan": None},
+            # More than the cap: sorted by -percent then lowercased label.
+            {"lines": [progress(f"W{i}", i * 10, 100) for i in range(6)]},
+            # Ties on percent, so the label tiebreak decides. The names are
+            # chosen so case-folding CHANGES the order: sorted raw, "ZULU"
+            # precedes "beta" because 'Z' < 'b' in code points.
+            {"lines": [progress(n, 50, 100) for n in ["beta", "Alpha", "ZULU", "charlie", "delta"]]},
+            {"lines": [progress(n, 50, 100) for n in ["delta", "Alpha", "charlie", "BRAVO", "echo"]]},
+            # Fully tied on BOTH sort keys, so only stability decides which
+            # four survive the cap. Twenty of them: Go's pdqsort falls back to
+            # insertion sort (which is stable) below about a dozen elements, so
+            # a smaller list would pass even with an unstable sort.
+            {"lines": [progress("same", 50, 100, resetsAt=f"2024-01-{d:02d}T12:00:00")
+                       for d in range(1, 21)]},
+            # ...and the same idea INTERLEAVED. All-equal keys are not enough on
+            # their own: pdqsort notices the slice is already ordered and
+            # returns without touching it, so an unstable sort looks stable.
+            # Four tie groups in rotating order force real partitioning, and the
+            # top group has five members for a cap of four, so which four
+            # survive -- and in what order -- is decided purely by stability.
+            {"lines": [progress(f"g{i % 4}", (i % 4) * 25, 100,
+                                resetsAt=f"2024-02-{i + 1:02d}T12:00:00")
+                       for i in range(20)]},
+            # Meta rows but no windows: the only shape that tells
+            # "no windows and no meta" apart from "no windows".
+            {"lines": [progress("Credits", 10, 100, kind="count")]},
+            {"lines": [progress("Credits", 10, 100, kind="count"),
+                       progress("Bonus", 5, 50, kind="count")]},
+            # Exactly at the cap: order must be left alone, not sorted.
+            {"lines": [progress(n, 10, 100) for n in ["d", "c", "b", "a"]]},
+            {"lines": [progress("S", 50, 100, resetsAt="2024-01-15T12:00:00")]},
+        ]
+
+    def test_quota_from_openusage(self):
+        cases = [(snap, key, name, self._NOW)
+                 for snap in self._openusage_snapshots()
+                 for key, name in (("codex", "Codex"), ("gemini", "Gemini"))]
+        self._compare(
+            "QuotaFromOpenusage", cases,
+            lambda s, k, n, now: collectors.quota_from_openusage(s, k, n, now_epoch=now),
+        )
+
+    def test_format_claude_plan(self):
+        values = [
+            "max", "pro", "max_5x", "max_20x", "MAX_5X", "", "   ", "_",
+            "a_b_c", "free", None, 7, True, [], {}, "ǅungla", "don't_stop",
+        ]
+        self._compare("FormatClaudePlan", [(v,) for v in values],
+                      collectors.format_claude_plan)
+
+    def test_claude_window_state(self):
+        windows = [
+            None, "not a dict", 42, [],
+            {}, {"utilization": 50}, {"used_percent": 50}, {"percent": 50},
+            {"utilization": 0}, {"utilization": 100}, {"utilization": 150},
+            {"utilization": -10}, {"utilization": 79.5}, {"utilization": 80.5},
+            {"utilization": "50"},
+            # All three spellings present: only their order decides the answer.
+            {"utilization": 10, "used_percent": 50, "percent": 90},
+            {"used_percent": 50, "percent": 90},
+            {"utilization": 0, "used_percent": 50},
+            {"utilization": 50, "resets_at": "2024-01-15T12:00:00"},
+            {"utilization": 50, "resets_at": "2024-01-15T09:00:00"},
+            {"utilization": 50, "reset_at": "2024-01-15T12:00:00"},
+            {"utilization": 50, "resets_at": "", "reset_at": "2024-01-15T12:00:00"},
+            {"utilization": 50, "resets_at": None, "reset_at": 1705290000},
+            # The old shape: a bare epoch, reached only when the ISO parse fails.
+            {"utilization": 50, "resets_at": 1705290000},
+            {"utilization": 50, "resets_at": 0},
+            {"utilization": 50, "resets_at": -5},
+            {"utilization": 0, "resets_at": "2024-01-15T12:00:00"},
+        ]
+        cases = [("Session", w, self._NOW) for w in windows]
+        self._compare(
+            "ClaudeWindowState", cases,
+            lambda label, w, now: collectors.claude_window_state(label, w, now_epoch=now),
+        )
+
+    def test_claude_quota_state_from_json(self):
+        bodies = [
+            "", "null", "[]", "{}", "not json", "42", '{"unrelated": 1}',
+            '{"five_hour": {"utilization": 50}}',
+            '{"fiveHour": {"utilization": 50}}',
+            # Both spellings: the snake_case one wins.
+            '{"five_hour": {"utilization": 10}, "fiveHour": {"utilization": 90}}',
+            '{"seven_day": {"utilization": 50}}',
+            '{"seven_day_opus": {"utilization": 95}}',
+            '{"seven_day_sonnet": {"utilization": 85}}',
+            '{"five_hour": {"utilization": 50}, "seven_day": {"utilization": 85},'
+            ' "seven_day_opus": {"utilization": 95}, "seven_day_sonnet": {"utilization": 5}}',
+            '{"five_hour": "not a dict"}',
+            '{"five_hour": {"utilization": 50, "resets_at": "2024-01-15T12:00:00"}}',
+        ]
+        plans = ["--", "max_5x", None, 7]
+        cases = [(body, plan, self._NOW) for body in bodies for plan in plans]
+        self._compare(
+            "ClaudeQuotaStateFromJSON", cases,
+            lambda body, plan, now: collectors.claude_quota_state_from_json(
+                body, plan=plan, now_epoch=now),
+        )
+
+
 def _contiguous_runs(chars):
     """Split a sorted character list into runs of consecutive code points."""
     runs, current = [], [chars[0]]

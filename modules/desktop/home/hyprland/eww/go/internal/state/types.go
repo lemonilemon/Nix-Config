@@ -47,23 +47,6 @@ type AiPeriods struct {
 	Month AiPeriod `json:"month"`
 }
 
-// AiQuota is one provider card in the AI popup.
-//
-// Windows and Meta are []any because the AI subsystem stays in Python and this
-// struct only has to carry its output through to eww unchanged. Giving them
-// concrete shapes would mean re-deriving six third-party schemas in Go, which
-// is the thing that subsystem exists in Python to avoid.
-type AiQuota struct {
-	Key     string `json:"key"`
-	Name    string `json:"name"`
-	Plan    string `json:"plan"`
-	Status  string `json:"status"`
-	Class   string `json:"class"`
-	Updated string `json:"updated"`
-	Windows []any  `json:"windows"`
-	Meta    []any  `json:"meta"`
-}
-
 // AiMeta is ai_usage.meta.
 type AiMeta struct {
 	Pricing    string `json:"pricing"`
@@ -75,15 +58,15 @@ type AiMeta struct {
 
 // AiUsage is collectors.ai_usage_state's shape.
 type AiUsage struct {
-	Text    string    `json:"text"`
-	Tooltip string    `json:"tooltip"`
-	Class   string    `json:"class"`
-	Source  string    `json:"source"`
-	Updated string    `json:"updated"`
-	Periods AiPeriods `json:"periods"`
-	Agents  string    `json:"agents"`
-	Quotas  []AiQuota `json:"quotas"`
-	Meta    AiMeta    `json:"meta"`
+	Text    string          `json:"text"`
+	Tooltip string          `json:"tooltip"`
+	Class   string          `json:"class"`
+	Source  string          `json:"source"`
+	Updated string          `json:"updated"`
+	Periods AiPeriods       `json:"periods"`
+	Agents  string          `json:"agents"`
+	Quotas  []collect.Quota `json:"quotas"`
+	Meta    AiMeta          `json:"meta"`
 }
 
 // Bar is the whole state the daemon emits, in emit order.

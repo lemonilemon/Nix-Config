@@ -244,22 +244,6 @@ def parse_iso_epoch(value):
         return None
 
 
-def daily_row_from_report(daily_report, now_epoch=None):
-    today_date = time.strftime("%F", time.localtime(now_epoch or time.time()))
-    daily_rows = list_value(daily_report, "daily", "data", "days", "rows")
-    today_row = next(
-        (
-            row
-            for row in daily_rows
-            if isinstance(row, dict) and (row.get("date") or row.get("period")) == today_date
-        ),
-        None,
-    )
-    if today_row is None and daily_rows:
-        today_row = next((row for row in reversed(daily_rows) if isinstance(row, dict)), None)
-    return today_row or {}
-
-
 def daily_token_values(today_row):
     input_tokens = number_value(today_row, "inputTokens", "input_tokens", "input")
     output_tokens = number_value(today_row, "outputTokens", "output_tokens", "output")
@@ -287,22 +271,6 @@ def daily_token_values(today_row):
         "total": total_tokens,
         "cost": total_cost,
     }
-
-
-def agents_from_daily_json(daily_json, now_epoch=None):
-    daily_report = parse_json(daily_json, {})
-    today_row = daily_row_from_report(daily_report, now_epoch=now_epoch)
-    if not today_row:
-        return []
-
-    agents = []
-    metadata = today_row.get("metadata")
-    if isinstance(metadata, dict):
-        agents.extend(value for value in metadata.get("agents", []) if isinstance(value, str))
-    agent = today_row.get("agent")
-    if isinstance(agent, str) and agent != "all":
-        agents.append(agent)
-    return [agent.lower() for agent in agents]
 
 
 def agents_text(agents):

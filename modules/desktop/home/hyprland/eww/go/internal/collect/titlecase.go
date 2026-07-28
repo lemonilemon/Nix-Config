@@ -1,0 +1,65 @@
+package collect
+
+// fullTitleCase is the titlecase mapping for the 48 code points whose
+// titlecase form is longer than one character.
+//
+// GENERATED from CPython's str.title() over the whole code point range and
+// committed, for the same reasons as state/defaults.go: it changes about once
+// per Unicode revision, and generating it at build time would mean
+// import-from-derivation. Values are escapes rather than literals because most
+// of them are invisible, decomposed, or both -- U+01F0 titlecases to "J" plus a
+// COMBINING CARON, which no editor will show you as two characters.
+//
+// unicode.ToTitle cannot express these: it maps one rune to one rune, and
+// Unicode's full case mappings are one-to-many. Without the table, "\uFB01ne"
+// titlecases to itself instead of "Fine".
+var fullTitleCase = map[rune]string{
+	'\u00DF': "Ss",                 // LATIN SMALL LETTER SHARP S
+	'\u0149': "\u02BCN",            // LATIN SMALL LETTER N PRECEDED BY APOSTROPHE
+	'\u01F0': "J\u030C",            // LATIN SMALL LETTER J WITH CARON
+	'\u0390': "\u0399\u0308\u0301", // GREEK SMALL LETTER IOTA WITH DIALYTIKA AND TONOS
+	'\u03B0': "\u03A5\u0308\u0301", // GREEK SMALL LETTER UPSILON WITH DIALYTIKA AND TONOS
+	'\u0587': "\u0535\u0582",       // ARMENIAN SMALL LIGATURE ECH YIWN
+	'\u1E96': "H\u0331",            // LATIN SMALL LETTER H WITH LINE BELOW
+	'\u1E97': "T\u0308",            // LATIN SMALL LETTER T WITH DIAERESIS
+	'\u1E98': "W\u030A",            // LATIN SMALL LETTER W WITH RING ABOVE
+	'\u1E99': "Y\u030A",            // LATIN SMALL LETTER Y WITH RING ABOVE
+	'\u1E9A': "A\u02BE",            // LATIN SMALL LETTER A WITH RIGHT HALF RING
+	'\u1F50': "\u03A5\u0313",       // GREEK SMALL LETTER UPSILON WITH PSILI
+	'\u1F52': "\u03A5\u0313\u0300", // GREEK SMALL LETTER UPSILON WITH PSILI AND VARIA
+	'\u1F54': "\u03A5\u0313\u0301", // GREEK SMALL LETTER UPSILON WITH PSILI AND OXIA
+	'\u1F56': "\u03A5\u0313\u0342", // GREEK SMALL LETTER UPSILON WITH PSILI AND PERISPOMENI
+	'\u1FB2': "\u1FBA\u0345",       // GREEK SMALL LETTER ALPHA WITH VARIA AND YPOGEGRAMMENI
+	'\u1FB4': "\u0386\u0345",       // GREEK SMALL LETTER ALPHA WITH OXIA AND YPOGEGRAMMENI
+	'\u1FB6': "\u0391\u0342",       // GREEK SMALL LETTER ALPHA WITH PERISPOMENI
+	'\u1FB7': "\u0391\u0342\u0345", // GREEK SMALL LETTER ALPHA WITH PERISPOMENI AND YPOGEGRAMMENI
+	'\u1FC2': "\u1FCA\u0345",       // GREEK SMALL LETTER ETA WITH VARIA AND YPOGEGRAMMENI
+	'\u1FC4': "\u0389\u0345",       // GREEK SMALL LETTER ETA WITH OXIA AND YPOGEGRAMMENI
+	'\u1FC6': "\u0397\u0342",       // GREEK SMALL LETTER ETA WITH PERISPOMENI
+	'\u1FC7': "\u0397\u0342\u0345", // GREEK SMALL LETTER ETA WITH PERISPOMENI AND YPOGEGRAMMENI
+	'\u1FD2': "\u0399\u0308\u0300", // GREEK SMALL LETTER IOTA WITH DIALYTIKA AND VARIA
+	'\u1FD3': "\u0399\u0308\u0301", // GREEK SMALL LETTER IOTA WITH DIALYTIKA AND OXIA
+	'\u1FD6': "\u0399\u0342",       // GREEK SMALL LETTER IOTA WITH PERISPOMENI
+	'\u1FD7': "\u0399\u0308\u0342", // GREEK SMALL LETTER IOTA WITH DIALYTIKA AND PERISPOMENI
+	'\u1FE2': "\u03A5\u0308\u0300", // GREEK SMALL LETTER UPSILON WITH DIALYTIKA AND VARIA
+	'\u1FE3': "\u03A5\u0308\u0301", // GREEK SMALL LETTER UPSILON WITH DIALYTIKA AND OXIA
+	'\u1FE4': "\u03A1\u0313",       // GREEK SMALL LETTER RHO WITH PSILI
+	'\u1FE6': "\u03A5\u0342",       // GREEK SMALL LETTER UPSILON WITH PERISPOMENI
+	'\u1FE7': "\u03A5\u0308\u0342", // GREEK SMALL LETTER UPSILON WITH DIALYTIKA AND PERISPOMENI
+	'\u1FF2': "\u1FFA\u0345",       // GREEK SMALL LETTER OMEGA WITH VARIA AND YPOGEGRAMMENI
+	'\u1FF4': "\u038F\u0345",       // GREEK SMALL LETTER OMEGA WITH OXIA AND YPOGEGRAMMENI
+	'\u1FF6': "\u03A9\u0342",       // GREEK SMALL LETTER OMEGA WITH PERISPOMENI
+	'\u1FF7': "\u03A9\u0342\u0345", // GREEK SMALL LETTER OMEGA WITH PERISPOMENI AND YPOGEGRAMMENI
+	'\uFB00': "Ff",                 // LATIN SMALL LIGATURE FF
+	'\uFB01': "Fi",                 // LATIN SMALL LIGATURE FI
+	'\uFB02': "Fl",                 // LATIN SMALL LIGATURE FL
+	'\uFB03': "Ffi",                // LATIN SMALL LIGATURE FFI
+	'\uFB04': "Ffl",                // LATIN SMALL LIGATURE FFL
+	'\uFB05': "St",                 // LATIN SMALL LIGATURE LONG S T
+	'\uFB06': "St",                 // LATIN SMALL LIGATURE ST
+	'\uFB13': "\u0544\u0576",       // ARMENIAN SMALL LIGATURE MEN NOW
+	'\uFB14': "\u0544\u0565",       // ARMENIAN SMALL LIGATURE MEN ECH
+	'\uFB15': "\u0544\u056B",       // ARMENIAN SMALL LIGATURE MEN INI
+	'\uFB16': "\u054E\u0576",       // ARMENIAN SMALL LIGATURE VEW NOW
+	'\uFB17': "\u0544\u056D",       // ARMENIAN SMALL LIGATURE MEN XEH
+}

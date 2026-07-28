@@ -42,17 +42,10 @@ func Default() Bar {
 				Month: AiPeriod{Label: "This month", Range: "", Tokens: "--", Cost: "--", Agents: []string{}},
 			},
 			Agents: "--",
-			Quotas: []AiQuota{
-				{Key: "claude", Name: "Claude", Plan: "--",
-					Status: "waiting", Class: "missing", Updated: "",
-					Windows: []any{}, Meta: []any{}},
-				{Key: "codex", Name: "Codex", Plan: "--",
-					Status: "waiting", Class: "missing", Updated: "",
-					Windows: []any{}, Meta: []any{}},
-				{Key: "antigravity", Name: "Antigravity", Plan: "--",
-					Status: "waiting", Class: "missing", Updated: "",
-					Windows: []any{}, Meta: []any{}},
-			},
+			// Not spelled out here: these ARE collectors.quota_default's
+			// templates, and the AI collectors deep-copy them on every probe.
+			// Two copies would drift the moment a provider is added.
+			Quotas: collect.QuotaDefaults(),
 			Meta: AiMeta{
 				Pricing: "offline", Refresh: "5m",
 				Status: "waiting", Stale: "false",

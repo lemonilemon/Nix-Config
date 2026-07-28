@@ -601,6 +601,90 @@ func dispatch(c call) (any, error) {
 			return nil, err
 		}
 		return collect.PyLower(text), nil
+
+	case "PyTitle":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		return collect.PyTitle(text), nil
+
+	// -- AI usage: the provider quota cards --------------------------------
+
+	case "QuotaWindowClass":
+		var percent int
+		var hasReset bool
+		if err := args(c, &percent, &hasReset); err != nil {
+			return nil, err
+		}
+		return collect.QuotaWindowClass(percent, hasReset), nil
+
+	case "QuotaCardClass":
+		var quota collect.Quota
+		if err := args(c, &quota); err != nil {
+			return nil, err
+		}
+		return collect.QuotaCardClass(quota), nil
+
+	case "QuotaDefault":
+		var key, name, status string
+		if err := args(c, &key, &name, &status); err != nil {
+			return nil, err
+		}
+		return collect.QuotaDefault(key, name, status), nil
+
+	case "OpenusageWindow":
+		var line map[string]any
+		var now float64
+		if err := args(c, &line, &now); err != nil {
+			return nil, err
+		}
+		return collect.OpenusageWindow(line, now), nil
+
+	case "OpenusageMeta":
+		var line map[string]any
+		if err := args(c, &line); err != nil {
+			return nil, err
+		}
+		entry, ok := collect.OpenusageMeta(line)
+		if !ok {
+			return nil, nil // Python's None
+		}
+		return entry, nil
+
+	case "QuotaFromOpenusage":
+		var snapshot any
+		var key, name string
+		var now float64
+		if err := args(c, &snapshot, &key, &name, &now); err != nil {
+			return nil, err
+		}
+		return collect.QuotaFromOpenusage(snapshot, key, name, now), nil
+
+	case "FormatClaudePlan":
+		var value any
+		if err := args(c, &value); err != nil {
+			return nil, err
+		}
+		return collect.FormatClaudePlan(value), nil
+
+	case "ClaudeWindowState":
+		var label string
+		var window any
+		var now float64
+		if err := args(c, &label, &window, &now); err != nil {
+			return nil, err
+		}
+		return collect.ClaudeWindowState(label, window, now), nil
+
+	case "ClaudeQuotaStateFromJSON":
+		var usageJSON string
+		var plan any
+		var now float64
+		if err := args(c, &usageJSON, &plan, &now); err != nil {
+			return nil, err
+		}
+		return collect.ClaudeQuotaStateFromJSON(usageJSON, plan, now), nil
 	}
 	return nil, fmt.Errorf("unknown fn: %s", c.Fn)
 }

@@ -15,6 +15,7 @@ import json
 import re
 import shutil
 import subprocess
+import time
 import sys
 import unittest
 import unittest.mock
@@ -1614,6 +1615,11 @@ class GoEquivalenceTests(unittest.TestCase):
 
     _NOW = 1705285800.0  # 2024-01-15T10:30:00 local
 
+    # Exactly midnight, i.e. exactly one week after a "2024-01-08" row starts.
+    # Computed rather than hardcoded because every period comparison runs in
+    # local time, and the sandbox is UTC while this laptop is not.
+    _NOW_WEEK_EDGE = time.mktime(time.strptime("2024-01-15T00:00:00", "%Y-%m-%dT%H:%M:%S"))
+
     def _openusage_lines(self):
         return [
             {}, {"used": 50, "limit": 100},
@@ -1791,6 +1797,247 @@ class GoEquivalenceTests(unittest.TestCase):
             lambda body, plan, now: collectors.claude_quota_state_from_json(
                 body, plan=plan, now_epoch=now),
         )
+
+
+    # -- AI usage: periods and assembly ---------------------------------------
+
+    def test_agent_display_name(self):
+        keys = [
+            "claude", "codex", "gemini", "opencode", "copilot", "amp", "droid",
+            "unknown", "my_agent", "my_5x_agent", "MY_AGENT", "", None, 7,
+            True, [], "a", "don't", "ǅungla",
+        ]
+        self._compare("AgentDisplayName", [(k,) for k in keys],
+                      collectors.agent_display_name)
+
+    def _period_rows(self):
+        """Rows around the reference instant, plus the shapes that break parsing."""
+        return [
+            [],
+            [{"date": "2024-01-15"}],
+            [{"date": "2024-01-14"}],
+            [{"period": "2024-01-15"}],
+            [{"period": "2024-01"}],
+            [{"period": "2023-12"}],
+            [{"period": "2024-01-08"}],  # the week containing the reference day
+            [{"period": "2024-01-15"}, {"period": "2024-01-08"}],
+            [{"period": "2024-01-01"}, {"period": "2024-01-08"}],
+            # Two starts two days apart, so they sit on different week phases:
+            # picking the latest and picking the earliest step to different
+            # keys, where starts a whole number of weeks apart converge.
+            [{"period": "2024-01-08"}, {"period": "2024-01-10"}],
+            [{"period": "2024-01-10"}, {"period": "2024-01-08"}],
+            [{"period": ""}], [{"period": None}], [{"period": 7}],
+            [{"date": None, "period": None}],
+            ["not a dict"], ["not a dict", {"date": "2024-01-15"}],
+            [{}, {"date": "2024-01-15"}],
+            [{"period": "garbage"}],
+            # Week starts far in the past: the stepping loop has to run.
+            [{"period": "2023-01-02"}],
+            [{"period": "2023-01-02"}, {"period": "2023-01-09"}],
+        ]
+
+    def test_current_period_key(self):
+        cases = [(kind, [r for r in rows if isinstance(r, dict)], now)
+                 for now in (self._NOW, self._NOW_WEEK_EDGE)
+                 for kind in ("daily", "weekly", "monthly")
+                 for rows in self._period_rows()]
+        self._compare("CurrentPeriodKey", cases, collectors.current_period_key)
+
+    def test_synthetic_period_row(self):
+        cases = [(kind, [r for r in rows if isinstance(r, dict)], self._NOW)
+                 for kind in ("daily", "weekly", "monthly")
+                 for rows in self._period_rows()]
+        self._compare("SyntheticPeriodRow", cases, collectors.synthetic_period_row)
+
+    def test_select_period_row(self):
+        cases = [(rows, kind, now)
+                 for now in (self._NOW, self._NOW_WEEK_EDGE)
+                 for kind in ("daily", "weekly", "monthly")
+                 for rows in self._period_rows()]
+        self._compare(
+            "SelectPeriodRow", cases,
+            lambda rows, kind, now: collectors.select_period_row(rows, kind, now_epoch=now),
+        )
+
+    def test_period_range_label(self):
+        periods = [
+            "", "2024-01-15", "2024-01", "2024-1", "2024-12", "2024-13",
+            "2024-00", "2024-01-01", "2024-12-31", "2023-02-28", "2024-02-29",
+            "garbage", "2024", "2024-01-15T00:00:00", "0", "2024-01-08",
+        ]
+        cases = [(kind, period, self._NOW)
+                 for kind in ("daily", "weekly", "monthly")
+                 for period in periods]
+        self._compare(
+            "PeriodRangeLabel", cases,
+            lambda kind, period, now: collectors.period_range_label(kind, period, now_epoch=now),
+        )
+
+    def test_period_range_label_leaks_a_non_string_month(self):
+        """Pins the one divergence PeriodRangeLabel documents.
+
+        For kind "monthly" with a non-string period, strptime raises TypeError
+        and the except branch returns the value UNCHANGED, so a number reaches
+        the state as a JSON number where every other path yields a string. Go
+        stringifies instead. Asserted here rather than reproduced, so the claim
+        in period.go cannot quietly stop being true.
+        """
+        for period in (2024, 7.5, True):
+            self.assertEqual(collectors.period_range_label("monthly", period), period)
+            self.assertNotIsInstance(
+                collectors.period_range_label("monthly", period), str,
+                "if this becomes a str, drop the divergence note in period.go",
+            )
+        # Every other kind already stringifies, which is why only monthly differs.
+        self.assertIsInstance(collectors.period_range_label("daily", 2024), str)
+
+    def _agent_rows(self):
+        def agent(key, tokens=0, cost=0.0):
+            return {"agent": key, "totalTokens": tokens, "totalCost": cost}
+
+        return [
+            {}, {"agents": []}, {"agents": "not a list"},
+            {"agents": [agent("claude", 100)]},
+            {"agents": [agent("claude", 100), agent("codex", 200)]},
+            {"agents": [agent("codex", 200), agent("claude", 100)]},
+            # "all" is the rollup row and is skipped.
+            {"agents": [agent("all", 300), agent("claude", 100)]},
+            # Zero on both counts is dropped; either one alone keeps the row.
+            {"agents": [agent("empty", 0, 0.0), agent("claude", 100)]},
+            {"agents": [agent("costonly", 0, 1.5)]},
+            {"agents": [agent("tokensonly", 5, 0.0)]},
+            {"agents": [agent("neg", -5, -1.0)]},
+            {"agents": [{"noagent": 1}, "junk", agent("claude", 100)]},
+            {"agents": [{"agent": 7, "totalTokens": 5}]},
+            # totalTokens absent or zero: the percentages come off the sum.
+            {"agents": [agent("a", 30), agent("b", 70)]},
+            {"totalTokens": 0, "agents": [agent("a", 30), agent("b", 70)]},
+            {"totalTokens": 1000, "agents": [agent("a", 30), agent("b", 70)]},
+            {"total_tokens": 200, "agents": [agent("a", 30)]},
+            # Ties on the sort key, so only stability decides the order.
+            {"agents": [agent(n, 50) for n in ["delta", "alpha", "charlie"]]},
+            {"agents": [agent(f"a{i}", (i % 3) * 10 + 1) for i in range(15)]},
+            # Mixed spellings and casing.
+            {"agents": [{"agent": "CLAUDE", "tokens": 5, "cost": 0.5}]},
+            {"agents": [{"agent": "My_Agent", "total_tokens": 5}]},
+            {"agents": [agent("big", 1_500_000), agent("small", 999)]},
+        ]
+
+    def test_period_agents(self):
+        self._compare("PeriodAgents", [(row,) for row in self._agent_rows()],
+                      collectors.period_agents)
+
+    def test_period_state(self):
+        rowsets = self._period_rows() + [
+            [{"date": "2024-01-15", "totalTokens": 1234, "totalCost": 5.5,
+              "agents": [{"agent": "claude", "totalTokens": 1234, "totalCost": 5.5}]}],
+            [{"date": "2024-01-15", "inputTokens": 10, "outputTokens": 20,
+              "cacheCreationTokens": 5, "cacheReadTokens": 5}],
+            [{"period": "2024-01", "totalTokens": 999}],
+            [{"period": "2024-01-08", "totalTokens": 42}],
+        ]
+        cases = [(rows, kind, label, self._NOW)
+                 for kind, label in (("daily", "Today"), ("weekly", "This week"),
+                                     ("monthly", "This month"))
+                 for rows in rowsets]
+        self._compare(
+            "PeriodState", cases,
+            lambda rows, kind, label, now: collectors.period_state(
+                rows, kind, label, now_epoch=now),
+        )
+
+    def _quota_sets(self):
+        def card(key, name, status, klass, plan="--", windows=()):
+            return {
+                "key": key, "name": name, "plan": plan, "status": status,
+                "class": klass, "updated": "",
+                "windows": [{"label": lbl, "percent": pct, "value": val,
+                             "remaining": "--", "reset": "--", "class": "active"}
+                            for lbl, pct, val in windows],
+                "meta": [],
+            }
+
+        return [
+            [],
+            [card("claude", "Claude", "waiting", "missing")],
+            [card("claude", "Claude", "live", "active")],
+            [card("claude", "Claude", "live", "warning")],
+            [card("claude", "Claude", "live", "critical")],
+            [card("claude", "Claude", "live", "active", plan="Max")],
+            [card("claude", "Claude", "live", "active", plan="")],
+            [card("claude", "Claude", "live", "active", plan="--")],
+            [card("claude", "Claude", "live", "active", plan="Max",
+                  windows=[("Session", 50, "50%")])],
+            # More than two windows: only the first two reach the tooltip.
+            [card("claude", "Claude", "live", "active", plan="Max",
+                  windows=[("A", 10, "10%"), ("B", 20, "20%"), ("C", 30, "30%")])],
+            # A "--" value is skipped inside the head line.
+            [card("claude", "Claude", "live", "active",
+                  windows=[("A", 0, "--"), ("B", 20, "20%")])],
+            [card("claude", "Claude", "live", "active"),
+             card("codex", "Codex", "live", "warning")],
+            [card("claude", "Claude", "unavailable", "missing"),
+             card("codex", "Codex", "live", "active")],
+        ]
+
+    def test_apply_quotas(self):
+        import copy
+
+        from eww_bar_backend.common import AI_USAGE_DEFAULT
+
+        states = [
+            copy.deepcopy(AI_USAGE_DEFAULT),
+            collectors.ai_usage_state_from_json(
+                json.dumps({"daily": [{"date": "2024-01-15", "totalTokens": 1234,
+                                       "totalCost": 5.5}]}),
+                now_epoch=self._NOW),
+            collectors.ai_usage_state_from_json(
+                json.dumps({"daily": [{"date": "2024-01-14"}]}), now_epoch=self._NOW),
+        ]
+        cases = [(state, quotas) for state in states for quotas in self._quota_sets()]
+        self._compare(
+            "ApplyQuotas", cases,
+            lambda state, quotas: collectors.apply_quotas(
+                copy.deepcopy(state), copy.deepcopy(quotas)),
+        )
+
+    def test_ai_usage_state_from_json(self):
+        reports = [
+            "", "null", "[]", "{}", "not json", "42",
+            '{"daily": []}', '{"daily": [], "weekly": [], "monthly": []}',
+            '{"unrelated": [1]}',
+            json.dumps({"daily": [{"date": "2024-01-15", "totalTokens": 1234,
+                                   "totalCost": 5.5}]}),
+            json.dumps({"daily": [{"date": "2024-01-14", "totalTokens": 10}]}),
+            json.dumps({"weekly": [{"period": "2024-01-08", "totalTokens": 99}]}),
+            json.dumps({"monthly": [{"period": "2024-01", "totalTokens": 77}]}),
+            json.dumps({
+                "daily": [{"date": "2024-01-15", "totalTokens": 1_500_000,
+                           "totalCost": 12.34,
+                           "agents": [{"agent": "claude", "totalTokens": 1_000_000,
+                                       "totalCost": 10.0},
+                                      {"agent": "codex", "totalTokens": 500_000,
+                                       "totalCost": 2.34}],
+                           "metadata": {"agents": ["claude", "codex"]}}],
+                "weekly": [{"period": "2024-01-08", "totalTokens": 3_000_000}],
+                "monthly": [{"period": "2024-01", "totalTokens": 9_000_000}],
+            }),
+            # Rows present but none current: the synthetic row must take over.
+            json.dumps({"daily": [{"date": "2020-01-01", "totalTokens": 5}]}),
+        ]
+        cases = [(report, self._NOW) for report in reports]
+        self._compare(
+            "AiUsageStateFromJSON", cases,
+            lambda report, now: collectors.ai_usage_state_from_json(report, now_epoch=now),
+        )
+
+    def test_ai_usage_default_is_byte_identical(self):
+        from eww_bar_backend.common import AI_USAGE_DEFAULT
+
+        answers = self._ask_go([{"fn": "AiUsageDefault", "args": []}])
+        self.assertTrue(answers[0]["ok"], answers[0].get("error"))
+        self.assertEqual(answers[0]["value"], AI_USAGE_DEFAULT)
 
 
 def _contiguous_runs(chars):

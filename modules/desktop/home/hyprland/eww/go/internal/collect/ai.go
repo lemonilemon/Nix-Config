@@ -131,7 +131,7 @@ func AgentsText(agents []string) string {
 	if len(seen) == 0 {
 		return "--"
 	}
-	return strings.Join(seen, " · ") // U+00B7 middle dot
+	return strings.Join(seen, " "+middleDot+" ")
 }
 
 // PeriodAgentKeys mirrors collectors.period_agent_keys.

@@ -685,6 +685,86 @@ func dispatch(c call) (any, error) {
 			return nil, err
 		}
 		return collect.ClaudeQuotaStateFromJSON(usageJSON, plan, now), nil
+
+	// -- AI usage: periods and assembly ------------------------------------
+
+	case "AgentDisplayName":
+		var key any
+		if err := args(c, &key); err != nil {
+			return nil, err
+		}
+		return collect.AgentDisplayName(key), nil
+
+	case "CurrentPeriodKey":
+		var kind string
+		var rows []map[string]any
+		var now float64
+		if err := args(c, &kind, &rows, &now); err != nil {
+			return nil, err
+		}
+		return collect.CurrentPeriodKey(kind, rows, now), nil
+
+	case "SyntheticPeriodRow":
+		var kind string
+		var rows []map[string]any
+		var now float64
+		if err := args(c, &kind, &rows, &now); err != nil {
+			return nil, err
+		}
+		return collect.SyntheticPeriodRow(kind, rows, now), nil
+
+	case "SelectPeriodRow":
+		var rows []any
+		var kind string
+		var now float64
+		if err := args(c, &rows, &kind, &now); err != nil {
+			return nil, err
+		}
+		return collect.SelectPeriodRow(rows, kind, now), nil
+
+	case "PeriodRangeLabel":
+		var kind string
+		var period any
+		var now float64
+		if err := args(c, &kind, &period, &now); err != nil {
+			return nil, err
+		}
+		return collect.PeriodRangeLabel(kind, period, now), nil
+
+	case "PeriodAgents":
+		var row map[string]any
+		if err := args(c, &row); err != nil {
+			return nil, err
+		}
+		return collect.PeriodAgents(row), nil
+
+	case "PeriodState":
+		var rows []any
+		var kind, label string
+		var now float64
+		if err := args(c, &rows, &kind, &label, &now); err != nil {
+			return nil, err
+		}
+		return collect.PeriodState(rows, kind, label, now), nil
+
+	case "ApplyQuotas":
+		var state collect.AiUsage
+		var quotas []collect.Quota
+		if err := args(c, &state, &quotas); err != nil {
+			return nil, err
+		}
+		return collect.ApplyQuotas(state, quotas), nil
+
+	case "AiUsageStateFromJSON":
+		var reportJSON string
+		var now float64
+		if err := args(c, &reportJSON, &now); err != nil {
+			return nil, err
+		}
+		return collect.AiUsageStateFromJSON(reportJSON, now), nil
+
+	case "AiUsageDefault":
+		return collect.AiUsageDefault(), nil
 	}
 	return nil, fmt.Errorf("unknown fn: %s", c.Fn)
 }

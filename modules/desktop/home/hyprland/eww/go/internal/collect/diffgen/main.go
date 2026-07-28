@@ -459,7 +459,12 @@ func dispatch(c call) (any, error) {
 	case "CollectActiveWindow", "CollectWorkspace", "CollectMedia",
 		"CollectTrayCount", "CollectBluetooth", "CollectVolume",
 		"NetworkRadioEnabled", "CollectLinkFallback", "CollectNetworkConnection",
-		"CollectNetwork":
+		"CollectNetwork",
+		"ClaudeCredentialsPaths", "ClaudeLoadOAuth", "ClaudeQuotaState",
+		"OpenusageQuotaStates", "QuotaStates", "QuotaStatesSequence",
+		"AiUsageState", "AiUsageStateStaleSequence", "AiUsageStateGoodTwice",
+		"RefreshAiUsage",
+		"AiRefreshCycleProbeTicks":
 		return withFixture(c)
 
 	case "CollectVolumeSequence":
@@ -795,20 +800,14 @@ func withFixture(c call) (any, error) {
 		return nil, fmt.Errorf("%s fixture: %w", c.Fn, err)
 	}
 
-	savedRun, savedRead := collect.RunText, collect.ReadTextFile
-	defer func() { collect.RunText, collect.ReadTextFile = savedRun, savedRead }()
+	restore := collect.InstallFixture(fixture)
+	defer restore()
 
-	collect.RunText = func(_ time.Duration, name string, argv ...string) string {
-		return fixture[strings.Join(append([]string{name}, argv...), "\x1f")]
-	}
-	collect.ReadTextFile = func(path string) (string, bool) {
-		value, ok := fixture["file\x1f"+path]
-		return value, ok
-	}
-
-	// The sink cache is process-global; a stale entry from a previous case
+	// Every process-global cache, cleared: a stale entry from a previous case
 	// would make this one pass for the wrong reason.
 	collect.ResetVolumeSinksCache()
+	collect.ResetQuotaCache()
+	collect.ResetAiUsageCache()
 
 	switch c.Fn {
 	case "CollectActiveWindow":
@@ -841,6 +840,117 @@ func withFixture(c call) (any, error) {
 		return collect.CollectNetworkConnection(), nil
 	case "CollectNetwork":
 		return collect.CollectNetwork(), nil
+
+	// -- AI usage: the impure shell ----------------------------------------
+
+	case "ClaudeCredentialsPaths":
+		return collect.ClaudeCredentialsPaths(), nil
+
+	case "ClaudeLoadOAuth":
+		oauth, ok := collect.ClaudeLoadOAuth()
+		if !ok {
+			return nil, nil // Python's None
+		}
+		return oauth, nil
+
+	case "ClaudeQuotaState":
+		return collect.ClaudeQuotaState(), nil
+
+	case "OpenusageQuotaStates":
+		var now float64
+		if len(c.Args) > 1 {
+			if err := json.Unmarshal(c.Args[1], &now); err != nil {
+				return nil, err
+			}
+		}
+		return collect.OpenusageQuotaStates(now), nil
+
+	case "QuotaStates":
+		var refresh bool
+		if len(c.Args) > 1 {
+			if err := json.Unmarshal(c.Args[1], &refresh); err != nil {
+				return nil, err
+			}
+		}
+		return collect.QuotaStates(refresh), nil
+
+	case "QuotaStatesSequence":
+		// Two calls, the second with refresh=false, so the cache is observable
+		// at all -- a single call can never show whether it was used.
+		first := collect.QuotaStates(true)
+		second := collect.QuotaStates(false)
+		return []any{first, second}, nil
+
+	case "AiUsageState":
+		var refreshQuotas bool
+		if len(c.Args) > 1 {
+			if err := json.Unmarshal(c.Args[1], &refreshQuotas); err != nil {
+				return nil, err
+			}
+		}
+		return collect.AiUsageState(refreshQuotas), nil
+
+	case "AiUsageStateStaleSequence":
+		// A good report, then a broken one: the second call must serve the
+		// remembered state marked stale rather than the placeholder.
+		good := collect.AiUsageState(true)
+		collect.RunText = func(_ time.Duration, name string, _ ...string) string {
+			return "" // ccusage and the probe both go dark
+		}
+		stale := collect.AiUsageState(true)
+		return []any{good, stale}, nil
+
+	case "AiUsageStateGoodTwice":
+		// Two GOOD reports back to back. The stale branch's `source ==
+		// "missing"` guard is only observable here: with one good call the
+		// remembered state is still empty, and with a good-then-broken pair
+		// both the guarded and unguarded versions take the stale path.
+		first := collect.AiUsageState(true)
+		second := collect.AiUsageState(true)
+		return []any{first, second}, nil
+
+	case "RefreshAiUsage":
+		var current collect.AiUsage
+		var refreshQuotas bool
+		if err := json.Unmarshal(c.Args[1], &current); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(c.Args[2], &refreshQuotas); err != nil {
+			return nil, err
+		}
+		published := []collect.AiUsage{}
+		result := collect.RefreshAiUsage(current, func(value collect.AiUsage) {
+			published = append(published, value)
+		}, refreshQuotas)
+		return map[string]any{"published": published, "result": result}, nil
+
+	case "AiRefreshCycleProbeTicks":
+		// Which ticks actually run the expensive probe. Observable only across
+		// a run of ticks, and only because a non-refreshing tick hits the warm
+		// cache instead of shelling out.
+		var quotaEvery int64
+		var ticks int
+		if err := json.Unmarshal(c.Args[1], &quotaEvery); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(c.Args[2], &ticks); err != nil {
+			return nil, err
+		}
+		probed := []bool{}
+		inner := collect.RunText
+		collect.RunText = func(timeout time.Duration, name string, argv ...string) string {
+			if name == "openusage-cli" {
+				probed[len(probed)-1] = true
+			}
+			return inner(timeout, name, argv...)
+		}
+		cycle := collect.AiRefreshCycle(quotaEvery)
+		current := collect.AiUsageDefault()
+		for i := 0; i < ticks; i++ {
+			probed = append(probed, false)
+			current = cycle(current, func(value collect.AiUsage) { current = value })
+		}
+		return probed, nil
 	}
 	return nil, fmt.Errorf("unknown fixture fn: %s", c.Fn)
 }

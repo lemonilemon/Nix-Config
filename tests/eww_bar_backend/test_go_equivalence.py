@@ -62,6 +62,12 @@ class GoEquivalenceTests(unittest.TestCase):
                 "HOME": str(self.cache),
                 "GOCACHE": str(self.cache / "gocache"),
                 "GOFLAGS": "-mod=mod",
+                # Pure Go, no C toolchain. net/http pulls in cgo for the
+                # resolver, which would make this gate depend on gcc being on
+                # PATH -- a dependency the skip-when-go-is-absent guard does not
+                # cover, so it would fail rather than skip. Nothing here
+                # resolves a hostname: httpGetText is stubbed by the fixture.
+                "CGO_ENABLED": "0",
             },
         )
         if result.returncode != 0:
@@ -2038,6 +2044,368 @@ class GoEquivalenceTests(unittest.TestCase):
         answers = self._ask_go([{"fn": "AiUsageDefault", "args": []}])
         self.assertTrue(answers[0]["ok"], answers[0].get("error"))
         self.assertEqual(answers[0]["value"], AI_USAGE_DEFAULT)
+
+
+    # -- AI usage: the impure shell -------------------------------------------
+    #
+    # Every seam is driven from one flat fixture map, encoded identically on
+    # both sides -- see collect.InstallFixture for the key contract.
+
+    @staticmethod
+    def _run_key(argv):
+        return "\x1f".join(argv)
+
+    def _python_under_fixture(self, fixture, call):
+        """Run `call` with the Python's seams bound to the same fixture."""
+        import contextlib
+        import os
+
+        def fake_run_text(argv, timeout=None, **_kwargs):
+            return fixture.get(self._run_key(argv), "")
+
+        def fake_read_text(path):
+            key = "file\x1f" + str(path)
+            if key not in fixture:
+                raise FileNotFoundError(path)
+            return fixture[key]
+
+        class FakePath(type(Path("/"))):
+            def read_text(self, *_a, **_k):
+                return fake_read_text(self)
+
+        def fake_urlopen(request, timeout=None):
+            import urllib.error
+
+            if fixture.get("http.error"):
+                raise OSError(fixture["http.error"])
+            status = int(fixture.get("http.status", "200"))
+            if status >= 400:
+                # A real (empty) file object, not None: HTTPError falls back to
+                # a tempfile when given None and then warns about cleaning it up.
+                import io
+                raise urllib.error.HTTPError(
+                    request.full_url, status, "err", {}, io.BytesIO(b""))
+
+            @contextlib.contextmanager
+            def response():
+                class R:
+                    def read(self_inner):
+                        return fixture.get("http.body", "").encode()
+                yield R()
+
+            return response()
+
+        env = {k[len("env."):]: v for k, v in fixture.items() if k.startswith("env.")}
+        patches = [
+            unittest.mock.patch.object(collectors, "run_text", fake_run_text),
+            unittest.mock.patch.object(collectors, "Path", FakePath),
+            unittest.mock.patch.dict(os.environ, env, clear=False),
+        ]
+        if "now" in fixture:
+            patches.append(
+                unittest.mock.patch.object(collectors.time, "time",
+                                           lambda: float(fixture["now"])))
+        patches.append(
+            unittest.mock.patch("urllib.request.urlopen", fake_urlopen))
+
+        collectors.reset_quota_cache()
+        collectors._LAST_AI_USAGE = None
+        with contextlib.ExitStack() as stack:
+            # HTTPError subclasses addinfourl, whose __del__ warns when it is
+            # collected unclosed. The original never closes it (it only reads
+            # .code), so the warning is the test's noise, not a defect.
+            import warnings
+            stack.enter_context(warnings.catch_warnings())
+            warnings.filterwarnings("ignore", category=ResourceWarning)
+            for patch in patches:
+                stack.enter_context(patch)
+            return call()
+
+    def _compare_fixture(self, fn, cases, python_call):
+        """cases is a list of (fixture, *extra_args)."""
+        answers = self._ask_go(
+            [{"fn": fn, "args": [fixture, *extra]} for fixture, *extra in cases])
+        mismatches = []
+        for (fixture, *extra), answer in zip(cases, answers):
+            self.assertTrue(answer["ok"], f"{fn} errored in Go: {answer.get('error')}")
+            expected = self._python_under_fixture(
+                fixture, lambda f=fixture, e=extra: python_call(*e))
+            if answer["value"] != expected:
+                mismatches.append((fixture, expected, answer["value"]))
+        if mismatches:
+            detail = "\n".join(
+                f"  fixture={f}\n    python={p!r}\n    go    ={g!r}"
+                for f, p, g in mismatches[:5])
+            self.fail(f"{len(mismatches)}/{len(cases)} disagreed:\n{detail}")
+
+    def test_claude_credentials_paths(self):
+        cases = [
+            ({"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": ""},),
+            ({"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "/etc/claude"},),
+            ({"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "  /etc/claude  "},),
+            ({"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "   "},),
+            ({"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "~/cfg"},),
+        ]
+        self._compare_fixture(
+            "ClaudeCredentialsPaths", cases,
+            lambda: [str(p) for p in collectors.claude_credentials_paths()])
+
+    _CREDS = "/home/tester/.claude/.credentials.json"
+    _CREDS_ALT = "/home/tester/.config/claude/.credentials.json"
+
+    def _oauth_fixtures(self):
+        """Credential-file shapes. Synthetic throughout: no real file is read."""
+        base = {"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": ""}
+        return [
+            dict(base),
+            dict(base, **{"file\x1f" + self._CREDS: "not json"}),
+            dict(base, **{"file\x1f" + self._CREDS: "[]"}),
+            dict(base, **{"file\x1f" + self._CREDS: "{}"}),
+            dict(base, **{"file\x1f" + self._CREDS: '{"claudeAiOauth": {}}'}),
+            dict(base, **{"file\x1f" + self._CREDS:
+                          '{"claudeAiOauth": {"accessToken": ""}}'}),
+            dict(base, **{"file\x1f" + self._CREDS:
+                          '{"claudeAiOauth": "not a dict"}'}),
+            dict(base, **{"file\x1f" + self._CREDS:
+                          '{"claudeAiOauth": {"accessToken": "tok"}}'}),
+            dict(base, **{"file\x1f" + self._CREDS:
+                          '{"claudeAiOauth": {"accessToken": "tok",'
+                          ' "subscriptionType": "max_5x", "expiresAt": 4102444800}}'}),
+            # First path present but unusable, second good.
+            dict(base, **{"file\x1f" + self._CREDS: "{}",
+                          "file\x1f" + self._CREDS_ALT:
+                          '{"claudeAiOauth": {"accessToken": "alt"}}'}),
+            # First path ABSENT, second good. A different branch from the one
+            # above: this is the unreadable-file path, and only it exercises
+            # whether the loop keeps going or stops at the first miss.
+            dict(base, **{"file\x1f" + self._CREDS_ALT:
+                          '{"claudeAiOauth": {"accessToken": "alt"}}'}),
+        ]
+
+    def test_claude_load_oauth(self):
+        self._compare_fixture(
+            "ClaudeLoadOAuth", [(f,) for f in self._oauth_fixtures()],
+            collectors.claude_load_oauth)
+
+    def test_claude_quota_state(self):
+        good = ('{"claudeAiOauth": {"accessToken": "tok",'
+                ' "subscriptionType": "max_5x", "expiresAt": %s}}')
+        body = json.dumps({"five_hour": {"utilization": 50},
+                           "seven_day": {"utilization": 85}})
+        base = {"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "",
+                "now": str(self._NOW)}
+
+        def creds(expires):
+            return {"file\x1f" + self._CREDS: good % expires}
+
+        cases = [
+            # No credentials at all.
+            (dict(base),),
+            # Expired, in seconds and in milliseconds.
+            (dict(base, **creds(int(self._NOW) - 10)),),
+            (dict(base, **creds(int(self._NOW * 1000) - 10000)),),
+            # expiresAt of 0 means "unknown", not "expired".
+            (dict(base, **creds(0)),),
+            (dict(base, **creds(int(self._NOW) + 3600), **{"http.body": body}),),
+            (dict(base, **creds(int(self._NOW * 1000) + 3600000),
+                  **{"http.body": body}),),
+            # Transport failure, then each HTTP status the handler splits on.
+            (dict(base, **creds(0), **{"http.error": "boom"}),),
+            (dict(base, **creds(0), **{"http.status": "401"}),),
+            (dict(base, **creds(0), **{"http.status": "403"}),),
+            (dict(base, **creds(0), **{"http.status": "500"}),),
+            (dict(base, **creds(0), **{"http.status": "404"}),),
+            (dict(base, **creds(0), **{"http.status": "200", "http.body": "{}"}),),
+            (dict(base, **creds(0), **{"http.status": "200", "http.body": body}),),
+        ]
+        self._compare_fixture("ClaudeQuotaState", cases, collectors.claude_quota_state)
+
+    _PROBE_KEY = "openusage-cli\x1fprobe\x1fcodex\x1fantigravity"
+
+    def _probe_report(self, *providers):
+        return json.dumps([
+            {"providerId": key,
+             "plan": "Pro",
+             "lines": [{"type": "progress", "label": "Session", "used": used,
+                        "limit": 100, "format": {"kind": "percent"}}]}
+            for key, used in providers
+        ])
+
+    def test_openusage_quota_states(self):
+        base = {"now": str(self._NOW)}
+        cases = [
+            (dict(base), self._NOW),
+            (dict(base, **{self._PROBE_KEY: "not json"}), self._NOW),
+            (dict(base, **{self._PROBE_KEY: "{}"}), self._NOW),
+            (dict(base, **{self._PROBE_KEY: "[]"}), self._NOW),
+            (dict(base, **{self._PROBE_KEY: '["not a dict"]'}), self._NOW),
+            (dict(base, **{self._PROBE_KEY: self._probe_report(("codex", 50))}),
+             self._NOW),
+            (dict(base, **{self._PROBE_KEY: self._probe_report(
+                ("codex", 50), ("antigravity", 95))}), self._NOW),
+            # An unrelated provider id: neither card should pick it up.
+            (dict(base, **{self._PROBE_KEY: self._probe_report(("gemini", 50))}),
+             self._NOW),
+            (dict(base, **{self._PROBE_KEY: json.dumps(
+                [{"providerId": "codex",
+                  "lines": [{"type": "text", "label": "Error", "value": "nope"}]}])}),
+             self._NOW),
+        ]
+        self._compare_fixture(
+            "OpenusageQuotaStates", cases,
+            lambda now: collectors.openusage_quota_states(now_epoch=now))
+
+    def test_quota_states_caches_across_calls(self):
+        """The cache is only observable across two calls, so make two."""
+        base = {"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "",
+                "now": str(self._NOW),
+                self._PROBE_KEY: self._probe_report(("codex", 50))}
+        cases = [(dict(base),), (dict(base, **{"http.status": "401"}),)]
+
+        def python_call():
+            first = collectors.quota_states(True)
+            second = collectors.quota_states(False)
+            return [first, second]
+
+        self._compare_fixture("QuotaStatesSequence", cases, python_call)
+
+    _CCUSAGE_KEY = ("ccusage\x1fdaily\x1f--json\x1f--offline\x1f--sections"
+                    "\x1fdaily,weekly,monthly\x1f--by-agent\x1f--since\x1f")
+
+    def _ccusage_key(self, now):
+        since = time.strftime("%Y%m%d", time.localtime(now - 45 * 86400))
+        return self._CCUSAGE_KEY + since
+
+    def _ccusage_report(self):
+        return json.dumps({
+            "daily": [{"date": time.strftime("%F", time.localtime(self._NOW)),
+                       "totalTokens": 1234, "totalCost": 5.5}],
+            "weekly": [], "monthly": [],
+        })
+
+    def test_ai_usage_state(self):
+        base = {"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "",
+                "now": str(self._NOW),
+                self._PROBE_KEY: self._probe_report(("codex", 50))}
+        good = {self._ccusage_key(self._NOW): self._ccusage_report()}
+        cases = [
+            (dict(base), True),
+            (dict(base), False),
+            (dict(base, **good), True),
+            (dict(base, **good), False),
+            (dict(base, **{self._ccusage_key(self._NOW): "not json"}), True),
+            (dict(base, **{self._ccusage_key(self._NOW): '{"daily": []}'}), True),
+        ]
+        self._compare_fixture(
+            "AiUsageState", cases,
+            lambda refresh: collectors.ai_usage_state(refresh_quotas=refresh))
+
+    def test_ai_usage_state_serves_stale_after_a_good_report(self):
+        base = {"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "",
+                "now": str(self._NOW),
+                self._PROBE_KEY: self._probe_report(("codex", 50)),
+                self._ccusage_key(self._NOW): self._ccusage_report()}
+
+        def python_call():
+            good = collectors.ai_usage_state(refresh_quotas=True)
+            with unittest.mock.patch.object(collectors, "run_text",
+                                            lambda *a, **k: ""):
+                stale = collectors.ai_usage_state(refresh_quotas=True)
+            return [good, stale]
+
+        self._compare_fixture("AiUsageStateStaleSequence", [(dict(base),)], python_call)
+
+    def test_ai_usage_state_does_not_go_stale_on_two_good_reports(self):
+        """The stale branch's source guard, which needs two GOOD calls to see.
+
+        With one call the remembered state is still empty, and with a
+        good-then-broken pair both a guarded and an unguarded stale branch
+        behave identically -- so neither shape can tell whether the guard is
+        there. Two good calls can: without the guard the second would come back
+        marked stale.
+        """
+        base = {"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "",
+                "now": str(self._NOW),
+                self._PROBE_KEY: self._probe_report(("codex", 50)),
+                self._ccusage_key(self._NOW): self._ccusage_report()}
+
+        def python_call():
+            return [collectors.ai_usage_state(refresh_quotas=True),
+                    collectors.ai_usage_state(refresh_quotas=True)]
+
+        self._compare_fixture("AiUsageStateGoodTwice", [(dict(base),)], python_call)
+
+    def test_refresh_ai_usage(self):
+        from eww_bar_backend.common import AI_USAGE_DEFAULT
+
+        base = {"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "",
+                "now": str(self._NOW),
+                self._PROBE_KEY: self._probe_report(("codex", 50)),
+                self._ccusage_key(self._NOW): self._ccusage_report()}
+
+        currents = [
+            copy_default := json.loads(json.dumps(AI_USAGE_DEFAULT)),
+            {**json.loads(json.dumps(AI_USAGE_DEFAULT)),
+             "meta": {**AI_USAGE_DEFAULT["meta"], "refreshing": "true"}},
+        ]
+        cases = [(dict(base), current, refresh)
+                 for current in currents for refresh in (True, False)]
+
+        class FakeState:
+            def __init__(self, current):
+                self.current = current
+                self.published = []
+
+            def get(self, key, default=None):
+                return self.current if key == "ai_usage" else default
+
+            def update(self, **items):
+                self.published.append(items["ai_usage"])
+                self.current = items["ai_usage"]
+
+        def python_call(current, refresh):
+            state = FakeState(json.loads(json.dumps(current)))
+            result = collectors.refresh_ai_usage(state, refresh_quotas=refresh)
+            return {"published": state.published, "result": result}
+
+        self._compare_fixture("RefreshAiUsage", cases, python_call)
+
+    def test_ai_refresh_cycle_probe_cadence(self):
+        """Which ticks pay for the openusage probe, over a full period."""
+        base = {"env.HOME": "/home/tester", "env.CLAUDE_CONFIG_DIR": "",
+                "now": str(self._NOW),
+                self._PROBE_KEY: self._probe_report(("codex", 50)),
+                self._ccusage_key(self._NOW): self._ccusage_report()}
+        cases = [(dict(base), every, 14) for every in (1, 2, 6)]
+
+        class FakeState:
+            def __init__(self):
+                self.current = None
+
+            def get(self, key, default=None):
+                return self.current if key == "ai_usage" else default
+
+            def update(self, **items):
+                self.current = items["ai_usage"]
+
+        def python_call(quota_every, ticks):
+            probed = []
+            real = collectors.run_text
+
+            def counting(argv, *a, **k):
+                if argv and argv[0] == "openusage-cli":
+                    probed[-1] = True
+                return real(argv, *a, **k)
+
+            refresh = collectors.ai_refresh_cycle(quota_every=quota_every)
+            state = FakeState()
+            with unittest.mock.patch.object(collectors, "run_text", counting):
+                for _ in range(ticks):
+                    probed.append(False)
+                    refresh(state)
+            return probed
+
+        self._compare_fixture("AiRefreshCycleProbeTicks", cases, python_call)
 
 
 def _contiguous_runs(chars):

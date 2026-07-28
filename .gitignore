@@ -10,3 +10,10 @@ __pycache__/
 # derived data, it reaches 800M, and flake.nix's pre-commit check has
 # src = ./. so anything here is copied into the store on every evaluation.
 .go-build-cache/
+
+# direnv's nix-direnv cache. Derived data: flake-inputs are store-path
+# symlinks and the flake-profile files are GC roots, all rebuilt on `direnv
+# reload`. Same reason as .go-build-cache above -- the pre-commit check has
+# src = ./., so every tracked file here is copied into the store on each
+# `nix flake check`.
+.direnv/

@@ -1232,6 +1232,338 @@ class GoEquivalenceTests(unittest.TestCase):
         self.assertEqual(json.loads(answers[0]["value"]), json.loads(match.group(1)))
 
 
+    # -- AI usage: value probing and epoch parsing ----------------------------
+
+    def test_py_float(self):
+        """float() is not strconv.ParseFloat, in four directions at once."""
+        texts = [
+            # ordinary
+            "0", "1", "-1", "1.5", "-1.5", ".5", "5.", "+1.5", "1e5", "1E5",
+            "1e-5", "-0", "-0.0", "0.1", "1e308", "1e309", "-1e309",
+            # whitespace: float() strips 25 of the 29 runes str.strip() does
+            " 1.5 ", "\t2\n", "\r\n3\v\f", "\x1c4", "5\x1f", "\x854", "\xa05",
+            " 1", "　1", "  2", "  ", "",
+            # underscores, permitted only between digits
+            "1_000", "1_0.5", "1e1_0", "_1", "1_", "1__0", "1._5", "1_.5",
+            # hex: Go accepts the second, CPython accepts neither
+            "0x10", "0x1p-2", "-0x1p-2", "0X1P2",
+            # the special values, and their spellings
+            "inf", "-inf", "+inf", "Inf", "INF", "infinity", "Infinity",
+            "nan", "NaN", "-nan", "infi", "in",
+            # rejected
+            "1,5", "1e", "e5", "--1", "1 2", "12abc", "None", "null",
+            # non-ASCII decimal digits
+            "٣", "١٢٣", "１２３", "๓.๕", "٣_٤",
+        ]
+        self._compare("PyFloat", [(t,) for t in texts], _py_float_answer)
+
+    def test_py_float_reads_every_unicode_decimal_digit_go_knows(self):
+        """What licenses unicodeDigitValue having no lookup table.
+
+        It assumes Go's Nd range table splits on decade boundaries, so a
+        digit's value is its offset from the start of its range. This checks
+        that assumption against unicodedata for every Nd rune -- the only way
+        it could be wrong is a range starting mid-decade.
+
+        Runes Go's tables do not carry are skipped rather than failed: CPython
+        3.14 knows ~80 digits Go 1.26 does not (Garay at U+10D40, Sunuwar at
+        U+11BF0), which is toolchain Unicode skew, not a port defect. The
+        assertion that matters is that Go never reads a digit as the WRONG
+        value, and the floor below keeps the skip list from quietly growing
+        until the test proves nothing.
+        """
+        import unicodedata
+
+        digits = [
+            chr(c) for c in range(0x110000)
+            if unicodedata.category(chr(c)) == "Nd"
+        ]
+        self.assertGreater(len(digits), 700, "sanity: Nd should be a large set")
+
+        answers = self._ask_go([{"fn": "PyFloat", "args": [d]} for d in digits])
+        read = {}
+        wrong, known = [], 0
+        for digit, answer in zip(digits, answers):
+            self.assertTrue(answer["ok"], answer.get("error"))
+            parsed, bits = answer["value"]
+            read[digit] = bits if parsed else None
+            if not parsed:
+                continue  # not in Go's Nd table at this Unicode version
+            known += 1
+            if bits != _float_bits(float(unicodedata.decimal(digit))):
+                wrong.append(digit)
+        self.assertEqual(wrong, [], "a digit read as the wrong value")
+        self.assertGreater(known, 600, "Go recognised too few digits to prove anything")
+
+        # The skip above is for Unicode skew, but on its own it also hides a
+        # broken decade calculation: dropping the modulo makes a second-decade
+        # digit produce ':' and REJECT, which reads as "Go doesn't know it".
+        # Only runs spanning more than one decade exercise the modulo at all --
+        # there are two, and U+1D7CE (mathematical digits, 5 decades) has been
+        # in Unicode since 3.1 -- so for any such run Go knows the start of, it
+        # must read every digit in the run. That closes the hole without
+        # pinning a Unicode version.
+        exercised = 0
+        for run in _contiguous_runs(digits):
+            if len(run) <= 10 or read.get(run[0]) is None:
+                continue
+            exercised += 1
+            for digit in run:
+                self.assertIsNotNone(
+                    read[digit],
+                    f"Go knows {hex(ord(run[0]))} but rejected {hex(ord(digit))} in the same run",
+                )
+        self.assertGreater(exercised, 0, "no multi-decade run tested; the modulo is unproven")
+
+    def test_py_lower_handles_the_one_code_point_go_gets_wrong(self):
+        """U+0130 is the reason PyLower exists rather than strings.ToLower."""
+        self._compare("PyLower", [("İ",), ("AİB",), ("İİ",)],
+                      str.lower)
+
+    def test_py_lower_matches_str_lower_over_every_cased_code_point(self):
+        """Exhaustive, but asserting an invariant that survives Unicode skew.
+
+        A plain equality check here fails on ~27 code points, and none of them
+        are a port defect: CPython 3.14 ships newer Unicode tables than Go
+        1.26, so it knows casing for scripts (Garay at U+10D50, and a handful
+        of Latin additions) that Go's tables do not. Pinning the exact set
+        would just break on the next toolchain bump in either direction.
+
+        So the assertion is the property that holds regardless of which side is
+        newer: wherever the two disagree, one of them left the rune ALONE. Go
+        emitting a genuinely DIFFERENT lowercase -- a real table bug, or
+        PyLower's U+0130 substitution going wrong -- still fails.
+        """
+        cased = [chr(c) for c in range(0x110000) if chr(c).lower() != chr(c)]
+        self.assertGreater(len(cased), 1000, "sanity: expected many cased runes")
+
+        answers = self._ask_go([{"fn": "PyLower", "args": [c]} for c in cased])
+        wrong = []
+        for char, answer in zip(cased, answers):
+            self.assertTrue(answer["ok"], answer.get("error"))
+            if answer["value"] == char.lower():
+                continue
+            if answer["value"] == char:
+                continue  # Go's tables do not know this rune is cased
+            wrong.append((hex(ord(char)), char.lower(), answer["value"]))
+        self.assertEqual(wrong, [], "Go produced a different lowercase, not a missing one")
+
+    def _iso_corpus(self):
+        dates = [
+            "2024-01-15", "20240115", "2024-W03-1", "2024W031", "2024-W03",
+            "2024W03", "2020-W53-7", "2024-W53-7", "2023-02-28", "2024-02-29",
+            "2023-02-29", "2024-12-31", "2024-00-10", "2024-13-01", "2024-01-00",
+            "2024-1-5", "2024-01", "2024", "2024-366",
+            # Extremes, but deliberately NOT 0001-01-01 or 9999-12-31. Within
+            # one UTC offset of datetime.min/max, CPython's .timestamp() raises
+            # for a NAIVE value and parse_iso_epoch silently drops to its
+            # strptime leg -- so the expected answer there depends on the host
+            # timezone, and the case would assert different things on this
+            # laptop (UTC+8) and in the flake sandbox (UTC). See isotime.go.
+            "0002-01-01", "9998-12-31",
+        ]
+        separators = ["T", "t", " ", "X", "\t", ""]
+        times = [
+            "", "10", "10:30", "1030", "10:30:00", "103000", "24:00:00",
+            "24:00:01", "24:30", "23:59:59", "10:30:00.5", "10:30:00.123456",
+            "10:30:00.1234567891", "10:30:00,25", "10:30:00.", "10:30:60",
+            "10:3", "10:30:0", "10:3000", "1030:00",
+        ]
+        zones = [
+            "", "Z", "+00:00", "+0000", "+00", "-08:00", "+05:30", "+23:59:59",
+            "+24:00", "+00:00:30", "-00:00", "+", "+1", "+123",
+            "+23:59:59.999999",
+        ]
+        cases = []
+        for date in dates:
+            for sep in separators:
+                for clock in times:
+                    for zone in zones:
+                        if not clock and zone:
+                            continue  # a zone with no time is a separate axis
+                        cases.append((date + sep + clock + zone,))
+        return cases
+
+    def test_parse_iso_epoch_over_the_grammar(self):
+        """The generated cross product of every date, time and zone form.
+
+        fromisoformat is far wider than RFC 3339 -- any separator character,
+        week dates, T24:00:00, sub-minute offsets -- and narrower in other
+        places. Hand-picked cases would only pin the forms someone remembered.
+
+        One shape is exempt, and the exemption is deliberately narrow: a BASIC
+        week date whose weekday digit is followed by another digit. CPython
+        resolves that ambiguity with an undocumented separator-position rule
+        that isn't derivable from the string, so parseISOWeekDate rejects it
+        instead of guessing. The exemption only permits Go to answer None --
+        a Go answer that differs from Python in any other way still fails, so
+        Go can never invent an instant CPython would not produce.
+        """
+        ambiguous = re.compile(r"^\d{4}W\d{2}\d\d")
+        cases = self._iso_corpus()
+        answers = self._ask_go([{"fn": "ParseISOEpoch", "args": list(a)} for a in cases])
+
+        mismatches, exempt = [], 0
+        for (text,), answer in zip(cases, answers):
+            self.assertTrue(answer["ok"], answer.get("error"))
+            expected = collectors.parse_iso_epoch(text)
+            if answer["value"] == expected:
+                continue
+            if answer["value"] is None and ambiguous.match(text):
+                exempt += 1
+                continue
+            mismatches.append((text, expected, answer["value"]))
+
+        detail = "\n".join(f"  {t!r}: python={p!r} go={g!r}" for t, p, g in mismatches[:20])
+        self.assertEqual(mismatches, [], f"{len(mismatches)}/{len(cases)} disagreed:\n{detail}")
+        self.assertGreater(exempt, 0, "the exemption is dead; drop it and the narrowing in isotime.go")
+
+    def test_parse_iso_epoch_on_non_strings_and_call_site_shapes(self):
+        cases = [
+            (None,), (0,), (1,), (1.5,), (True,), ([],), ({},), ("",),
+            # The shape the ccusage period path builds, including its failures.
+            ("2024-01-15T00:00:00",), ("T00:00:00",), ("garbageT00:00:00",),
+            ("2024-01-15T00:00:00Z",),
+            # The strptime fallback's territory: unpadded fields fromisoformat
+            # rejects outright.
+            ("2024-1-5T1:2:3",), ("2024-01-15T1:2:3",), ("2024-1-5T01:02:03",),
+            ("2024-02-30T00:00:00",), ("2024-01-15T10:30:61",),
+            ("2024-01-15T10:30:62",), ("2024-01-15T25:00:00",),
+            # Longer than 19 characters, so the fallback slices.
+            ("2024-1-5T1:2:3 trailing junk",), ("2024-01-15T10:30:00extra",),
+            # Z is replaced globally, not just at the end.
+            ("Z2024-01-15",), ("2024Z01Z15",),
+        ]
+        self._compare("ParseISOEpoch", cases, collectors.parse_iso_epoch)
+
+    def test_format_clock_time(self):
+        cases = [
+            (None,), (0,), (1,), (-1,), (1.9,), (-0.5,), (1705285800,),
+            (1705285800.9,), (1705285800.123456,), (2**31,), (-2**31,),
+        ]
+        self._compare("FormatClockTime", cases, collectors.format_clock_time)
+
+    def test_number_value(self):
+        """The bool guard, the string fallback, and key precedence."""
+        rows = [
+            {}, {"a": 1}, {"a": 1.5}, {"a": -2}, {"a": 0},
+            {"a": True}, {"a": False}, {"a": True, "b": 7},
+            {"a": "12"}, {"a": "1.5"}, {"a": " 3 "}, {"a": "abc"},
+            {"a": "abc", "b": 4}, {"a": None}, {"a": None, "b": 5},
+            {"a": []}, {"a": {}}, {"a": [], "b": 6},
+            {"a": "1e999"}, {"a": 1e308}, {"a": "0x10"}, {"a": "1_000"},
+            {"b": 1}, {"a": "", "b": 2},
+            {"totalTokens": 5, "total_tokens": 9},
+            {"total_tokens": 9}, {"tokens": "11"},
+        ]
+        key_sets = [["a"], ["a", "b"], ["b", "a"], ["missing"],
+                    ["totalTokens", "total_tokens", "tokens"]]
+        cases = [(row, keys) for row in rows for keys in key_sets]
+        self._compare(
+            "NumberValue", cases,
+            lambda row, keys: _float_bits(collectors.number_value(row, *keys)),
+        )
+
+    def test_list_value(self):
+        rows = [
+            {}, {"a": []}, {"a": [1, 2]}, {"a": "not a list"}, {"a": {}},
+            {"a": None}, {"a": None, "b": [3]}, {"b": ["x"]},
+            {"daily": [{"date": "2024-01-15"}]}, {"data": [1]}, {"rows": [2]},
+        ]
+        key_sets = [["a"], ["a", "b"], ["daily", "data", "days", "rows"]]
+        cases = [(row, keys) for row in rows for keys in key_sets]
+        self._compare(
+            "ListValue", cases, lambda row, keys: collectors.list_value(row, *keys)
+        )
+
+    def test_daily_token_values(self):
+        rows = [
+            {},
+            {"inputTokens": 10, "outputTokens": 20},
+            {"input_tokens": 10, "output_tokens": 20},
+            {"input": 1, "output": 2, "cache_creation_tokens": 3,
+             "cache_read_tokens": 4},
+            {"cacheCreationTokens": 5, "cacheReadTokens": 6},
+            {"cacheCreationInputTokens": 5, "cacheReadInputTokens": 6},
+            # totalTokens present but zero: the fallback sum must kick in.
+            {"totalTokens": 0, "inputTokens": 3, "outputTokens": 4},
+            {"totalTokens": -1, "inputTokens": 3},
+            {"totalTokens": 99, "inputTokens": 3},
+            {"totalCost": 1.25}, {"total_cost": 1.25}, {"costUSD": 1.25},
+            {"cost": 1.25}, {"totalCost": 0, "cost": 9},
+            {"inputTokens": "7", "outputTokens": True},
+            {"tokens": 12, "totalTokens": 0},
+        ]
+        self._compare(
+            "DailyTokenValues", [(row,) for row in rows],
+            collectors.daily_token_values,
+        )
+
+    def test_agents_text(self):
+        cases = [
+            ([],), (["claude"],), (["codex"],), (["gemini"],),
+            (["gemini", "claude"],), (["claude", "claude"],),
+            (["anthropic.claude"],), (["CLAUDE"],), (["opencode"],),
+            (["claude", "codex", "gemini"],), (["cod"],), (["codexx"],),
+            (["", "claude"],), ([""],),
+        ]
+        self._compare("AgentsText", cases, collectors.agents_text)
+
+    def test_period_agent_keys(self):
+        rows = [
+            {},
+            {"metadata": {"agents": ["Claude", "codex"]}},
+            {"metadata": {"agents": []}},
+            {"metadata": {"agents": ["a", 1, None, "b"]}},
+            {"metadata": {}},
+            {"metadata": "not a dict"},
+            {"metadata": {"agents": "abc"}},
+            {"agents": [{"agent": "claude"}, {"agent": "all"}]},
+            {"agents": [{"agent": "Codex"}, {"noagent": 1}, "junk"]},
+            {"agents": "not a list"},
+            {"metadata": {"agents": ["X"]}, "agents": [{"agent": "Y"}]},
+            {"agents": [{"agent": "İstanbul"}]},
+        ]
+        self._compare(
+            "PeriodAgentKeys", [(row,) for row in rows],
+            collectors.period_agent_keys,
+        )
+
+
+def _contiguous_runs(chars):
+    """Split a sorted character list into runs of consecutive code points."""
+    runs, current = [], [chars[0]]
+    for char in chars[1:]:
+        if ord(char) == ord(current[-1]) + 1:
+            current.append(char)
+        else:
+            runs.append(current)
+            current = [char]
+    runs.append(current)
+    return runs
+
+
+def _float_bits(value):
+    """The IEEE bits of a float, with NaN canonicalised.
+
+    Mirrors diffgen's floatBits. Bits rather than the number itself because
+    Go's encoding/json refuses Inf and NaN, and because they distinguish -0.0.
+    """
+    import math
+    import struct
+
+    if isinstance(value, float) and math.isnan(value):
+        return 0x7FF8000000000000
+    return struct.unpack("<Q", struct.pack("<d", float(value)))[0]
+
+
+def _py_float_answer(text):
+    try:
+        return [True, _float_bits(float(text))]
+    except ValueError:
+        return [False, _float_bits(0.0)]
+
+
 class DecimalHazardTests(unittest.TestCase):
     """Documents why DecimalTimes100HalfUp does not go through float64.
 

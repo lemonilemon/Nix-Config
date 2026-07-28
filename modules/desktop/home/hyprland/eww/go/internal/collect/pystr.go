@@ -1,5 +1,33 @@
 package collect
 
+import "strings"
+
+// PyLower is Python's str.lower().
+//
+// strings.ToLower agrees on every code point in Unicode but one: U+0130, the
+// capital I with dot above, lowercases to TWO characters in Python -- "i"
+// followed by U+0307 combining dot above -- where Go yields a bare "i".
+// Established by comparing both over the entire code point range rather than
+// by sampling; test_go_equivalence.py re-runs that comparison.
+//
+// It matters because the AI collectors lowercase agent keys that are then
+// rendered, so a dropped combining mark would reach the popup.
+
+// Escapes rather than literals: dottedLowerI is "i" plus a COMBINING DOT
+// ABOVE, which renders as one glyph and would not survive an editor that
+// normalises, or a reviewer who cannot see it.
+const (
+	capitalIWithDot = "\u0130"
+	dottedLowerI    = "i\u0307"
+)
+
+func PyLower(s string) string {
+	if strings.Contains(s, capitalIWithDot) {
+		s = strings.ReplaceAll(s, capitalIWithDot, dottedLowerI)
+	}
+	return strings.ToLower(s)
+}
+
 // SplitLines is Python's str.splitlines().
 //
 // strings.Split(s, "\n") is not it, and the difference is not academic: Python

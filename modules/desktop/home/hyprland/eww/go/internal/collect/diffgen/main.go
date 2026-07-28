@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"strings"
@@ -523,8 +524,99 @@ func dispatch(c call) (any, error) {
 			return nil, err
 		}
 		return collect.VolumeEventIsRelevant(line), nil
+
+	// -- AI usage: value probing, epoch parsing ---------------------------
+	//
+	// Anything that can produce a non-finite float is answered as an IEEE bit
+	// pattern rather than a number. Go's encoding/json refuses Inf and NaN
+	// outright while Python's json emits bare Infinity, so a float("1e999")
+	// case would fail in the harness rather than in the code under test. Bits
+	// also make the comparison exact for -0.0 and for every NaN payload.
+	case "PyFloat":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		value, ok := collect.PyFloat(text)
+		return []any{ok, floatBits(value)}, nil
+
+	case "NumberValue":
+		var data map[string]any
+		var keys []string
+		if err := args(c, &data, &keys); err != nil {
+			return nil, err
+		}
+		return floatBits(collect.NumberValue(data, keys...)), nil
+
+	case "ListValue":
+		var data map[string]any
+		var keys []string
+		if err := args(c, &data, &keys); err != nil {
+			return nil, err
+		}
+		return collect.ListValue(data, keys...), nil
+
+	case "ParseISOEpoch":
+		var value any
+		if err := args(c, &value); err != nil {
+			return nil, err
+		}
+		epoch, ok := collect.ParseISOEpoch(value)
+		if !ok {
+			return nil, nil // Python's None
+		}
+		return epoch, nil
+
+	case "FormatClockTime":
+		var epoch any
+		if err := args(c, &epoch); err != nil {
+			return nil, err
+		}
+		return collect.FormatClockTime(epoch), nil
+
+	case "DailyTokenValues":
+		var row map[string]any
+		if err := args(c, &row); err != nil {
+			return nil, err
+		}
+		return collect.DailyTokenValues(row), nil
+
+	case "AgentsText":
+		var agents []string
+		if err := args(c, &agents); err != nil {
+			return nil, err
+		}
+		return collect.AgentsText(agents), nil
+
+	case "PeriodAgentKeys":
+		var row map[string]any
+		if err := args(c, &row); err != nil {
+			return nil, err
+		}
+		return collect.PeriodAgentKeys(row), nil
+
+	case "PyLower":
+		var text string
+		if err := args(c, &text); err != nil {
+			return nil, err
+		}
+		return collect.PyLower(text), nil
 	}
 	return nil, fmt.Errorf("unknown fn: %s", c.Fn)
+}
+
+// floatBits answers a float as its IEEE bit pattern, canonicalising NaN.
+//
+// Bits are the comparison currency for anything that can go non-finite,
+// because encoding/json refuses Inf and NaN where Python's json emits them
+// bare. NaN is canonicalised first: CPython's float("nan") carries payload
+// 0x7FF8000000000000 and Go's math.NaN() carries 0x7FF8000000000001, and that
+// difference is in the runtimes' choice of quiet NaN, not in the port.
+func floatBits(value float64) uint64 {
+	if math.IsNaN(value) {
+		return 0x7FF8000000000000
+	}
+	return math.Float64bits(value)
 }
 
 // withFixture installs a fake RunText/ReadTextFile for the duration of one

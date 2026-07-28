@@ -197,6 +197,10 @@
 
           buildInputs = with nixpkgs.legacyPackages.${system}; [
             nixfmt
+            # Same reason as the eww-backend check: test_go_equivalence skips
+            # itself when the toolchain is absent, so without go here the port
+            # gate quietly ran nothing for anyone working inside this shell.
+            go
           ];
         };
       });

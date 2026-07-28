@@ -58,12 +58,23 @@ var (
 		}
 		listing := make([]DirEntryInfo, 0, len(entries))
 		for _, entry := range entries {
-			info, err := entry.Info()
+			full := filepath.Join(dir, entry.Name())
+			// os.Stat, NOT entry.Info(): Info is an lstat, so a symlink reports
+			// as not-a-regular-file and drops out of the picker. pathlib's
+			// is_file() and stat() both FOLLOW links, and the seed wallpaper
+			// this repo deploys is a Home Manager store symlink -- the very
+			// thing WallpaperItems resolves. Caught by the shadow-daemon
+			// comparison, which is the only check that exercises the real
+			// filesystem: the fixture stubs ListDir, so no unit test could see
+			// it.
+			info, err := os.Stat(full)
 			if err != nil {
+				// A broken symlink. is_file() is False for one in Python too,
+				// so it is excluded either way.
 				continue
 			}
 			listing = append(listing, DirEntryInfo{
-				Path:    filepath.Join(dir, entry.Name()),
+				Path:    full,
 				IsFile:  info.Mode().IsRegular(),
 				MtimeNS: info.ModTime().UnixNano(),
 				Size:    info.Size(),

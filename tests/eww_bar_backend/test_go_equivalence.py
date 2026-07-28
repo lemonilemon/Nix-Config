@@ -110,6 +110,12 @@ class GoEquivalenceTests(unittest.TestCase):
                 # cover, so it would fail rather than skip. Nothing here
                 # resolves a hostname: httpGetText is stubbed by the fixture.
                 "CGO_ENABLED": "0",
+                # TZ must cross into the subprocess. Every period label, clock
+                # field and reset time resolves through the local zone, so a Go
+                # child reading /etc/localtime while Python honours TZ makes the
+                # two disagree on ~15 cases for a reason that is entirely the
+                # harness's.
+                "TZ": __import__("os").environ.get("TZ", ""),
             },
         )
         if result.returncode != 0:

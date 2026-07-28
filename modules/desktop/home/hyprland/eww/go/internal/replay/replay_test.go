@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"ewwbar/internal/collect"
 )
@@ -23,12 +24,22 @@ import (
 //	EWW_GOLDEN_OUT=.../golden.jsonl.gz python3 -m unittest \
 //	    tests.eww_bar_backend.test_go_equivalence
 //
-// and only while the Python is still present to be checked against.
+// and only while the Python is still present to be checked against. Generate it
+// under TZ=UTC: see TestMain.
 //
 //go:embed testdata/golden.jsonl.gz
 var golden []byte
 
 func TestMain(m *testing.M) {
+	// UTC, pinned, and this is load-bearing. Period labels, clock fields and
+	// every reset time resolve through the local zone, so the recorded answers
+	// are only meaningful in the zone they were recorded in. The file is
+	// generated under TZ=UTC; without this the suite passes on the machine that
+	// generated it and fails everywhere else -- which is exactly how it first
+	// showed up, green locally and red in the Nix sandbox where there is no
+	// /etc/localtime.
+	time.Local = time.UTC
+
 	// The same rail package control and package watch use: several recorded
 	// calls are fixture-driven collectors, and a collector shells out.
 	restore := collect.InstallFixture(map[string]string{})

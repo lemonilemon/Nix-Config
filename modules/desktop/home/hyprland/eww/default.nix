@@ -14,30 +14,18 @@ let
     )
   );
 
-  # The state daemon. Stays Python: measured on this host, 93% of its CPU is the
-  # child processes its collectors fork (pactl, nmcli, hyprctl, ...), and those
-  # cost the same in any language — the interpreter itself is 0.64% of one core.
-  ewwBarTools = pkgs.stdenvNoCC.mkDerivation {
-    pname = "eww-bar-tools";
-    version = "0";
-
-    dontUnpack = true;
-    nativeBuildInputs = [ pkgs.python3 ];
-
-    installPhase = ''
-      install -Dm755 ${./scripts/backend} $out/bin/eww-bar-backend
-      cp -R ${./scripts/eww_bar_backend} $out/bin/eww_bar_backend
-      patchShebangs $out/bin
-    '';
-  };
-
-  # eww-barctl and eww-popup. Compiled, because eww.yuck invokes them from 39
-  # handlers including :onscroll and they do almost no work: the daemon answers
-  # a ping in 0.06 ms, against ~45 ms of CPython startup spent asking it.
-  # Measured here: 45.4 ms -> 3.3 ms for eww-barctl, 50.8 ms -> 3.3 ms for
-  # eww-popup.
-  ewwBarClient = pkgs.buildGoModule {
-    pname = "eww-bar-client";
+  # The daemon, eww-barctl and eww-popup, one Go module.
+  #
+  # The daemon was Python until the port: 93% of its CPU is the child processes
+  # its collectors fork (pactl, nmcli, hyprctl, ...), which cost the same in any
+  # language, so the interpreter was never the expense. What moved it was the
+  # CLIENTS -- eww.yuck invokes them from 39 handlers including :onscroll, and
+  # they do almost no work: the daemon answers a ping in 0.06 ms against ~45 ms
+  # of CPython startup spent asking it. Measured: 45.4 ms -> 3.3 ms for
+  # eww-barctl, 50.8 ms -> 3.3 ms for eww-popup. Once those were compiled,
+  # leaving the daemon behind meant maintaining the same collectors twice.
+  ewwBar = pkgs.buildGoModule {
+    pname = "eww-bar";
     version = "0";
 
     src = ./go;
@@ -52,19 +40,13 @@ let
     # main package under cmd/ and runs `go test ./...` over the rest.
 
     postInstall = ''
-      # The Go daemon is BUILT -- which is how `go test ./...` above covers it
-      # -- but not shipped yet. ewwBarTools still installs eww-bar-backend, and
-      # two packages providing the same name collide in the profile. Deleting
-      # this line, and the Python package, is the cutover.
-      rm -f $out/bin/eww-bar-backend
-
       # argv[0] dispatch, as the Python entry point used to do: exec'ing a
       # symlink leaves argv[0] as the name the caller typed.
       ln -s eww-bar-client $out/bin/eww-barctl
       ln -s eww-bar-client $out/bin/eww-popup
     '';
 
-    meta.mainProgram = "eww-bar-client";
+    meta.mainProgram = "eww-bar-backend";
   };
 
   runtimePackages =
@@ -104,8 +86,7 @@ let
       openusage-cli
     ])
     ++ [
-      ewwBarTools
-      ewwBarClient
+      ewwBar
     ];
 
   runtimePath = lib.makeBinPath runtimePackages;
@@ -158,8 +139,7 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = with pkgs; [
       eww
-      ewwBarTools
-      ewwBarClient
+      ewwBar
       gsimplecal
       htop
       libappindicator

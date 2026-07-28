@@ -134,55 +134,61 @@
         eww-backend =
           let
             pkgs = nixpkgs.legacyPackages.${system};
+
+            # This check runs the Go test suite AND the one assertion that
+            # cannot live inside it: eww.yuck's :initial literal has to equal
+            # the daemon's starting snapshot, and eww.yuck is not part of the Go
+            # source.
+            #
+            # `go test` is here rather than left to buildGoModule's checkPhase
+            # because `nix flake check` evaluates the NixOS configurations
+            # without building them, so that checkPhase never ran in CI -- it
+            # would first execute during a user's rebuild, which is the worst
+            # place to discover a failing test. A timezone-dependent golden file
+            # passed locally and failed in the sandbox for exactly that reason.
+            #
+            # It matters because that literal is what the bar renders for the
+            # instant before the first line arrives on stdout. Drift shows up as
+            # a flicker at startup or a missing widget, and nothing else in the
+            # build would notice.
+            #
+            # A committed file rather than an inline string: Nix's
+            # indented-string stripping and Python's indentation rules do not
+            # agree, and a checker worth having is worth being able to read as
+            # Python.
+            checkYuckInitial = ./tests/nix/check_yuck_initial.py;
           in
           pkgs.runCommand "eww-backend-tests"
             {
-              # go is here for test_go_equivalence, which runs the ported
-              # collectors against the Python they came from. Without it that
-              # test skips, and a port gate that only runs on the porter's
-              # machine is not a gate.
               nativeBuildInputs = [
-                pkgs.python3
                 pkgs.go
+                pkgs.python3
               ];
-              PYTHONDONTWRITEBYTECODE = "1";
             }
             ''
-              mkdir -p modules/desktop/home/hyprland/eww
-              cp -R ${./tests} tests
-              cp -R ${./modules/desktop/home/hyprland/eww/scripts} \
-                modules/desktop/home/hyprland/eww/scripts
-              cp -R ${./modules/desktop/home/hyprland/eww/go} \
-                modules/desktop/home/hyprland/eww/go
-              chmod -R u+w modules/desktop/home/hyprland/eww/go
+              # Not "go": that name collides with $GOPATH in the sandbox and the
+              # toolchain then ignores the module's go.mod.
+              cp -R ${./modules/desktop/home/hyprland/eww/go} src
+              chmod -R u+w src
 
               # The sandbox has no HOME and no network; `go run` needs a
               # writable cache, and the module has no dependencies to fetch.
               export HOME=$TMPDIR
               export GOCACHE=$TMPDIR/go-cache
               export GOFLAGS=-mod=mod
-              # test_state_defaults asserts eww.yuck's :initial literal against
-              # BarState(), so the sandbox needs the yuck file too, not just
-              # the Python package.
-              cp ${./modules/desktop/home/hyprland/eww/eww.yuck} \
-                modules/desktop/home/hyprland/eww/eww.yuck
+              # net/http pulls cgo in for its resolver, and there is no reason
+              # to link against libc for a test that resolves nothing.
+              export CGO_ENABLED=0
 
-              # unittest discovery skips packageless directories in silence, so
-              # a new test dir without __init__.py would leave this check green
-              # while running none of its tests. Only directories that actually
-              # hold test files need to be packages; tests/nix holds eval
-              # assertions, not Python.
-              for dir in $(find tests -type d); do
-                # find, not a glob: stdenv sets nullglob, which would collapse an
-                # unmatched `ls dir/test_*.py` into a bare `ls` that always succeeds.
-                has_tests=$(find "$dir" -maxdepth 1 -name 'test_*.py' -print -quit)
-                if [ -n "$has_tests" ] && [ ! -f "$dir/__init__.py" ]; then
-                  echo "test directory $dir has no __init__.py; unittest would skip it" >&2
-                  exit 1
-                fi
-              done
+              cd src
+              go test ./...
 
-              python3 -m unittest discover -s tests -t . -v
+              echo '{"fn":"DefaultSnapshot","args":[]}' \
+                | go run ./internal/collect/diffgen > $TMPDIR/answer.json
+
+              python3 ${checkYuckInitial} $TMPDIR/answer.json \
+                ${./modules/desktop/home/hyprland/eww/eww.yuck}
+
               touch $out
             '';
       });
@@ -191,15 +197,10 @@
         default = nixpkgs.legacyPackages.${system}.mkShell {
           inherit (self.checks.${system}.pre-commit-check) shellHook;
 
-          # Matches the eww-backend check, so running the tests by hand in this
-          # shell cannot leave __pycache__ dirs behind.
-          PYTHONDONTWRITEBYTECODE = "1";
-
           buildInputs = with nixpkgs.legacyPackages.${system}; [
             nixfmt
-            # Same reason as the eww-backend check: test_go_equivalence skips
-            # itself when the toolchain is absent, so without go here the port
-            # gate quietly ran nothing for anyone working inside this shell.
+            # The backend is a Go module now; `go test ./...` from this shell
+            # is the same suite the eww-backend check runs.
             go
           ];
         };

@@ -5,3 +5,8 @@ __pycache__/
 !.agents/
 !.agents/skills/
 !.agents/skills/**
+
+# Go build cache. Created by running the eww backend tests by hand; it is
+# derived data, it reaches 800M, and flake.nix's pre-commit check has
+# src = ./. so anything here is copied into the store on every evaluation.
+.go-build-cache/

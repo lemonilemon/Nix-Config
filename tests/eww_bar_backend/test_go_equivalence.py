@@ -28,6 +28,7 @@ SCRIPTS_DIR = EWW_DIR / "scripts"
 GO_DIR = EWW_DIR / "go"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
+from tests.eww_bar_backend import SubprocessEscape  # noqa: E402
 from eww_bar_backend import (  # noqa: E402
     collectors,
     control,
@@ -2230,7 +2231,11 @@ class GoEquivalenceTests(unittest.TestCase):
             return response()
 
         def escaped(argv, *_a, **_k):
-            raise AssertionError(
+            # SubprocessEscape, not AssertionError: python_call below mirrors
+            # serve_control_connection's `except Exception`, which would
+            # otherwise turn a leaked command into an ordinary error reply and
+            # report it as a value mismatch rather than as the leak it is.
+            raise SubprocessEscape(
                 "a fixture test reached the REAL subprocess: "
                 f"{argv!r}\n"
                 "Some module under test holds an unpatched `subprocess`. Patch it "

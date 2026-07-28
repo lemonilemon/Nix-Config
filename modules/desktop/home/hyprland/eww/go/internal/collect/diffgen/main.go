@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"ewwbar/internal/collect"
+	"ewwbar/internal/control"
 	"ewwbar/internal/pyjson"
 	"ewwbar/internal/state"
 )
@@ -466,7 +467,7 @@ func dispatch(c call) (any, error) {
 		"RefreshAiUsage",
 		"CollectNotifications", "NotifAction", "NotifToggleGroupTwice",
 		"ScanWallpaperFiles", "ThumbCachePath", "EnsureThumbnail",
-		"CollectWallpaper", "SetWallpaper", "NotifMarkSeenRewind",
+		"CollectWallpaper", "SetWallpaper", "NotifMarkSeenRewind", "ControlHandle",
 		"IdleInhibitedState", "LidInhibitedState", "ToggleIdleInhibited",
 		"SetIdleInhibited", "SetLidInhibited", "ReadDisplayMode",
 		"WriteDisplayMode", "DisplayState", "MonitorState", "SetDisplayMode",
@@ -1065,6 +1066,32 @@ func withFixture(c call) (any, error) {
 			results = append(results, notifAction("mark-seen", ""))
 		}
 		return results, nil
+
+	case "ControlHandle":
+		// The handler answers with its reply JSON, the side-effect journal, and
+		// the state it wrote -- all three, because a reply that is right while
+		// the state update is wrong leaves the bar showing stale values with no
+		// error anywhere.
+		var payload map[string]any
+		if err := json.Unmarshal(c.Args[1], &payload); err != nil {
+			return nil, err
+		}
+		collect.ResetNotifyUIState()
+		store := state.New()
+		reply, handleErr := control.Handle(store, payload)
+		if handleErr != nil {
+			reply = control.ErrorReply(handleErr.Error())
+		}
+		encoded, err := pyjson.Encode(reply, true)
+		if err != nil {
+			return nil, err
+		}
+		snapshot, err := store.Snapshot()
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"reply": encoded, "snapshot": snapshot,
+			"journal": collect.FixtureJournal()}, nil
 
 	case "ScanWallpaperFiles":
 		var dir string

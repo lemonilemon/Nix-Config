@@ -33,26 +33,13 @@ func Default() Bar {
 			Text: "", Status: "", Icon: "\uF001",
 			Class: "", Tooltip: "",
 		},
-		AiUsage: AiUsage{
-			Text: "\U000F0674 --", Tooltip: "AI usage data is not available yet",
-			Class: "missing", Source: "missing", Updated: "",
-			Periods: AiPeriods{
-				Today: AiPeriod{Label: "Today", Range: "", Tokens: "--", Cost: "--", Agents: []string{}},
-				Week:  AiPeriod{Label: "This week", Range: "", Tokens: "--", Cost: "--", Agents: []string{}},
-				Month: AiPeriod{Label: "This month", Range: "", Tokens: "--", Cost: "--", Agents: []string{}},
-			},
-			Agents: "--",
-			// Not spelled out here: these ARE collectors.quota_default's
-			// templates, and the AI collectors deep-copy them on every probe.
-			// Two copies would drift the moment a provider is added.
-			Quotas: collect.QuotaDefaults(),
-			Meta: AiMeta{
-				Pricing: "offline", Refresh: "5m",
-				Status: "waiting", Stale: "false",
-				Refreshing: "false",
-			},
-		},
-		CPU: "\uF2DB --%",
+		// The whole ai_usage subtree is collectors.AI_USAGE_DEFAULT, which the
+		// AI collectors deep-copy on every refresh. One definition, so the two
+		// cannot drift -- an earlier attempt at this move silently did not
+		// apply, and package state kept a parallel copy that nothing crossed
+		// until the control handler did.
+		AiUsage: collect.AiUsageDefault(),
+		CPU:     "\uF2DB --%",
 		Memory: collect.Module{
 			Text: "", Tooltip: "", Class: "",
 		},

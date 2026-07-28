@@ -30,6 +30,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 from eww_bar_backend import (  # noqa: E402
     collectors,
+    control,
     display,
     inhibitors,
     notifications,
@@ -2228,14 +2229,29 @@ class GoEquivalenceTests(unittest.TestCase):
 
             return response()
 
+        def escaped(argv, *_a, **_k):
+            raise AssertionError(
+                "a fixture test reached the REAL subprocess: "
+                f"{argv!r}\n"
+                "Some module under test holds an unpatched `subprocess`. Patch it "
+                "in _python_under_fixture before running anything else -- without "
+                "this guard the command executes on the developer's machine, which "
+                "is how test_control_handle came to toggle wifi, bluetooth, volume "
+                "and the media player before anyone noticed.")
+
         env = {k[len("env."):]: v for k, v in fixture.items() if k.startswith("env.")}
         mode_path = fixture.get("display.mode_path", "/run/eww-display-mode")
         patches = [
+            # FIRST, and load-bearing: anything this harness forgot to patch now
+            # fails loudly instead of running against the real desktop session.
+            unittest.mock.patch("subprocess.run", escaped),
+            unittest.mock.patch("subprocess.Popen", escaped),
             unittest.mock.patch.object(collectors, "run_text", fake_run_text),
             unittest.mock.patch.object(collectors, "Path", FakePath),
             unittest.mock.patch.object(display, "run_text", fake_run_text),
             unittest.mock.patch.object(display, "subprocess", FakeSubprocess),
             unittest.mock.patch.object(inhibitors, "subprocess", FakeSubprocess),
+            unittest.mock.patch.object(control, "subprocess", FakeSubprocess),
             unittest.mock.patch.object(notifications, "run_text", fake_run_text),
             unittest.mock.patch.object(notifications, "subprocess", FakeSubprocess),
             unittest.mock.patch.object(wallpaper, "run_text", fake_run_text),
@@ -2260,7 +2276,12 @@ class GoEquivalenceTests(unittest.TestCase):
         patches.append(
             unittest.mock.patch("urllib.request.urlopen", fake_urlopen))
 
+        # Every process-global cache, matching what collect.InstallFixture
+        # clears on the Go side. A warm sink cache here made Python skip the two
+        # pactl calls Go still made, which showed up as a journal difference
+        # rather than as the harness asymmetry it was.
         collectors.reset_quota_cache()
+        collectors.reset_volume_sinks_cache()
         collectors._LAST_AI_USAGE = None
         with contextlib.ExitStack() as stack:
             # HTTPError subclasses addinfourl, whose __del__ warns when it is
@@ -2967,6 +2988,114 @@ class GoEquivalenceTests(unittest.TestCase):
         # The third read must show nothing new: the 900 ms item was already
         # marked seen by the first call and the second must not have undone it.
         self.assertEqual(answers[0]["value"][2]["result"]["new"], 0)
+
+
+    # -- the control command handler ------------------------------------------
+
+    def _control_base(self, **extra):
+        """Everything the eight command branches touch, in one fixture."""
+        base = self._notif_base()
+        base.update(self._wall_base(["a.png|1|100|10"]))
+        base.update(self._display_base())
+        base.update({
+            "wpctl\x1fget-volume\x1f@DEFAULT_AUDIO_SINK@": "Volume: 0.50",
+            "pactl\x1fget-default-sink": "sink-a",
+            "pactl\x1f-f\x1fjson\x1flist\x1fsinks":
+                '[{"name": "sink-a", "description": "Speakers"}]',
+            "playerctl\x1fstatus": "Playing",
+            "playerctl\x1fmetadata\x1f--format\x1f{{artist}} - {{title}}": "A - B",
+            "bluetoothctl\x1fshow": "Alias: host\nPowered: yes",
+            "bluetoothctl\x1fdevices\x1fConnected": "",
+            "nmcli\x1fradio\x1fwifi": "enabled",
+            "nmcli\x1f-t\x1f-f\x1fDEVICE,TYPE,STATE\x1fdev\x1fstatus": "",
+            "hyprctl\x1fmonitors\x1f-j": json.dumps(
+                [{"name": "eDP-1"}, {"name": "DP-2"}]),
+        })
+        base.update(extra)
+        return base
+
+    def test_control_handle(self):
+        """Every branch, its reply shape, its state write and its side effects."""
+        payloads = [
+            {}, {"command": "nope"}, {"command": "ping"},
+            # volume
+            {"command": "volume", "action": "up"},
+            {"command": "volume", "action": "down"},
+            {"command": "volume", "action": "mute"},
+            {"command": "volume", "action": "set", "value": "42"},
+            {"command": "volume", "action": "set", "value": "42.6"},
+            {"command": "volume", "action": "set", "value": "150"},
+            {"command": "volume", "action": "set", "value": "-5"},
+            {"command": "volume", "action": "set", "value": "abc"},
+            {"command": "volume", "action": "set"},
+            {"command": "volume", "action": "sink", "sink": "sink-a"},
+            {"command": "volume", "action": "sink"},
+            {"command": "volume", "action": "bogus"},
+            {"command": "volume"},
+            # media
+            {"command": "media", "action": "play-pause"},
+            {"command": "media", "action": "next"},
+            {"command": "media", "action": "bogus"},
+            # bluetooth
+            {"command": "bluetooth", "action": "power-toggle"},
+            {"command": "bluetooth", "action": "disconnect", "mac": "AA:BB"},
+            {"command": "bluetooth", "action": "disconnect"},
+            {"command": "bluetooth", "action": "bogus"},
+            # network
+            {"command": "network", "action": "wifi-toggle"},
+            {"command": "network", "action": "bogus"},
+            # idle -- note the reply carries no "action" key
+            {"command": "idle"}, {"command": "idle", "action": "on"},
+            {"command": "idle", "action": "off"},
+            {"command": "idle", "action": "status"},
+            {"command": "idle", "action": "bogus"},
+            # display
+            {"command": "display"}, {"command": "display", "action": "headless"},
+            {"command": "display", "action": "bogus"},
+            # notif
+            {"command": "notif", "action": "clear-all"},
+            {"command": "notif", "action": "dnd-toggle"},
+            {"command": "notif", "action": "mark-seen"},
+            {"command": "notif", "action": "toggle-group", "app": "Firefox"},
+            {"command": "notif", "action": "toggle-group"},
+            {"command": "notif", "action": "dismiss", "id": "3"},
+            {"command": "notif", "action": "dismiss", "id": "x"},
+            {"command": "notif", "action": "clear-group", "app": "Firefox"},
+            {"command": "notif", "action": "bogus"},
+            # wallpaper
+            {"command": "wallpaper", "action": "rescan"},
+            {"command": "wallpaper", "action": "set", "path": "/w/a.png"},
+            {"command": "wallpaper", "action": "set"},
+            {"command": "wallpaper", "action": "bogus"},
+        ]
+        cases = [(self._control_base(), payload) for payload in payloads]
+
+        class FakeState:
+            def __init__(self, initial):
+                self.state = initial
+
+            def get(self, key, default=None):
+                return self.state.get(key, default)
+
+            def update(self, **items):
+                self.state.update(items)
+
+            def snapshot(self):
+                return json.dumps(self.state, separators=(",", ":"),
+                                  ensure_ascii=False)
+
+        def python_call(payload):
+            from eww_bar_backend.state import BarState
+
+            store = FakeState(json.loads(BarState().snapshot()))
+            try:
+                reply = control.handle_control_command(store, payload)
+            except Exception as exc:  # noqa: BLE001 -- serve_control_connection does this
+                reply = {"ok": False, "error": str(exc)}
+            return {"reply": json.dumps(reply, separators=(",", ":")),
+                    "snapshot": store.snapshot()}
+
+        self._compare_fixture("ControlHandle", cases, python_call, with_journal=True)
 
 
 def _contiguous_runs(chars):

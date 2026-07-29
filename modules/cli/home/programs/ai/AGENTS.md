@@ -1,5 +1,5 @@
 > Managed by Nix at `modules/cli/home/programs/ai/AGENTS.md` in `~/nixos-config`.
-> All five link targets are read-only; edit the repo file and rebuild.
+> Every link target is read-only; edit the repo file and rebuild.
 
 # lemonilemon's agent instructions
 These are common instructions for lemonilemon's agents across all scenarios.

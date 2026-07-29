@@ -118,56 +118,62 @@
 
 (defwidget workspaces [output]
   (box :class "workspaces" :orientation "h" :space-evenly false
-    (workspace :id "1" :output output :state_class {bar_state.workspace_state.ws1_class} :icon {bar_state.workspace_state.ws1_text}
+    (workspace :id "1" :output output :state_class {bar_state.workspace_state.ws1_class}
       :owner {ws_monitors.ws1_owner} :active_on {ws_monitors.ws1_active_on} :monitors {ws_monitors.monitors})
-    (workspace :id "2" :output output :state_class {bar_state.workspace_state.ws2_class} :icon {bar_state.workspace_state.ws2_text}
+    (workspace :id "2" :output output :state_class {bar_state.workspace_state.ws2_class}
       :owner {ws_monitors.ws2_owner} :active_on {ws_monitors.ws2_active_on} :monitors {ws_monitors.monitors})
-    (workspace :id "3" :output output :state_class {bar_state.workspace_state.ws3_class} :icon {bar_state.workspace_state.ws3_text}
+    (workspace :id "3" :output output :state_class {bar_state.workspace_state.ws3_class}
       :owner {ws_monitors.ws3_owner} :active_on {ws_monitors.ws3_active_on} :monitors {ws_monitors.monitors})
-    (workspace :id "4" :output output :state_class {bar_state.workspace_state.ws4_class} :icon {bar_state.workspace_state.ws4_text}
+    (workspace :id "4" :output output :state_class {bar_state.workspace_state.ws4_class}
       :owner {ws_monitors.ws4_owner} :active_on {ws_monitors.ws4_active_on} :monitors {ws_monitors.monitors})
-    (workspace :id "5" :output output :state_class {bar_state.workspace_state.ws5_class} :icon {bar_state.workspace_state.ws5_text}
+    (workspace :id "5" :output output :state_class {bar_state.workspace_state.ws5_class}
       :owner {ws_monitors.ws5_owner} :active_on {ws_monitors.ws5_active_on} :monitors {ws_monitors.monitors})))
 
 ; One bar per monitor, so each one answers for its own screen.
 ;
-; With fewer than two monitors attached -- including monitors == 0, which is the
-; daemon's zero value and therefore what a failed read looks like -- state_class
-; is used verbatim and this renders exactly as it did before the mapping
-; existed. That is deliberate: undocking must not change the island.
+; Two visual channels carrying two independent facts, rather than four states
+; sharing one grey ramp:
 ;
-; With two or more, state_class is the wrong answer here. It is computed once
-; from the globally focused workspace and shared by every bar, so the unfocused
-; monitor's bar highlights a workspace living on the other screen. The four
-; states below are per-monitor and mutually exclusive:
+;   SHAPE says who owns it.   filled = this screen, ring = another screen,
+;                             small dot = the workspace does not exist.
+;   LIGHTNESS says its state. overlay0 empty < subtext0 has windows <
+;                             green + accent being displayed here.
 ;
-;   active     this monitor is displaying it
-;   occupied   this monitor owns it, but is showing something else
-;   elsewhere  another monitor owns it
-;   empty      it does not exist
+; Shape does the work colour was failing at. Judging which of two grey discs is
+; lighter is slow and only possible side by side; filled against outlined
+; resolves before you look directly at it. Splitting the axes also means colour
+; is no longer load-bearing on its own.
 ;
-; The icon needs no such treatment: it is filled whenever the workspace has
-; windows, which is true on any screen.
+; With fewer than two monitors -- including monitors == 0, the daemon's zero
+; value and therefore what a failed read looks like -- there is no ownership
+; axis to encode, so no ring is ever drawn and state_class is used verbatim.
+; Docking and undocking cannot change the island's width or its vocabulary.
 ;
-; Right-click pulls the workspace onto THIS monitor. It is the deliberate
-; counterpart to leaving workspaces unbound -- nothing in the Hyprland config
-; pins a workspace to a screen, so this is how one gets moved without a
+; bar_state.workspace_state.wsN_text is deliberately no longer read: the glyph
+; now depends on WHICH bar is asking, which that field cannot express. It stays
+; in the state because 294 recorded cases pin WorkspaceStateFromJSON and the
+; golden replay cannot be regenerated.
+;
+; Right-click pulls the workspace onto THIS monitor. Nothing in the Hyprland
+; config pins a workspace to a screen, so this is how one gets moved without a
 ; keybind. Left-click is unchanged and still matches MOD1+N exactly.
-(defwidget workspace [id output state_class icon owner active_on monitors]
+(defwidget workspace [id output state_class owner active_on monitors]
   (button
     :class "workspace ${monitors < 2 ? state_class : (active_on == output ? 'active' : (owner == output ? 'occupied' : (owner == '' ? 'empty' : 'elsewhere')))}"
     :onclick "hyprctl dispatch workspace ${id}"
     :onrightclick "hyprctl dispatch moveworkspacetomonitor ${id} ${output}"
     ; The right-click is otherwise undiscoverable -- there is no room on a 24px
     ; button for a hint, and the first person to use this feature could not find
-    ; it. The tooltip says where the workspace is and, when that is somewhere
-    ; else, what to do about it. Single line: yuck string escapes do not include
-    ; \n, and every multi-line tooltip on this bar is built in Go.
+    ; it. Single line: yuck strings have no \n escape, and every multi-line
+    ; tooltip on this bar is assembled in Go.
     :tooltip {monitors < 2 ? "Workspace ${id}"
               : owner == output ? "Workspace ${id}, on this screen"
               : owner == "" ? "Workspace ${id}, empty"
               : "Workspace ${id}, on ${owner}. Right-click to bring it here."}
-    (label :text icon)))
+    (label :text {monitors < 2 ? (state_class == "empty" ? "󰧟" : "")
+                  : owner == "" ? "󰧟"
+                  : (owner == output || active_on == output) ? ""
+                  : ""})))
 
 (defwindow popup_backdrop
   :monitor 0

@@ -1,13 +1,14 @@
 // Package replay answers one recorded call against the ported collectors.
 //
-// It is the shared body of two things: the diffgen command, which the
-// differential gate drives from Python, and the golden replay test, which
-// checks the same calls with no Python present.
+// It is the shared body of two things: the golden replay test, and the diffgen
+// command, which the eww-backend flake check drives to produce the default
+// snapshot. During the port a third caller drove diffgen from Python and diffed
+// the two implementations line by line; that gate is gone with the Python.
 //
-// That second use is the point. The differential question -- "does Go agree
-// with CPython?" -- stops being answerable the moment the Python is deleted.
-// What replaces it is "does Go still answer what it answered when we checked
-// it against CPython?", and that needs exactly these inputs and the recorded
+// Outliving the gate is the point. The differential question -- "does Go agree
+// with CPython?" -- stopped being answerable the moment the Python was deleted.
+// What replaces it is "does Go still answer what it answered when we checked it
+// against CPython?", and that needs exactly these inputs and the recorded
 // outputs, which is why this dispatch is a package rather than a main.
 package replay
 
@@ -421,9 +422,10 @@ func Answer(c Call) (any, error) {
 	// --- impure collectors, driven from a command -> output fixture ---------
 	//
 	// The first argument is a map keyed by the argv joined with \x1f, standing
-	// in for run_text. The Python side patches collectors.run_text with the
-	// same map, so both implementations see identical subprocess output and any
-	// difference is theirs, not the machine's.
+	// in for the subprocess. It is what makes these cases replayable at all: the
+	// recorded answer is a function of the fixture, not of the machine, so a
+	// collector that shells out to nmcli returns the same thing on a laptop with
+	// no network as it did on the machine that recorded it.
 
 	case "CollectActiveWindow", "CollectWorkspace", "CollectMedia",
 		"CollectTrayCount", "CollectBluetooth", "CollectVolume",

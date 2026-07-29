@@ -251,8 +251,8 @@ func parseISOWeekDate(s string, year, head int, extended bool) (int, int, int, s
 	// reaches parse_iso_epoch in this form -- the callers pass RFC 3339 from two
 	// HTTP APIs and a locally built "<period>T00:00:00" -- and both sides
 	// already agree on every extended week date, which is the ISO form anything
-	// real emits. test_go_equivalence.py asserts the divergence is exactly this
-	// shape and always None, so it cannot widen unnoticed.
+	// real emits. The golden replay pins the divergence at exactly this shape
+	// and always None, so it cannot widen unnoticed.
 	if !extended && rest != "" && isASCIIDigit(rest[0]) {
 		return 0, 0, 0, "", false
 	}

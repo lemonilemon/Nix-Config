@@ -129,8 +129,8 @@ func QuotaCardClass(quota Quota) string {
 }
 
 // timeNow is the clock seam. Package-level var for the same reason as RunText:
-// the Python is tested by passing now_epoch explicitly, and the ported tests
-// keep that shape.
+// a test swaps it and restores it on defer, and InstallFixture drives it from
+// the "now" key so a recorded case resolves the same wall clock every time.
 var timeNow = time.Now
 
 // nowOr mirrors the `now_epoch or time.time()` idiom these collectors all open

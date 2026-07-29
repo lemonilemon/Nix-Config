@@ -1,10 +1,9 @@
-// Package paths mirrors eww_bar_backend/paths.py: the runtime files the daemon
-// and its client agree on.
+// Package paths holds the runtime files the daemon and its clients agree on.
 //
-// One definition, imported by both sides. paths.py's own docstring warns that
-// the socket path was duplicated in the Go client and had to be kept in step by
-// hand; this package is what removes that hazard rather than adding a third
-// copy of it.
+// One definition, imported by every side. It exists because there was a period
+// when the daemon was Python and the clients were Go, and the socket path was
+// duplicated across the boundary and kept in step by hand. The boundary is gone;
+// the single definition should outlive the reason for it.
 package paths
 
 import (

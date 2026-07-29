@@ -10,8 +10,9 @@ import (
 // strings.ToLower agrees on every code point in Unicode but one: U+0130, the
 // capital I with dot above, lowercases to TWO characters in Python -- "i"
 // followed by U+0307 combining dot above -- where Go yields a bare "i".
-// Established by comparing both over the entire code point range rather than
-// by sampling; test_go_equivalence.py re-runs that comparison.
+// Established by comparing both over the entire code point range rather than by
+// sampling. That sweep is gone with CPython; what survives it is the golden
+// replay, which pins 1,463 PyLower cases including four that carry U+0130.
 //
 // It matters because the AI collectors lowercase agent keys that are then
 // rendered, so a dropped combining mark would reach the popup.

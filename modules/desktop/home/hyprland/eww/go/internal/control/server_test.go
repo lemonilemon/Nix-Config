@@ -15,7 +15,7 @@ import (
 	"ewwbar/internal/state"
 )
 
-// TestMain is the Go-side equivalent of the Python suite's rails.
+// TestMain installs the suite's safety rails.
 //
 // These tests drive real control handlers, and a handler shells out --
 // collect.RunText and RunStatus execute by default. Installing an empty

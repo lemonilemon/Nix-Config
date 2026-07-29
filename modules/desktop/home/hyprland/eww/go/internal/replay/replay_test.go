@@ -14,18 +14,30 @@ import (
 )
 
 // golden holds every case the differential gate generated, with the answer that
-// run verified.
+// run verified against CPython: 42,621 cases over 97 entry points.
 //
-// This file is what the port's safety survives on after the Python is deleted.
-// The gate could ask "does Go agree with CPython?"; once CPython is gone the
-// only answerable question is "does Go still answer what it answered when we
-// checked?" -- which needs these exact inputs and outputs. Regenerate with:
+// This file is what the port's safety survives on. The gate could ask "does Go
+// agree with CPython?"; with CPython gone the only answerable question is "does
+// Go still answer what it answered when we checked?" -- which needs these exact
+// inputs and outputs.
+//
+// It CANNOT BE REGENERATED. The generator was
+// tests/eww_bar_backend/test_go_equivalence.py, driven as
 //
 //	EWW_GOLDEN_OUT=.../golden.jsonl.gz python3 -m unittest \
 //	    tests.eww_bar_backend.test_go_equivalence
 //
-// and only while the Python is still present to be checked against. Generate it
-// under TZ=UTC: see TestMain.
+// and it was deleted with the rest of the Python backend. Recovering it means
+// going back through history:
+//
+//	git log --diff-filter=D -- tests/eww_bar_backend/test_go_equivalence.py
+//	git show <that commit>^:tests/eww_bar_backend/test_go_equivalence.py
+//
+// So treat a failure here as a regression in the Go, never as a stale recording
+// to be refreshed. Adding coverage means writing an ordinary Go test, not
+// appending to this file.
+//
+// Recorded under TZ=UTC, which TestMain re-pins.
 //
 //go:embed testdata/golden.jsonl.gz
 var golden []byte

@@ -14,10 +14,13 @@ import (
 // separators=(",", ":").
 //
 // ensureASCII picks between the two settings this backend actually uses, and
-// they are NOT the same call:
+// they are NOT the same call. The original spelled the difference as:
 //
-//	state.py:72       json.dumps(state, separators=(",", ":"), ensure_ascii=False)
-//	control.py:301    json.dumps(payload, separators=(",", ":"))   # ensure_ascii=True
+//	state.py    json.dumps(state, separators=(",", ":"), ensure_ascii=False)
+//	control.py  json.dumps(payload, separators=(",", ":"))   # ensure_ascii=True
+//
+// which is now state.Store's Encode(bar, false) against server.go's
+// Encode(reply, true).
 //
 // So the state emitter puts Nerd Font glyphs on the wire as raw UTF-8 while the
 // control socket escapes them to \uXXXX. Getting that backwards would not break

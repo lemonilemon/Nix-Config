@@ -75,14 +75,13 @@ let
       procps
       pulseaudio
       pulsemixer
-      python3
       socat
       systemd
       wireplumber
       wlogout
       llm-agents.ccusage
-      # Codex/Antigravity quota collection (see collectors.py); Claude stays on
-      # the native read-only collector.
+      # Codex/Antigravity quota collection (see internal/collect/aifetch.go);
+      # Claude stays on the native read-only collector.
       openusage-cli
     ])
     ++ [
@@ -122,8 +121,8 @@ let
     eww close-all >/dev/null 2>&1 || true
 
     # Startup only — monitors hotplugged later are handled by the backend
-    # (watchers.py reacts to socket2 monitoradded/monitorremoved with the
-    # same open/close commands).
+    # (internal/watch's WatchHyprland reacts to socket2
+    # monitoradded/monitorremoved with the same open/close commands).
     monitors=$(hyprctl monitors -j | jq -r '.[].name')
     if [ -z "$monitors" ]; then
       eww open bar --arg output=0

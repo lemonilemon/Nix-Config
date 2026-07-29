@@ -2,17 +2,21 @@ package state
 
 import "ewwbar/internal/collect"
 
-// Default is BarState()'s initial value, from state.py.
+// Default is the bar's initial state, the value every widget renders before its
+// first real reading arrives.
 //
-// GENERATED ONCE from BarState().snapshot() and committed, not generated at
-// build time -- a build-time generator would mean import-from-derivation, and
-// this changes about twice a year. Every string came out of CPython as an
-// escape rather than a literal, because twelve of these fields hold Nerd Font
-// glyphs that look exactly like "" in an editor. Regenerate the same way if
-// the Python defaults change; test_go_equivalence.py fails when they drift.
+// GENERATED ONCE from the Python BarState().snapshot() and committed, not
+// generated at build time -- a build-time generator would mean
+// import-from-derivation, and this changes about twice a year. Every string is
+// written as an escape rather than a literal, because twelve of these fields
+// hold Nerd Font glyphs that look exactly like "" in an editor and would not
+// survive a copy-paste.
 //
-// A function, not a var: the Python copies each default at every use and a
-// shared Go value that a caller mutated would corrupt every later reader.
+// Keep it in step with eww.yuck's :initial literal: the eww-backend flake check
+// compares the two and fails the build on drift.
+//
+// A function, not a var: a shared Go value that one caller mutated would
+// corrupt every later reader.
 func Default() Bar {
 	return Bar{
 		ActiveWindow: collect.ActiveWindowState{

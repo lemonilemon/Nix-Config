@@ -11,10 +11,9 @@ import (
 
 // RunText and ReadTextFile are the seams every impure collector goes through.
 //
-// Package-level vars rather than parameters or an interface, deliberately: the
-// Python side is tested with ~25 unittest.mock.patch calls against run_text,
-// and this shape lets the ported tests keep the same structure instead of
-// threading a runner through forty call sites. Reassign, defer the restore.
+// Package-level vars rather than parameters or an interface, deliberately: it
+// lets a test swap one seam and restore it on defer, instead of threading a
+// runner through forty call sites. InstallFixture drives all of them at once.
 //
 // Nothing in production reassigns these. If something ever needs to, it wants a
 // parameter instead.

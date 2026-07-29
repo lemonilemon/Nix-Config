@@ -107,8 +107,11 @@ func asciiFoldDigits(s string) string {
 // There is no stdlib lookup for this and no room for a 760-entry table, so it
 // leans on a property of the UCD: Nd characters come in contiguous, ascending
 // runs of ten, and Go's range table splits on exactly those block boundaries,
-// so a range always begins at a zero digit. Verified over all 760 Nd runes in
-// test_go_equivalence.py against unicodedata, not taken on faith.
+// so a range always begins at a zero digit. That was verified over all 760 Nd
+// runes against unicodedata rather than taken on faith, back when CPython was
+// still here to be asked. If a future Unicode revision breaks the alignment,
+// nothing in this repo will notice -- re-run the sweep by hand against
+// unicodedata.decimal if you touch this.
 func unicodeDigitValue(r rune) (int, bool) {
 	for _, rg := range unicode.Nd.R16 {
 		if rg.Stride == 1 && r >= rune(rg.Lo) && r <= rune(rg.Hi) {

@@ -61,10 +61,10 @@ func (s *Store) Update(mutate func(*Bar)) {
 	}
 }
 
-// Snapshot is BarState.snapshot: the exact bytes eww reads on stdout.
+// Snapshot is the exact bytes eww reads on stdout.
 //
-// ensure_ascii=False, matching state.py:72. The control socket uses the other
-// setting; see pyjson.Encode.
+// ensure_ascii=False, so Nerd Font glyphs go out as raw UTF-8. The control
+// socket deliberately uses the other setting; see pyjson.Encode.
 func (s *Store) Snapshot() (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

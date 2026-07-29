@@ -1,12 +1,12 @@
 package collect
 
-// Glyphs that appear inside common.py's *_DEFAULT dicts.
+// Glyphs that belong in the *Default values below, written as escapes.
 //
 // Every one of these renders as nothing -- a blank, or a box -- in an editor, a
-// terminal and a diff. In the Python source they look exactly like "". So a
-// port that reads common.py and transcribes what it sees produces a struct
-// whose zero value is silently wrong, and every test that only checks
-// "the default" passes.
+// terminal and a diff, so in the original Python source they looked exactly like
+// "". A port that read that source and transcribed what it saw produced a struct
+// whose zero value was silently wrong, and every test that only checked "the
+// default" passed.
 //
 // This is not hypothetical: MediaDefault below was written as an empty struct,
 // the equivalence gate rejected it, and the reason was this U+F001. Twelve

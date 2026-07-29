@@ -24,9 +24,11 @@ type ActiveWindowState struct {
 // glyph, byte-identical to the fallback for an unknown app. Verified against
 // the source bytes, not the rendered text. That is almost certainly a past
 // encoding accident (this repo has two commits repairing mangled glyphs
-// elsewhere), but it is what ships, so it is what this reproduces. Fixing it is
-// a behaviour change and belongs in its own commit against the Python, not
-// smuggled in through a port.
+// elsewhere), but it is what shipped, so it is what this reproduces. It was left
+// alone during the port because fixing it is a behaviour change and had no
+// business being smuggled in through a port. That reason has expired -- give
+// those four apps real glyphs whenever you like, it is a one-line change here
+// and the golden replay will flag it so you know you meant it.
 var appIcons = map[string]string{
 	"kitty":               " ",
 	"zen-beta":            "\U000F0239 ",

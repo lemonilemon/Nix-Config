@@ -299,7 +299,12 @@
   (network_panel))
 
 (defwidget battery_row [label value]
+  ; "--" means no data source, as opposed to "N/A", which means the reading does
+  ; not apply right now -- time-to-empty on a battery that is full. The first is
+  ; worth hiding, the second is worth saying. In practice this hides Health on
+  ; any laptop whose firmware pins charge_full to charge_full_design.
   (box :class "popup-row battery-row" :orientation "h" :space-evenly false
+    :visible {value != "--"}
     (label :class "battery-row-label" :halign "start" :text label)
     (label :class "battery-row-value" :halign "end" :hexpand true :text value)))
 

@@ -222,8 +222,23 @@ func BatteryStateFromFiles(files map[string]string) (Battery, bool) {
 		timeStr = fmt.Sprintf("%dh %dm", minutes/60, minutes%60)
 	}
 
+	// Health is charge_full over charge_full_design, which is a measurement only
+	// if the firmware actually maintains charge_full. Plenty do not -- they echo
+	// the design value forever -- and this laptop is one of them: 357 cycles in,
+	// charge_full is 3083000 against a charge_full_design of 3083000, identical
+	// to the microamp-hour. No real cell is at exactly 100.000% of design after
+	// 357 cycles; upower reads the same pair and reports the same 100%.
+	//
+	// So an exact match is treated as no data rather than as perfect health.
+	// Rendering a constant as though it were a reading is worse than admitting
+	// the firmware does not say.
+	//
+	// A genuinely new battery also reads full == design and is suppressed by the
+	// same rule. That is the right direction to be wrong in: an unknown that is
+	// really 100% costs nothing, while a permanent 100% on a worn cell is a lie
+	// you would act on.
 	health := "--"
-	if haveFull && fullValue != 0 && haveDesign && designValue > 0 {
+	if haveFull && fullValue != 0 && haveDesign && designValue > 0 && fullValue != designValue {
 		health = fmt.Sprintf("%d%%", RoundHalfEven(float64(fullValue)*100/float64(designValue)))
 	}
 

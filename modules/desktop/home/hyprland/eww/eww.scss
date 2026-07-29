@@ -166,6 +166,20 @@ tooltip label {
   min-height: 24px;
   min-width: 24px;
   padding: 0 3px;
+  /* Every state change on these dots used to be an instant swap, which is why
+     the difference between them was easy to miss: nothing ever drew the eye to
+     the moment one changed. Easing the change is what makes it noticeable --
+     switch workspaces, or right-click one onto this screen, and the dot visibly
+     travels between states instead of teleporting.
+
+     box-shadow is in the list so .active's inset accent grows in rather than
+     appearing whole. 200ms is long enough to register and short enough that
+     rapid MOD1+N switching does not feel like it is lagging behind the keys.
+
+     The first transition in this stylesheet; the @keyframes rules elsewhere
+     prove GTK's full CSS engine is in play, and transition is part of it. */
+  transition: color 200ms ease-out, background 200ms ease-out,
+    box-shadow 200ms ease-out;
 }
 
 .workspace.empty {
@@ -179,21 +193,20 @@ tooltip label {
 /* Owned by a different monitor. Only reachable with two or more attached, so a
    single-screen bar never renders this.
 
-   A hue, not another shade of grey. This started as a brightness ladder --
-   empty < elsewhere < occupied, three greys under one green -- and it did not
-   read: five identical circles separated by #6c7086 / #7f849c / #a6adc8 is not
-   a distinction anyone can make at a glance on a 34px bar.
+   A brightness ladder, deliberately, after trying a hue and rejecting it:
+   empty ($overlay0) < elsewhere ($overlay1) < occupied ($subtext0) < active
+   ($green, plus the accent). Colouring another monitor's workspaces blue read
+   clearly but made the island loud, and the island is the leftmost thing on the
+   bar and the one most often in peripheral vision. Quiet wins.
 
-   $blue is matched to $subtext0 in perceived lightness on purpose, so
-   "elsewhere" is a different CATEGORY rather than a fainter kind of occupied.
-   It does not compete with .active, which wins on background and accent rather
-   than on colour alone. It is also the blue .display-mode-mark.external already
-   uses for a screen that is not the built-in panel.
+   What carries the distinction instead is motion: .workspace transitions, so
+   the moment a dot changes state is visible even when the two resting states
+   are close together.
 
-   Costs no width, so the leftmost and most-glanced island keeps its size, and
-   it stays truthful with any number of monitors attached. */
+   Costs no width, so the island keeps its size, and it stays truthful with any
+   number of monitors attached. */
 .workspace.elsewhere {
-  color: $blue;
+  color: $overlay1;
 }
 
 .workspace:hover {

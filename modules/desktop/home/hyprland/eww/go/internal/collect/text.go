@@ -1,9 +1,10 @@
-// Package collect holds the ported bar collectors.
+// Package collect holds the bar's collectors.
 //
-// Every function here is a transliteration of one in
-// scripts/eww_bar_backend/, and must agree with it byte for byte -- the two run
-// side by side until the daemon flips over, and diffgen_test.go checks them
-// against each other on generated input.
+// Every function here began as a transliteration of one in the Python backend
+// this replaced, checked against it byte for byte while both existed. That is
+// why so many of them carry a comment about a CPython quirk: the quirk is the
+// specification, and the golden replay in internal/replay is what still holds
+// them to it.
 package collect
 
 import "unicode/utf8"

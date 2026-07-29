@@ -165,11 +165,26 @@ func CollectActiveWindow() ActiveWindowState {
 // system. If urgency is ever wanted back, Hyprland 0.56 exposes it through the
 // Lua API as window.urgent rather than through the JSON.
 func CollectWorkspace() WorkspaceState {
-	return WorkspaceStateFromJSON(
-		RunText(defaultTimeout, "hyprctl", "activeworkspace", "-j"),
-		RunText(defaultTimeout, "hyprctl", "workspaces", "-j"),
-		"",
-	)
+	workspace, _ := CollectWorkspaceViews()
+	return workspace
+}
+
+// CollectWorkspaceViews reads hyprctl once and derives both workspace models.
+//
+// One call rather than two collectors because they overlap: both need
+// `hyprctl workspaces -j`, and the bar refreshes them on the same events, so
+// separate collectors would fork it twice on every window move.
+//
+// Three reads, which is what this path cost before the urgency fork was
+// dropped -- but `hyprctl monitors -j` serialises a handful of monitors where
+// `hyprctl clients -j` serialised every window on the system, so the exchange
+// is a good one.
+func CollectWorkspaceViews() (WorkspaceState, MonitorWorkspaces) {
+	active := RunText(defaultTimeout, "hyprctl", "activeworkspace", "-j")
+	workspaces := RunText(defaultTimeout, "hyprctl", "workspaces", "-j")
+	monitors := RunText(defaultTimeout, "hyprctl", "monitors", "-j")
+	return WorkspaceStateFromJSON(active, workspaces, ""),
+		MonitorWorkspacesFromJSON(monitors, workspaces)
 }
 
 // MediaState mirrors collectors.media_state.

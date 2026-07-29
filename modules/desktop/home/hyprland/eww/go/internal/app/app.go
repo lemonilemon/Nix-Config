@@ -90,7 +90,7 @@ func seed(store *state.Store) {
 	bluetooth := collect.CollectBluetooth()
 	idle := collect.IdleInhibitedState()
 	display := collect.DisplayState("")
-	workspace := collect.CollectWorkspace()
+	workspace, monitorWorkspaces := collect.CollectWorkspaceViews()
 	notifications := collect.CollectNotifications()
 
 	store.Update(func(bar *state.Bar) {
@@ -109,6 +109,12 @@ func seed(store *state.Store) {
 		bar.WorkspaceState = workspace
 		bar.Notifications = notifications
 	})
+
+	// After the store, not before: this spawns `eww update`, and the seed's job
+	// is to get the first snapshot onto stdout quickly. The bar renders without
+	// the variable anyway -- its default is the zero value, which the yuck reads
+	// as "one screen" and falls back to bar_state.workspace_state.
+	watch.PublishMonitorWorkspaces(monitorWorkspaces)
 }
 
 // launchWatchers starts every background loop.

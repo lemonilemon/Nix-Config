@@ -176,6 +176,18 @@ tooltip label {
   color: $subtext0;
 }
 
+/* Owned by a different monitor. Only reachable with two or more attached, so a
+   single-screen bar never renders this.
+
+   A brightness ladder rather than a badge: empty ($overlay0) < elsewhere
+   ($overlay1) < occupied ($subtext0) < active ($green, plus the accent). It
+   reads at a glance as "this island is about this screen", and unlike a letter
+   or a monitor number it costs no width on the leftmost, most-glanced island
+   and stays truthful with any number of monitors attached. */
+.workspace.elsewhere {
+  color: $overlay1;
+}
+
 .workspace:hover {
   background: rgba(49, 50, 68, 0.76);
   color: $text;

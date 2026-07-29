@@ -4,6 +4,17 @@
 (defvar battery_module "@batteryModule@")
 (defvar wifi_controls "@wifiControls@")
 
+; Which monitor owns each workspace, and which monitor is displaying it.
+;
+; Pushed by the daemon with `eww update` rather than arriving on bar_state,
+; because the golden replay pins the whole bar state as a byte-exact string in
+; 46 recorded cases and a new key there would break all of them permanently.
+;
+; The default below is the daemon's zero value, and it is what renders before
+; the first push and after any failed read. monitors = 0 sends every workspace
+; down the single-screen path, which is byte-for-byte today's rendering.
+(defvar ws_monitors '{"ws1_owner":"","ws2_owner":"","ws3_owner":"","ws4_owner":"","ws5_owner":"","ws1_active_on":"","ws2_active_on":"","ws3_active_on":"","ws4_active_on":"","ws5_active_on":"","focused":"","monitors":0}')
+
 (defvar show_date false)
 (defvar show_quota_left false)
 (defvar show_reset_exact false)
@@ -32,7 +43,7 @@
     (centerbox :class "bar-root" :hexpand true
       (box :class "left" :orientation "h" :space-evenly false :halign "start" :hexpand true
         (box :class "bar-island workspace-island" :orientation "h" :space-evenly false
-          (workspaces)
+          (workspaces :output output)
           (label :class "submap" :visible {bar_state.submap != ""} :text {bar_state.submap}))
         (box :class "bar-island media-island" :orientation "h" :space-evenly false :visible {bar_state.media.text != ""}
           (button :class "media ${bar_state.media.class}"
@@ -105,18 +116,48 @@
           (button :class "power-button" :onclick "hyprctl dispatch exec wlogout"
             (label :text "")))))))
 
-(defwidget workspaces []
+(defwidget workspaces [output]
   (box :class "workspaces" :orientation "h" :space-evenly false
-    (workspace :id "1" :state_class {bar_state.workspace_state.ws1_class} :icon {bar_state.workspace_state.ws1_text})
-    (workspace :id "2" :state_class {bar_state.workspace_state.ws2_class} :icon {bar_state.workspace_state.ws2_text})
-    (workspace :id "3" :state_class {bar_state.workspace_state.ws3_class} :icon {bar_state.workspace_state.ws3_text})
-    (workspace :id "4" :state_class {bar_state.workspace_state.ws4_class} :icon {bar_state.workspace_state.ws4_text})
-    (workspace :id "5" :state_class {bar_state.workspace_state.ws5_class} :icon {bar_state.workspace_state.ws5_text})))
+    (workspace :id "1" :output output :state_class {bar_state.workspace_state.ws1_class} :icon {bar_state.workspace_state.ws1_text}
+      :owner {ws_monitors.ws1_owner} :active_on {ws_monitors.ws1_active_on} :monitors {ws_monitors.monitors})
+    (workspace :id "2" :output output :state_class {bar_state.workspace_state.ws2_class} :icon {bar_state.workspace_state.ws2_text}
+      :owner {ws_monitors.ws2_owner} :active_on {ws_monitors.ws2_active_on} :monitors {ws_monitors.monitors})
+    (workspace :id "3" :output output :state_class {bar_state.workspace_state.ws3_class} :icon {bar_state.workspace_state.ws3_text}
+      :owner {ws_monitors.ws3_owner} :active_on {ws_monitors.ws3_active_on} :monitors {ws_monitors.monitors})
+    (workspace :id "4" :output output :state_class {bar_state.workspace_state.ws4_class} :icon {bar_state.workspace_state.ws4_text}
+      :owner {ws_monitors.ws4_owner} :active_on {ws_monitors.ws4_active_on} :monitors {ws_monitors.monitors})
+    (workspace :id "5" :output output :state_class {bar_state.workspace_state.ws5_class} :icon {bar_state.workspace_state.ws5_text}
+      :owner {ws_monitors.ws5_owner} :active_on {ws_monitors.ws5_active_on} :monitors {ws_monitors.monitors})))
 
-(defwidget workspace [id state_class icon]
+; One bar per monitor, so each one answers for its own screen.
+;
+; With fewer than two monitors attached -- including monitors == 0, which is the
+; daemon's zero value and therefore what a failed read looks like -- state_class
+; is used verbatim and this renders exactly as it did before the mapping
+; existed. That is deliberate: undocking must not change the island.
+;
+; With two or more, state_class is the wrong answer here. It is computed once
+; from the globally focused workspace and shared by every bar, so the unfocused
+; monitor's bar highlights a workspace living on the other screen. The four
+; states below are per-monitor and mutually exclusive:
+;
+;   active     this monitor is displaying it
+;   occupied   this monitor owns it, but is showing something else
+;   elsewhere  another monitor owns it
+;   empty      it does not exist
+;
+; The icon needs no such treatment: it is filled whenever the workspace has
+; windows, which is true on any screen.
+;
+; Right-click pulls the workspace onto THIS monitor. It is the deliberate
+; counterpart to leaving workspaces unbound -- nothing in the Hyprland config
+; pins a workspace to a screen, so this is how one gets moved without a
+; keybind. Left-click is unchanged and still matches MOD1+N exactly.
+(defwidget workspace [id output state_class icon owner active_on monitors]
   (button
-    :class "workspace ${state_class}"
+    :class "workspace ${monitors < 2 ? state_class : (active_on == output ? 'active' : (owner == output ? 'occupied' : (owner == '' ? 'empty' : 'elsewhere')))}"
     :onclick "hyprctl dispatch workspace ${id}"
+    :onrightclick "hyprctl dispatch moveworkspacetomonitor ${id} ${output}"
     (label :text icon)))
 
 (defwindow popup_backdrop

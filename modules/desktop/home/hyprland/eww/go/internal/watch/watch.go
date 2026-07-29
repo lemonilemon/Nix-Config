@@ -13,12 +13,56 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"ewwbar/internal/collect"
+	"ewwbar/internal/pyjson"
+	"ewwbar/internal/run"
 	"ewwbar/internal/state"
 )
+
+// The per-monitor workspace mapping goes to eww as a plain variable, NOT
+// through state.Bar.
+//
+// That is forced rather than chosen. The golden replay pins 46 ControlHandle
+// cases and each holds the whole bar state as a byte-exact JSON string, so any
+// new top-level key would break all 46 permanently, and the recording cannot be
+// regenerated. `eww update` sidesteps the emit path entirely.
+//
+// Pushed only on change, for the same reason EmitLoop compares encoded bytes
+// before writing: a window move fires several events in a burst, and each push
+// is a process spawn.
+var (
+	monitorViewLock sync.Mutex
+	monitorViewLast string
+)
+
+// PublishMonitorWorkspaces sends the mapping to eww if it differs from the last
+// one sent.
+//
+// Failures are silent, matching run.Eww: eww may not be listening yet during
+// startup, and the bar renders correctly without this variable anyway -- the
+// yuck falls back to bar_state.workspace_state whenever monitors is below two.
+func PublishMonitorWorkspaces(view collect.MonitorWorkspaces) {
+	encoded, err := pyjson.Encode(view, false)
+	if err != nil {
+		return
+	}
+
+	monitorViewLock.Lock()
+	unchanged := encoded == monitorViewLast
+	if !unchanged {
+		monitorViewLast = encoded
+	}
+	monitorViewLock.Unlock()
+
+	if unchanged {
+		return
+	}
+	run.Eww([]string{"update", "ws_monitors=" + encoded})
+}
 
 // Update is one batch of assignments into BarState.
 //
@@ -195,6 +239,15 @@ var (
 	workspacePrefixes = []string{
 		"workspace>>", "focusedmon>>", "openwindow>>", "closewindow>>",
 		"movewindow>>", "createworkspace>>", "destroyworkspace>>", "urgent>>",
+		// Added with the per-monitor mapping. Without these, moving a workspace
+		// between screens -- by the bar's own right-click, or by
+		// moveworkspacetomonitor from anywhere -- leaves the bars showing the
+		// old owner until some unrelated event happens to refresh them.
+		// monitoradded/removed matter for the same reason: attaching a screen
+		// redistributes workspaces, and the mapping's monitor count is what
+		// switches the island between its one-screen and two-screen rendering.
+		"moveworkspace>>", "moveworkspacev2>>",
+		"monitoradded>>", "monitorremoved>>",
 	}
 	activeWindowPrefixes = []string{"activewindow>>", "activewindowv2>>", "closewindow>>"}
 )
@@ -213,8 +266,9 @@ func WatchHyprland(ctx context.Context, store *state.Store) {
 	go ReconcileBarWindows(ctx)
 
 	for ctx.Err() == nil {
-		workspace := collect.CollectWorkspace()
+		workspace, monitors := collect.CollectWorkspaceViews()
 		store.Update(func(bar *state.Bar) { bar.WorkspaceState = workspace })
+		PublishMonitorWorkspaces(monitors)
 
 		socketPath, ok := HyprlandSocketPath()
 		if !ok {
@@ -248,8 +302,9 @@ func readHyprlandEvents(ctx context.Context, store *state.Store, socketPath stri
 			store.Update(func(bar *state.Bar) { bar.Submap = submap })
 		}
 		if hasAnyPrefix(line, workspacePrefixes) {
-			workspace := collect.CollectWorkspace()
+			workspace, monitors := collect.CollectWorkspaceViews()
 			store.Update(func(bar *state.Bar) { bar.WorkspaceState = workspace })
+			PublishMonitorWorkspaces(monitors)
 		}
 		if hasAnyPrefix(line, activeWindowPrefixes) {
 			active := collect.CollectActiveWindow()

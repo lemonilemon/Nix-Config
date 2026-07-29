@@ -1022,9 +1022,15 @@ tooltip label {
 .popup calendar.button { color: $overlay1; }
 .popup calendar.button:hover { color: $green; }
 
-/* The Mo Tu We row, and the week-number column beside it. */
-.popup calendar.highlight,
-.popup calendar:week {
+/* The Mo Tu We row.
+   NOT `calendar:week` or `calendar:day`. Those two appear in libgtk's symbol
+   table beside the real selectors, but they are GTK3 REGIONS -- deprecated in
+   3.14 and gone -- not pseudo-classes. GTK rejects the rule and then abandons
+   the rest of the stylesheet, so one bad selector here took the whole bar's
+   appearance with it. Anything outside the standard pseudo-class set
+   (:hover :active :selected :checked :indeterminate :disabled :backdrop :focus)
+   needs proof before it goes in. */
+.popup calendar.highlight {
   color: $overlay0;
   font-size: 10px;
   font-weight: 700;

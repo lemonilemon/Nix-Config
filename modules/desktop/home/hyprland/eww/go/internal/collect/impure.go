@@ -146,11 +146,29 @@ func CollectActiveWindow() ActiveWindowState {
 }
 
 // WorkspaceState mirrors collectors.workspace_state.
+//
+// clientsJSON is deliberately empty. It exists to feed the urgency branch in
+// WorkspaceStateFromJSON, and Hyprland does not supply the input: 0.56.0's
+// `hyprctl clients -j` emits 32 keys per window and `urgent` is not among them,
+// so the branch has never fired on this machine and .workspace.urgent is
+// unreachable CSS.
+//
+// Passing "" rather than deleting the parameter, because WorkspaceStateFromJSON
+// is pinned by 294 recorded cases in the golden replay, which cannot be
+// regenerated. Its signature and body stay exactly as recorded; only what
+// production chooses to hand it changes, and the recorded cases replay with
+// their own arguments so they never see this.
+//
+// The win is a fork. This runs on every workspace event -- every window open,
+// close and move, and every workspace switch -- and `hyprctl clients -j` is the
+// most expensive of the three calls, since it serialises every window on the
+// system. If urgency is ever wanted back, Hyprland 0.56 exposes it through the
+// Lua API as window.urgent rather than through the JSON.
 func CollectWorkspace() WorkspaceState {
 	return WorkspaceStateFromJSON(
 		RunText(defaultTimeout, "hyprctl", "activeworkspace", "-j"),
 		RunText(defaultTimeout, "hyprctl", "workspaces", "-j"),
-		RunText(defaultTimeout, "hyprctl", "clients", "-j"),
+		"",
 	)
 }
 

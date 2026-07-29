@@ -187,6 +187,9 @@ tooltip label {
   box-shadow: inset 0 -2px 0 rgba(166, 227, 161, 0.86);
 }
 
+/* Parked, not deleted: Hyprland 0.56's `hyprctl clients -j` has no urgent key,
+   so the collector no longer asks for one and these two rules are unreachable.
+   Kept because the styling is the hard part and the signal may come back. */
 .workspace.urgent {
   background: rgba(243, 139, 168, 0.16);
   color: $red;

@@ -62,7 +62,6 @@ let
       gawk
       gnugrep
       gnused
-      gsimplecal
       htop
       hyprland
       imagemagick
@@ -139,7 +138,6 @@ in
     home.packages = with pkgs; [
       eww
       ewwBar
-      gsimplecal
       htop
       libappindicator
       libnotify

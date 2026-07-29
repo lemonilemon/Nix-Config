@@ -991,6 +991,54 @@ tooltip label {
 .accent-bluetooth { @include glass-popup($sapphire); }
 .accent-network { @include glass-popup($peach); }
 .accent-battery { @include glass-popup($blue); }
+/* Green because the clock button is green. Every popup takes the colour of the
+   module that opens it. */
+.accent-clock { @include glass-popup($green); }
+
+/* GTK3's calendar is not the single unstyleable node it is often described as.
+   The widget exposes eight selectors -- calendar, .header, .button, .highlight,
+   :selected, :indeterminate, :day and :week -- which is enough to bring it into
+   the bar's own palette instead of leaving an Adwaita rectangle inside a glass
+   popup. Names taken from GTK's own symbol table, not from a blog post.
+
+   Scoped under .popup so nothing here can reach another widget, and every
+   property is set explicitly because the stylesheet opens with `* { all: unset }`
+   and inherited defaults cannot be relied on. */
+.popup calendar {
+  background: transparent;
+  color: $subtext0;
+  padding: 2px;
+}
+
+/* The month heading and its two navigation arrows. */
+.popup calendar.header {
+  background: transparent;
+  border-bottom: 1px solid rgba(205, 214, 244, 0.07);
+  color: $text;
+  font-weight: 800;
+  padding-bottom: 4px;
+}
+
+.popup calendar.button { color: $overlay1; }
+.popup calendar.button:hover { color: $green; }
+
+/* The Mo Tu We row, and the week-number column beside it. */
+.popup calendar.highlight,
+.popup calendar:week {
+  color: $overlay0;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Days spilling in from the neighbouring months. */
+.popup calendar:indeterminate { color: $surface1; }
+
+.popup calendar:selected {
+  background: rgba(166, 227, 161, 0.16);
+  border-radius: 5px;
+  color: $green;
+  font-weight: 800;
+}
 
 .popup-header {
   border-bottom: 1px solid rgba(205, 214, 244, 0.07);
@@ -1075,6 +1123,7 @@ tooltip label {
 .accent-bluetooth .popup-mark { background: rgba(116, 199, 236, 0.11); border-color: rgba(116, 199, 236, 0.18); color: $sapphire; }
 .accent-network .popup-mark { background: rgba(250, 179, 135, 0.11); border-color: rgba(250, 179, 135, 0.18); color: $peach; }
 .accent-battery .popup-mark { background: rgba(137, 180, 250, 0.11); border-color: rgba(137, 180, 250, 0.18); color: $blue; }
+.accent-clock .popup-mark { background: rgba(166, 227, 161, 0.11); border-color: rgba(166, 227, 161, 0.18); color: $green; }
 
 /* Volume specifics */
 .volume-value { color: $text; font-size: 22px; font-weight: 900; margin-bottom: 4px; }

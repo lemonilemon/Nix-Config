@@ -63,7 +63,7 @@
       (box :class "bar-island clock-island" :orientation "h" :space-evenly false
         (button :class "clock"
           :onclick "eww update show_date=${show_date == 'true' ? 'false' : 'true'}"
-          :onrightclick "hyprctl dispatch exec gsimplecal"
+          :onrightclick "eww-popup toggle calendar_popup ${output}"
           :tooltip {bar_state.clock.tooltip}
           (label :text {show_date == "true" ? bar_state.clock.date : bar_state.clock.time})))
       (box :class "right" :orientation "h" :space-evenly false :halign "end" :hexpand true
@@ -376,6 +376,35 @@
         (battery_row :label "Time" :value {bar_state.battery.time})
         (battery_row :label "Health" :value {bar_state.battery.health})
         (battery_row :label "Power draw" :value {bar_state.battery.power})))))
+
+(defwindow calendar_popup
+  ;; Anchored center, unlike every other popup: the clock sits in the
+  ;; centerbox's center slot, and a popup that opens under its own button is
+  ;; the whole reason this replaced a separate gsimplecal window.
+  :monitor 0
+  :geometry (geometry :x "0" :y "50px" :width "300px" :height "330px" :anchor "top center")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-calendar"
+  (calendar_panel))
+
+;; No :day/:month/:year bindings on purpose. Binding them to bar_state.clock
+;; would snap the view back to today on every clock tick, one minute after you
+;; navigated away from it. Unbound, GTK starts the widget on today, the heading
+;; arrows move freely, and eww-popup's close-then-open cycle rebuilds the window
+;; so reopening lands on today again -- which is the behaviour you want from
+;; something whose whole job is looking up a date.
+(defwidget calendar_panel []
+  (box :class "popup accent-clock" :orientation "v" :space-evenly false
+    (popup_header :icon "󰃭" :title "Calendar" :subtitle {bar_state.clock.tooltip})
+    (box :class "popup-body" :orientation "v" :space-evenly false
+      (calendar :class "calendar"
+        :show-heading true
+        :show-day-names true
+        ;; ISO week numbers: the one thing a desktop calendar can tell a
+        ;; developer that a wall calendar cannot.
+        :show-week-numbers true))))
 
 (defwindow battery_popup
   :monitor 0

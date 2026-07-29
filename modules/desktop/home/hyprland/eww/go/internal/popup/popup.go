@@ -26,6 +26,7 @@ var popupWindows = []string{
 	"notif_center_popup",
 	"wallpaper_picker_popup",
 	"settings_popup",
+	"calendar_popup",
 }
 
 const backdropWindow = "popup_backdrop"

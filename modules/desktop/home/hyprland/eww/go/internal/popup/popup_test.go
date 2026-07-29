@@ -150,7 +150,7 @@ func TestEveryYuckPopupIsManaged(t *testing.T) {
 	for _, name := range []string{
 		"volume_popup", "bluetooth_popup", "network_popup", "battery_popup",
 		"ai_usage_popup", "display_mode_popup", "notif_center_popup",
-		"wallpaper_picker_popup", "settings_popup",
+		"wallpaper_picker_popup", "settings_popup", "calendar_popup",
 	} {
 		if !isPopupWindow(name) {
 			t.Errorf("%s is toggled by eww.yuck but not managed", name)

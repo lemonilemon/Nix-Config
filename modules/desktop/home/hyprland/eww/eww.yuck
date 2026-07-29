@@ -193,20 +193,29 @@
   (box :class "display-mode-popup" :orientation "v" :space-evenly false
     (box :class "display-mode-header" :orientation "h" :space-evenly false
       (box :class "display-mode-mark ${bar_state.display.class}"
-        (label :text {bar_state.display.mode == "headless" ? "󰒲" : (bar_state.display.mode == "external" ? "󰍹" : "")}))
+        (label :text {bar_state.display.mode == "headless" ? "󰒲" : (bar_state.display.mode == "external" ? "󰍹" : "󰌢")}))
       (box :class "display-mode-title-stack" :orientation "v" :space-evenly false
         (label :class "display-mode-title" :halign "start" :text {bar_state.display.mode == "headless" ? "Headless server" : (bar_state.display.mode == "external" ? "External only" : "Normal desktop")})
-        (label :class "display-mode-eyebrow" :halign "start" :text {bar_state.display.status})))
+        ; What happens if you walk away, rather than a second copy of the title.
+        ; This is the line that has to move when the Hypridle button is pressed.
+        (label :class "display-mode-eyebrow" :halign "start"
+          :text {bar_state.display.mode == "headless" ? "Screens off, machine awake"
+                  : bar_state.display.mode == "external" ? "Internal panel off, staying awake"
+                  : bar_state.idle_inhibited == "true" ? "Staying awake"
+                  : "Sleeps when idle"})))
     (box :class "display-mode-status" :orientation "h" :space-evenly false
       (label :class "display-mode-chip ${bar_state.idle_inhibited == 'true' ? 'active' : ''}" :text {bar_state.idle_inhibited == "true" ? "Hypridle paused" : "Hypridle active"})
       (label :class "display-mode-chip ${bar_state.display.lid_inhibited == 'true' ? 'active' : ''}" :text {bar_state.display.lid_inhibited == "true" ? "Lid ignored" : "Lid normal"}))
+    ; The three modes are mutually exclusive, so they read as one radio group:
+    ; same shape, one list, exactly one highlighted. Hypridle sits below the rule
+    ; because it is a different axis -- picking a mode SETS the inhibitors, and
+    ; this toggles one of them on its own.
     (box :class "display-mode-actions" :orientation "v" :space-evenly false
-      (button :class "display-mode-action ${bar_state.idle_inhibited == 'true' ? 'active' : ''}"
-        :onclick "eww-barctl --quiet idle toggle"
+      (button :class "display-mode-action ${bar_state.display.mode == 'normal' ? 'active' : ''}"
+        :onclick "eww-barctl --quiet display normal"
         (box :orientation "h" :space-evenly false
-          (label :class "display-mode-action-icon" :text "")
-          (label :class "display-mode-action-label" :halign "start"
-            :text {bar_state.idle_inhibited == "true" ? "Resume Hypridle" : "Pause Hypridle"})))
+          (label :class "display-mode-action-icon" :text "󰌢")
+          (label :class "display-mode-action-label" :halign "start" :text "Normal desktop")))
       (button :class "display-mode-action ${bar_state.display.mode == 'external' ? 'active' : ''}"
         :onclick "eww-barctl --quiet display external"
         (box :orientation "h" :space-evenly false
@@ -218,12 +227,10 @@
           (label :class "display-mode-action-icon" :text "󰒲")
           (label :class "display-mode-action-label" :halign "start" :text "Headless server"))))
     (box :class "display-mode-footer" :orientation "h" :space-evenly false
-      (button :class "display-mode-footer-action"
-        :onclick "eww-barctl --quiet display restore"
-        (label :text "Turn screens on"))
-      (button :class "display-mode-footer-action danger"
-        :onclick "eww-barctl --quiet display normal && eww-popup close"
-        (label :text "Exit mode")))))
+      (button :class "display-mode-footer-action ${bar_state.idle_inhibited == 'true' ? 'active' : ''}"
+        :hexpand true
+        :onclick "eww-barctl --quiet idle toggle"
+        (label :text {bar_state.idle_inhibited == "true" ? "󰤄  Resume Hypridle" : "󰅶  Pause Hypridle"})))))
 
 (defwidget bluetooth_panel []
   (box :class "popup accent-bluetooth" :orientation "v" :space-evenly false

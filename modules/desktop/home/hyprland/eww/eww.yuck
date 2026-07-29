@@ -158,6 +158,15 @@
     :class "workspace ${monitors < 2 ? state_class : (active_on == output ? 'active' : (owner == output ? 'occupied' : (owner == '' ? 'empty' : 'elsewhere')))}"
     :onclick "hyprctl dispatch workspace ${id}"
     :onrightclick "hyprctl dispatch moveworkspacetomonitor ${id} ${output}"
+    ; The right-click is otherwise undiscoverable -- there is no room on a 24px
+    ; button for a hint, and the first person to use this feature could not find
+    ; it. The tooltip says where the workspace is and, when that is somewhere
+    ; else, what to do about it. Single line: yuck string escapes do not include
+    ; \n, and every multi-line tooltip on this bar is built in Go.
+    :tooltip {monitors < 2 ? "Workspace ${id}"
+              : owner == output ? "Workspace ${id}, on this screen"
+              : owner == "" ? "Workspace ${id}, empty"
+              : "Workspace ${id}, on ${owner}. Right-click to bring it here."}
     (label :text icon)))
 
 (defwindow popup_backdrop

@@ -1004,10 +1004,15 @@ tooltip label {
    Scoped under .popup so nothing here can reach another widget, and every
    property is set explicitly because the stylesheet opens with `* { all: unset }`
    and inherited defaults cannot be relied on. */
+/* Backed rather than transparent. glass-popup sits at 0.72 alpha, which is fine
+   behind a few large rows and not fine behind a month grid: forty small numbers
+   over whatever wallpaper happens to be underneath. This gives the grid its own
+   ground, compounding with the popup to roughly 0.9 effective. */
 .popup calendar {
-  background: transparent;
+  background: rgba(24, 24, 37, 0.66);
+  border-radius: 8px;
   color: $subtext0;
-  padding: 2px;
+  padding: 6px 4px;
 }
 
 /* The month heading and its two navigation arrows. */

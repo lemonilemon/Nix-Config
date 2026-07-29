@@ -157,6 +157,13 @@
             # agree, and a checker worth having is worth being able to read as
             # Python.
             checkYuckInitial = ./tests/nix/check_yuck_initial.py;
+
+            # And the stylesheet's pseudo-classes, for the same reason: GTK
+            # parses eww.scss, nothing in the build does, and GTK abandons the
+            # rest of the file at the first rule it cannot read -- so one bad
+            # selector strips the bar's appearance from that line down. It cost
+            # a broken desktop once already.
+            checkGtkCss = ./tests/nix/check_gtk_css.py;
           in
           pkgs.runCommand "eww-backend-tests"
             {
@@ -188,6 +195,9 @@
 
               python3 ${checkYuckInitial} $TMPDIR/answer.json \
                 ${./modules/desktop/home/hyprland/eww/eww.yuck}
+
+              python3 ${checkGtkCss} \
+                ${./modules/desktop/home/hyprland/eww/eww.scss}
 
               touch $out
             '';

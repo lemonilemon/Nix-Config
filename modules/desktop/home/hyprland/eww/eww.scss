@@ -179,13 +179,21 @@ tooltip label {
 /* Owned by a different monitor. Only reachable with two or more attached, so a
    single-screen bar never renders this.
 
-   A brightness ladder rather than a badge: empty ($overlay0) < elsewhere
-   ($overlay1) < occupied ($subtext0) < active ($green, plus the accent). It
-   reads at a glance as "this island is about this screen", and unlike a letter
-   or a monitor number it costs no width on the leftmost, most-glanced island
-   and stays truthful with any number of monitors attached. */
+   A hue, not another shade of grey. This started as a brightness ladder --
+   empty < elsewhere < occupied, three greys under one green -- and it did not
+   read: five identical circles separated by #6c7086 / #7f849c / #a6adc8 is not
+   a distinction anyone can make at a glance on a 34px bar.
+
+   $blue is matched to $subtext0 in perceived lightness on purpose, so
+   "elsewhere" is a different CATEGORY rather than a fainter kind of occupied.
+   It does not compete with .active, which wins on background and accent rather
+   than on colour alone. It is also the blue .display-mode-mark.external already
+   uses for a screen that is not the built-in panel.
+
+   Costs no width, so the leftmost and most-glanced island keeps its size, and
+   it stays truthful with any number of monitors attached. */
 .workspace.elsewhere {
-  color: $overlay1;
+  color: $blue;
 }
 
 .workspace:hover {

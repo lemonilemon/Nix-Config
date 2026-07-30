@@ -48,6 +48,11 @@ in
         drun-display-format = "{name}";
         kb-cancel = "Escape";
         sidebar-mode = true;
+        # Single left-click launches. The default reserves MousePrimary for
+        # moving the highlight and demands a double click to accept, which
+        # reads as clicks doing nothing.
+        me-select-entry = "";
+        me-accept-entry = "MousePrimary";
         # Mode names shown in the switcher. Material Design Icons from the same
         # Nerd Font as wlogout's tiles, so the stroke weight matches across the
         # family.

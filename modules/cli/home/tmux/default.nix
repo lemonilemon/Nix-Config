@@ -23,6 +23,14 @@
         set -g detach-on-destroy off
         set -g renumber-windows on
 
+        # Agent TUIs need modified Enter to survive tmux. Without extended keys
+        # tmux strips the modifier and Shift+Enter arrives as a plain Enter, so
+        # "insert a newline" submits the prompt instead. csi-u is the format pi
+        # documents as most reliable and needs tmux >= 3.5; we run 3.7b. Only
+        # applies once an application asks for extended key reporting.
+        set -g extended-keys on
+        set -g extended-keys-format csi-u
+
         # Status bar customization
         set -g status-position top
         set -g status-right-length 100

@@ -112,7 +112,14 @@ A dynamic tiling Wayland compositor with modern features.
 - Logout/power menu
 - Shutdown, reboot, suspend options
 - Visual confirmation dialog
-- Keyboard shortcuts
+- Keyboard shortcuts, shown on the buttons
+- Styled as hyprlock's sibling rather than as an eww bar island: fullscreen
+  session overlays are a separate tier from the bar's glass chrome. Colours come
+  from `theme/palette.nix`; the blurred backdrop comes from the `logout_dialog`
+  layerrule in `default.nix`
+- Icons are rasterised at build time from `nerd-fonts.jetbrains-mono`, one per
+  accent, because a CSS `background-image` cannot inherit `color` and so could
+  never take the button's accent on hover
 
 #### Desktop Applications
 

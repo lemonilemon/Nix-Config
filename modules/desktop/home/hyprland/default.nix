@@ -163,6 +163,13 @@
             )
             ++ lib.optionals config.home.desktop.hyprland.dunst.enable [
               "match:namespace notifications, blur on"
+            ]
+            ++ lib.optionals config.home.desktop.hyprland.wlogout.enable [
+              # wlogout names its layer surface logout_dialog. Without this it is
+              # the only layer surface on the desktop left with a razor-sharp
+              # backdrop, which is most of why the power menu read as foreign
+              # beside hyprlock and its blur_passes = 3.
+              "match:namespace logout_dialog, blur on"
             ];
 
           workspace = [

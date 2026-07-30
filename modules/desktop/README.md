@@ -23,15 +23,18 @@ desktop/
 │   ├── options.nix     # Home-specific options
 │   └── hyprland/       # Hyprland configuration
 │       ├── default.nix        # Hyprland entry point
-│       ├── waybar.nix         # Status bar
+│       ├── waybar.nix         # Status bar (fallback when Eww is off)
+│       ├── eww/               # Eww bar and popups
+│       ├── dunst.nix          # Notification daemon
 │       ├── hyprlock.nix       # Screen locker
-│       ├── hyprpaper/         # Wallpaper manager
+│       ├── hyprpaper/         # Static wallpaper engine (fallback)
+│       ├── wallpaper/         # awww wallpaper engine and picker backend
+│       ├── rofi.nix           # App launcher / window switcher
 │       ├── wlogout/           # Logout menu
 │       ├── theme/             # GTK/Qt theming
 │       ├── network/           # Network manager applet
 │       ├── bluetooth/         # Bluetooth manager
 │       ├── nemo.nix           # File manager (GUI)
-│       ├── ranger.nix         # File manager (TUI)
 │       └── imv.nix            # Image viewer
 └── nixos/              # NixOS system-level desktop settings
     ├── default.nix     # NixOS module entry
@@ -108,6 +111,14 @@ A dynamic tiling Wayland compositor with modern features.
 - Per-monitor wallpapers
 - Dynamic wallpaper changing
 
+**Rofi** (`rofi.nix`):
+- App launcher, window switcher, and run dialog
+- Third member of the hyprlock/wlogout session-overlay family: glass panel over
+  compositor blur (the `rofi` layerrule in `default.nix`), hyprlock's input
+  field as the search bar, selection styled with wlogout's hover formula.
+  Colours come from `theme/palette.nix`; the catppuccin module's stock rofi
+  theme is opted out like the rest of the family
+
 **wlogout** (`wlogout/`):
 - Logout/power menu
 - Shutdown, reboot, suspend options
@@ -123,9 +134,8 @@ A dynamic tiling Wayland compositor with modern features.
 
 #### Desktop Applications
 
-**File Managers**:
+**File Manager**:
 - **Nemo** (`nemo.nix`): Graphical file manager (fork of Nautilus)
-- **Ranger** (`ranger.nix`): Terminal-based file manager with vim keybindings
 
 **Image Viewer**:
 - **imv** (`imv.nix`): Lightweight Wayland image viewer

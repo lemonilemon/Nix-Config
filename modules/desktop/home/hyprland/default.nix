@@ -12,6 +12,7 @@
     ./hyprlock.nix
     ./nemo.nix
     ./imv.nix
+    ./rofi.nix
     ./theme
     ./network
     ./wlogout
@@ -108,7 +109,9 @@
             "${MOD2}, f, exec, ${BROWSER}" # Browser
             "${MOD2}, q, togglespecialworkspace, mainterm" # Terminal
             "${MOD2}, s, togglespecialworkspace, scratchpad" # Scratchpad
-            "${MOD2}, space, exec, pkill ${DRUN} || ${DRUN}" # Launcher
+            # Toggle: `pkill rofi` closes an open launcher; only if none was
+            # running does the right-hand side start one.
+            "${MOD2}, space, exec, pkill rofi || ${DRUN}"
             "${MOD2}, e, exec, ${FILE}" # File manager
           ];
 
@@ -135,8 +138,6 @@
             "match:class ${BROWSER}, tag +browser"
             "match:class ${TERM}, tag +term"
             "match:class ${FILE}, tag +file"
-            "match:class (rofi|Rofi), tag +launcher"
-            "match:tag launcher, stay_focused on" # ensure focus stays on rofi
             "match:modal true, pseudo on"
             "match:class fcitx5, pseudo on"
             "match:tag term, match:workspace special:mainterm, tag +mainterm"
@@ -170,6 +171,13 @@
               # backdrop, which is most of why the power menu read as foreign
               # beside hyprlock and its blur_passes = 3.
               "match:namespace logout_dialog, blur on"
+            ]
+            ++ [
+              # rofi 2.0 is Wayland-native and runs as a layer surface named
+              # `rofi`, so this -- not a windowrule -- is what reaches it. Blur
+              # completes the launcher's glass panel (see ./rofi.nix), the same
+              # treatment logout_dialog gets.
+              "match:namespace rofi, blur on"
             ];
 
           workspace = [
@@ -262,24 +270,6 @@
       extraConfig = ''
         source = ~/.config/hypr/monitors.conf
       '';
-    };
-
-    # Windows switcher / App launcher:
-    programs.rofi = {
-      enable = true;
-      package = pkgs.rofi;
-      font = "JetBrains Mono Nerd Font 14";
-      extraConfig = {
-        show-icons = true;
-        modi = "window,drun,run,ssh";
-        combi-modi = "drun,run,ssh";
-        matching = "fuzzy";
-        terminal = "kitty";
-        drun-match-fields = "name";
-        drun-dis-play-format = "{name}";
-        kb-cancel = "Escape";
-        sidebar-mode = true;
-      };
     };
 
     home.sessionVariables = {

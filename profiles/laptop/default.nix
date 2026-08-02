@@ -4,7 +4,6 @@
 
 {
   pkgs,
-  config,
   lib,
   ...
 }:
@@ -39,11 +38,6 @@
   # Hardware
   hardware = {
     graphics.enable = true;
-    nvidia = {
-      modesetting.enable = true;
-      package = config.boot.kernelPackages.nvidiaPackages.stable;
-      prime.sync.enable = true;
-    };
     bluetooth.enable = true;
   };
   # Bluetooth

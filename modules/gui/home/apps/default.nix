@@ -21,7 +21,13 @@
     programs.ssh = {
       enable = true;
       enableDefaultConfig = false;
-      includes = [ "~/.ssh/1Password/config" ];
+      includes = [
+        "~/.ssh/1Password/config"
+        # Hand-edited host inventory (Host aliases, IPs). Deliberately outside
+        # Nix and git: hosts churn too often to deserve a rebuild, and OpenSSH
+        # ignores the Include while the file does not exist yet.
+        "~/.ssh/config.local"
+      ];
       settings = {
         "*" = {
           ForwardAgent = true;

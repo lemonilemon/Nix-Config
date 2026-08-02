@@ -45,6 +45,11 @@ fmt:
 #
 ############################################################################
 
+# Ship starship + zsh + agent instructions to a remote without Nix or root
+[group('remote')]
+portable host *ssh_opts:
+    ./portable/bootstrap.sh {{ host }} {{ ssh_opts }}
+
 nixhost := x"${NIXHOST}"
 username := env_var_or_default("USER", "lemonilemon")
 # build system with new config

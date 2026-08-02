@@ -1,0 +1,112 @@
+# Deployed from ~/nixos-config (portable/zshrc) by portable/bootstrap.sh.
+# A hand-maintained mirror of the Home Manager zsh setup for machines without
+# Nix. Every tool hook is guarded, so a missing tool switches a feature off
+# instead of erroring. Edit the repo copy and re-run the bootstrap; changes
+# made here are overwritten on the next deploy.
+
+# Nix, if this machine ever gains a per-user install.
+if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi
+
+typeset -U path fpath
+path=("$HOME/.local/bin" $path)
+
+export LANGUAGE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_CTYPE=en_US.UTF-8
+
+# Plugins are cloned by remote-install.sh; zplug stays a Nix-only affair.
+# nix-zsh-completions and zsh-nix-shell are omitted: without Nix they have
+# nothing to complete or wrap. zsh-autocomplete needs zsh >= 5.8 and runs
+# compinit itself; older zsh falls back to plain completion.
+zsh_plugin_dir="$HOME/.local/share/zsh/plugins"
+autoload -Uz is-at-least
+if is-at-least 5.8 && [[ -r "$zsh_plugin_dir/zsh-autocomplete/zsh-autocomplete.plugin.zsh" ]]; then
+  source "$zsh_plugin_dir/zsh-autocomplete/zsh-autocomplete.plugin.zsh"
+else
+  autoload -Uz compinit && compinit
+fi
+# Useless without the GitHub CLI, and it warns on every startup when gh (or
+# its copilot extension) is missing, so gate it on gh being installed.
+if command -v gh >/dev/null && [[ -r "$zsh_plugin_dir/zsh-github-copilot/zsh-github-copilot.plugin.zsh" ]]; then
+  source "$zsh_plugin_dir/zsh-github-copilot/zsh-github-copilot.plugin.zsh"
+fi
+unset zsh_plugin_dir
+
+if command -v zoxide >/dev/null; then
+  eval "$(zoxide init zsh --cmd cd)"
+fi
+
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE="$HOME/.zsh_history"
+setopt HIST_FCNTL_LOCK HIST_IGNORE_DUPS HIST_IGNORE_SPACE SHARE_HISTORY
+setopt NO_APPEND_HISTORY NO_EXTENDED_HISTORY NO_HIST_EXPIRE_DUPS_FIRST
+setopt NO_HIST_FIND_NO_DUPS NO_HIST_IGNORE_ALL_DUPS NO_HIST_SAVE_NO_DUPS
+
+if [[ $options[zle] = on ]] && command -v fzf >/dev/null; then
+  # Older fzf has no --zsh; the redirect turns that into a silent no-op.
+  source <(fzf --zsh 2>/dev/null)
+fi
+
+# Bindkeys for zsh-github-copilot (only once the plugin registered them)
+if (( $+functions[zsh_gh_copilot_explain] )); then
+  bindkey '^[|' zsh_gh_copilot_explain # bind Alt+shift+\ to explain
+  bindkey '^[\' zsh_gh_copilot_suggest # bind Alt+\ to suggest
+fi
+# Up searches history for the typed prefix, as on the Nix side. terminfo
+# covers application mode, the raw sequence covers everything else.
+zmodload -F zsh/terminfo +p:terminfo 2>/dev/null
+for k in "$terminfo[kcuu1]" '^[[A'; do
+  if [[ -n "$k" ]]; then bindkey "$k" up-line-or-search; fi
+done
+unset k
+
+# lazygit that follows the repo you switched to inside it
+if command -v lazygit >/dev/null; then
+  function lg() {
+    export LAZYGIT_NEW_DIR_FILE=~/.lazygit/newdir
+    command lazygit "$@"
+    if [ -f $LAZYGIT_NEW_DIR_FILE ]; then
+      cd "$(cat $LAZYGIT_NEW_DIR_FILE)"
+      rm -f $LAZYGIT_NEW_DIR_FILE > /dev/null
+    fi
+  }
+fi
+
+# yazi that leaves the shell in the directory you browsed to
+if command -v yazi >/dev/null; then
+  function y() {
+    local tmp="$(mktemp -t "yazi-cwd.XXXXX")"
+    command yazi "$@" --cwd-file="$tmp"
+    if cwd="$(<"$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+      builtin cd -- "$cwd"
+    fi
+    rm -f -- "$tmp"
+  }
+fi
+
+if [[ $TERM != dumb ]] && command -v starship >/dev/null; then
+  eval "$(starship init zsh)"
+fi
+
+if command -v direnv >/dev/null; then
+  eval "$(direnv hook zsh)"
+fi
+
+if [[ $options[zle] = on ]] && command -v atuin >/dev/null; then
+  eval "$(atuin init zsh --disable-ctrl-r)"
+fi
+
+alias -- ..='cd ..'
+if command -v nvim >/dev/null; then
+  alias -- vimdiff='nvim -d'
+fi
+if command -v lsd >/dev/null; then
+  alias -- ls='lsd'
+  alias -- la='lsd -A'
+  alias -- ll='lsd -l'
+  alias -- lla='lsd -lA'
+  alias -- lt='lsd --tree'
+  alias -- llt='lsd -l --tree'
+fi

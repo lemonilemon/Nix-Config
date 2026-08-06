@@ -11,6 +11,24 @@ let
   # else that resolves AGENTS.md by walking up from the workspace.
   agentInstructions = ./AGENTS.md;
 
+  # Skills versioned in the repo instead of installed by the `skills` CLI, so
+  # their rules and sample excerpts evolve through the repo the way AGENTS.md
+  # does. One attrset line per skill; skillLinks expands each entry into every
+  # agent's skill root.
+  nixManagedSkills = {
+    my-voice = ./skills/my-voice;
+  };
+
+  # ~/.agents/skills is pi's native global skill directory and the shared home
+  # of the `skills` CLI's installs; ~/.claude/skills is claude-code's. Links
+  # are per-name (the CLI's own layout), so CLI-installed skills keep living
+  # alongside, and both names resolve to the same store path, so a skill
+  # cannot drift between agents.
+  skillLinks = lib.concatMapAttrs (name: src: {
+    ".agents/skills/${name}".source = src;
+    ".claude/skills/${name}".source = src;
+  }) nixManagedSkills;
+
   # herdr runs nested inside tmux here, so both halves of its chrome are tuned to
   # stay out of tmux's way: tmux keeps the top row and ctrl+b, herdr keeps the
   # left edge and ctrl+g. Verified against `herdr config check`.
@@ -345,7 +363,8 @@ in
       # Its binary documents "global/workspace steering" as a default resource
       # and its global home is ~/.kiro. Re-verify after the first kiro-cli run.
       ".kiro/steering/00-global.md".source = agentInstructions;
-    };
+    }
+    // skillLinks;
 
     xdg.configFile = {
       "opencode/AGENTS.md".source = agentInstructions;

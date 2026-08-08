@@ -166,7 +166,11 @@ A dynamic tiling Wayland compositor with modern features.
 
 #### Hyprland Configuration
 
-The main Hyprland config (`default.nix`) includes:
+The main Hyprland config (`default.nix`) renders to the Lua config format
+(`~/.config/hypr/hyprland.lua`, `configType = "lua"`) — Hyprland 0.57 removes
+the legacy hyprlang `.conf` format. Monitor overrides from nwg-displays are
+loaded from the unmanaged `~/.config/hypr/monitors.lua` when present. It
+includes:
 - Window management rules
 - Workspace configuration
 - Keybindings

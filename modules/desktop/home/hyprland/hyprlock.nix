@@ -118,7 +118,7 @@ in
             lock_cmd = "pidof hyprlock || hyprlock"; # avoid starting multiple hyprlock instances.
             before_sleep_cmd = "loginctl lock-session"; # lock before suspend.
             # Re-enable display then restart hyprlock if it crashed during GPU reset on suspend.
-            after_sleep_cmd = "hyprctl dispatch dpms on; pidof hyprlock || hyprlock";
+            after_sleep_cmd = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'; pidof hyprlock || hyprlock";
           };
           listener = [
             {
@@ -129,8 +129,8 @@ in
               # Turn off display while locked to save power.
               # on-resume brings it back if user wakes before suspend fires.
               timeout = idle.dpmsTimeout;
-              on-timeout = "hyprctl dispatch dpms off";
-              on-resume = "hyprctl dispatch dpms on";
+              on-timeout = "hyprctl dispatch 'hl.dsp.dpms({ action = \"off\" })'";
+              on-resume = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
             }
           ]
           ++ lib.optionals idle.suspend.enable [

@@ -93,10 +93,10 @@
             :tooltip {bar_state.ai_usage.tooltip}
             (label :text {bar_state.ai_usage.text}))
           (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
-          (button :class "module-button cpu" :onclick "hyprctl dispatch exec 'kitty -- htop'"
+          (button :class "module-button cpu" :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty -- htop\")'"
             (label :text {bar_state.cpu}))
           (button :class "module-button memory ${bar_state.memory.class}"
-            :onclick "hyprctl dispatch exec 'kitty -- htop'"
+            :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty -- htop\")'"
             :tooltip {bar_state.memory.tooltip}
             (label :text {bar_state.memory.text})))
         (box :class "bar-island session-island" :orientation "h" :space-evenly false
@@ -113,7 +113,7 @@
             :timeout "5s" :onclick "eww-popup toggle settings_popup ${output}"
             :tooltip "Settings"
             (label :text "󰒓"))
-          (button :class "power-button" :onclick "hyprctl dispatch exec wlogout"
+          (button :class "power-button" :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"wlogout\")'"
             (label :text "")))))))
 
 (defwidget workspaces [output]
@@ -160,8 +160,8 @@
 (defwidget workspace [id output state_class owner active_on monitors]
   (button
     :class "workspace ${monitors < 2 ? state_class : (active_on == output ? 'active' : (owner == output ? 'occupied' : (owner == '' ? 'empty' : 'elsewhere')))}"
-    :onclick "hyprctl dispatch workspace ${id}"
-    :onrightclick "hyprctl dispatch moveworkspacetomonitor ${id} ${output}"
+    :onclick "hyprctl dispatch 'hl.dsp.focus({ workspace = ${id} })'"
+    :onrightclick "hyprctl dispatch 'hl.dsp.workspace.move({ workspace = ${id}, monitor = \"${output}\" })'"
     ; The right-click is otherwise undiscoverable -- there is no room on a 24px
     ; button for a hint, and the first person to use this feature could not find
     ; it. Single line: yuck strings have no \n escape, and every multi-line
@@ -313,7 +313,7 @@
               :onclick "eww-barctl --quiet bluetooth disconnect ${device.mac}"
               (label :text "󰅖")))))
       (button :class "popup-footer-action"
-        :onclick "hyprctl dispatch exec blueman-manager"
+        :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"blueman-manager\")'"
         (label :text "Open blueman")))))
 
 (defwindow bluetooth_popup
@@ -342,7 +342,7 @@
           (label :class "popup-action-label" :halign "start"
             :text {bar_state.network.wifi_enabled == "true" ? "Wi-Fi on" : "Wi-Fi off"})))
       (button :class "popup-footer-action"
-        :onclick "hyprctl dispatch exec 'kitty -- nmtui'"
+        :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty -- nmtui\")'"
         (label :text "Advanced…")))))
 
 (defwindow network_popup
@@ -497,7 +497,7 @@
         (label :class "popup-title" :halign "start" :text "Wallpapers")
         (label :class "popup-eyebrow" :halign "start" :text "${bar_state.wallpaper.count} in ~/Pictures/wallpapers"))
       (button :class "wallpaper-open-folder" :halign "end" :hexpand true
-        :onclick "hyprctl dispatch exec 'nemo ~/Pictures/wallpapers'"
+        :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"nemo ~/Pictures/wallpapers\")'"
         :tooltip "Open folder"
         (label :text "")))
     (box :class "popup-empty wallpaper-empty" :orientation "h" :space-evenly false
@@ -556,7 +556,7 @@
           (label :class "popup-action-label" :halign "start"
             :text {bar_state.idle_inhibited == "true" ? "Resume Hypridle" : "Pause Hypridle"})))
       (button :class "popup-action" :timeout "5s"
-        :onclick "hyprctl dispatch exec nwg-displays && eww-popup close"
+        :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"nwg-displays\")' && eww-popup close"
         (box :orientation "h" :space-evenly false
           (label :class "popup-action-icon" :text "󰍺")
           (label :class "popup-action-label" :halign "start" :text "Monitor layout"))))))

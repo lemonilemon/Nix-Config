@@ -29,8 +29,11 @@
         package = pkgs.rose-pine-icon-theme;
       };
       theme = {
-        name = lib.mkForce "rose-pine";
-        package = pkgs.rose-pine-gtk-theme;
+        name = lib.mkForce "catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard";
+        package = pkgs.catppuccin-gtk.override {
+          variant = config.catppuccin.flavor;
+          accents = [ config.catppuccin.accent ];
+        };
       };
       cursorTheme = {
         name = lib.mkForce "BreezeX-RosePine-Linux";
@@ -52,8 +55,13 @@
     };
 
     home.sessionVariables = {
-      GTK_THEME = "rose-pine";
+      GTK_THEME = config.gtk.theme.name;
     };
+
+    # The xdg-desktop-portal Settings backend serves this to every
+    # portal-aware app (zen, Electron); without it they assume light. The
+    # gtk-application-prefer-dark-theme keys above only reach plain GTK3.
+    dconf.settings."org/gnome/desktop/interface".color-scheme = "prefer-dark";
 
     qt = {
       enable = true;

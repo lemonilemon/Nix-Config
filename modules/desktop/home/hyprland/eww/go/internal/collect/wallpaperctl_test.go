@@ -54,3 +54,31 @@ func TestListDirFollowsSymlinks(t *testing.T) {
 		t.Errorf("expected exactly plain.png and linked.png, got %v", files)
 	}
 }
+
+// TestPersistCurrentWallpaper pins the collect half of the login-reveal
+// contract: awww-daemon runs with --no-cache, so this state file is the only
+// thing that carries a wallpaper across logins. The write goes through the
+// WriteTextFile seam (fixtures intercept it) and ends in a newline so
+// $(cat ...) in awww-init strips it cleanly; an empty current -- awww query
+// gave nothing back -- must not clobber a previous pick.
+func TestPersistCurrentWallpaper(t *testing.T) {
+	prevWrite := WriteTextFile
+	t.Cleanup(func() { WriteTextFile = prevWrite })
+	writes := map[string]string{}
+	WriteTextFile = func(path, text string) error {
+		writes[path] = text
+		return nil
+	}
+
+	PersistCurrentWallpaper("/w/a.png")
+	want := expandUser("~/.local/state/awww/current-wallpaper")
+	if got := writes[want]; got != "/w/a.png\n" {
+		t.Errorf("persisted %q at %q, want the path plus newline", got, want)
+	}
+
+	writes = map[string]string{}
+	PersistCurrentWallpaper("")
+	if len(writes) != 0 {
+		t.Errorf("an empty current was persisted: %v", writes)
+	}
+}

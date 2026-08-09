@@ -35,6 +35,10 @@
     mesa-demos # Test utilities for OpenGL
   ];
 
+  # Early KMS: amdgpu in the initrd so Plymouth runs at native resolution
+  # from the first seconds of boot instead of after root switch.
+  boot.initrd.kernelModules = [ "amdgpu" ];
+
   # Hardware
   hardware = {
     graphics.enable = true;

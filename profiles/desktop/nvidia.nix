@@ -28,6 +28,14 @@
     };
     # Load nvidia driver for Xorg and Wayland
     services.xserver.videoDrivers = [ "nvidia" ];
+    # Early KMS: the NVIDIA stack in the initrd so Plymouth can take over the
+    # display during early boot. Grows the initrd by tens of MB (zstd helps).
+    boot.initrd.kernelModules = [
+      "nvidia"
+      "nvidia_modeset"
+      "nvidia_uvm"
+      "nvidia_drm"
+    ];
     environment.sessionVariables = {
       CUDA_PATH = "${pkgs.cudatoolkit}"; # CUDA toolkit path
     };

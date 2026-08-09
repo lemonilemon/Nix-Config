@@ -288,6 +288,10 @@
             misc = {
               force_default_wallpaper = -1;
               disable_hyprland_logo = true;
+              # Mocha base for the frame between login and awww's first draw;
+              # the default (0xff111111) is the one off-palette surface in the
+              # whole startup chain.
+              background_color = mkLuaInline "0xff1e1e2e";
             };
             ecosystem = {
               no_update_news = true;

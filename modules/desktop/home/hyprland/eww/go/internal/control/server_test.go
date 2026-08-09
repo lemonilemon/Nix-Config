@@ -269,3 +269,40 @@ func TestWriteBackendPidfileOnlyRemovesItsOwn(t *testing.T) {
 		t.Fatal("cleanup deleted a pidfile belonging to another process")
 	}
 }
+
+// TestPersistWallpaperPick pins the serve-loop half of the login-reveal
+// contract. The persist hangs off ServeConnection because the golden replay
+// pins Handle and SetWallpaper byte-for-byte; this test is the ordinary-Go
+// coverage that replaces what the gate cannot record. Only a "wallpaper set"
+// persists, and what it persists is the reply's current -- the wallpaper awww
+// actually reports -- not the requested path.
+func TestPersistWallpaperPick(t *testing.T) {
+	prevWrite := collect.WriteTextFile
+	t.Cleanup(func() { collect.WriteTextFile = prevWrite })
+	writes := map[string]string{}
+	collect.WriteTextFile = func(path, text string) error {
+		writes[path] = text
+		return nil
+	}
+
+	setReply := ok("wallpaper",
+		pair("action", "set"),
+		pair("wallpaper", collect.Wallpaper{Current: "/w/current.png"}))
+
+	persistWallpaperPick(map[string]any{"command": "wallpaper", "action": "set"}, setReply)
+	if len(writes) != 1 {
+		t.Fatalf("want exactly one state write, got %v", writes)
+	}
+	for _, text := range writes {
+		if text != "/w/current.png\n" {
+			t.Errorf("persisted %q, want the reply's current plus newline", text)
+		}
+	}
+
+	writes = map[string]string{}
+	persistWallpaperPick(map[string]any{"command": "wallpaper", "action": "rescan"}, setReply)
+	persistWallpaperPick(map[string]any{"command": "volume", "action": "set"}, setReply)
+	if len(writes) != 0 {
+		t.Errorf("a non-set command persisted state: %v", writes)
+	}
+}

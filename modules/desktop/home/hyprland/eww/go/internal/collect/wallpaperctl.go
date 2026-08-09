@@ -213,6 +213,23 @@ func CollectWallpaper() Wallpaper {
 	}
 }
 
+// PersistCurrentWallpaper records the wallpaper now on screen, for awww-init
+// to redraw at the next login: awww-daemon runs with --no-cache (see the
+// wallpaper Home Manager module), so this file -- not the daemon's own cache
+// -- is what carries a pick across logins; awww-init falls back to the seed
+// when it is missing.
+//
+// Called from the control serve loop, NOT from SetWallpaper: the golden
+// replay pins SetWallpaper's and ControlHandle's journals byte-for-byte, and
+// the serve loop is the first frame of the call stack it does not record.
+func PersistCurrentWallpaper(current string) {
+	if current == "" {
+		return
+	}
+	// Trailing newline so $(cat ...) in awww-init strips it cleanly.
+	_ = WriteTextFile(expandUser("~/.local/state/awww/current-wallpaper"), current+"\n")
+}
+
 // SetWallpaper mirrors wallpaper.set_wallpaper.
 //
 // The awww failure is swallowed, as in the original: the picker re-reads the

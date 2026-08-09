@@ -13,6 +13,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"ewwbar/internal/collect"
 	"ewwbar/internal/paths"
 	"ewwbar/internal/pyjson"
 	"ewwbar/internal/state"
@@ -110,10 +111,34 @@ func ServeConnection(store *state.Store, conn net.Conn) {
 		if err != nil {
 			return ErrorReply(err.Error())
 		}
+		persistWallpaperPick(payload, result)
 		return result
 	}()
 
 	WriteResponse(conn, reply)
+}
+
+// persistWallpaperPick mirrors nothing in CPython; it is post-port behavior
+// (the login-reveal contract), which is why it hangs off the serve loop
+// instead of Handle or SetWallpaper -- those journals are pinned by the
+// golden replay. It persists the reply's wallpaper.current rather than the
+// requested path: current is what awww actually reports on screen, so a
+// swallowed awww failure re-records the surviving wallpaper instead of one
+// that never appeared.
+func persistWallpaperPick(payload map[string]any, reply Reply) {
+	if payloadString(payload, "command", "") != "wallpaper" ||
+		payloadString(payload, "action", "") != "set" {
+		return
+	}
+	for _, entry := range reply {
+		if entry.Key != "wallpaper" {
+			continue
+		}
+		if value, isWallpaper := entry.Value.(collect.Wallpaper); isWallpaper {
+			collect.PersistCurrentWallpaper(value.Current)
+		}
+		return
+	}
 }
 
 // Listen prepares the control socket and returns a listener.

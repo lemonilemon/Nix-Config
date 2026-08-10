@@ -12,7 +12,7 @@
     ./hardware-configuration.nix
     ./config.nix
     ./nvidia.nix # For NVIDIA graphics cards
-    ./limine # Limine bootloader trial (GRUB stays on the ESP as fallback)
+    ./bootloader # SpaceNix-themed loaders; nixos.desktop.bootloader picks one
     ../base.nix
     ../i18n.nix
     ../boot.nix

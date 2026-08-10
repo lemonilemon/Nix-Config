@@ -194,7 +194,10 @@ General GUI applications and utilities.
 - **Download**: Gopeed
 - **Containers**: Podman Desktop
 - **Utilities**: Antigravity
-- **SSH**: SSH config with 1Password agent forwarding
+- **SSH**: SSH config with 1Password agent forwarding; host inventory
+  decrypted by sops-nix from `secrets/ssh-hosts.conf` to
+  `~/.ssh/config.inventory` (edit with `sops secrets/ssh-hosts.conf`), plus an
+  unversioned `~/.ssh/config.local` for scratch hosts
 
 **System Apps** (`nixos/apps/`):
 - System-wide applications

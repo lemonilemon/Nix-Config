@@ -26,6 +26,10 @@
 
       # 1password cli-client
       _1password-cli
+
+      # secrets editing (secrets/ in the config repo)
+      sops
+      age
     ];
     programs = {
       direnv = {

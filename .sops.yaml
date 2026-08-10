@@ -1,0 +1,10 @@
+# Recipients for everything under secrets/. Only the *public* key lives here;
+# the private half is at ~/.config/sops/age/keys.txt (backed up in 1Password)
+# and must never enter this repo.
+keys:
+  - &lemonilemon age1v447pahztggne7eansuflajzjn5nxtxpxmz9ufr98d9k6synxs8screuea
+creation_rules:
+  - path_regex: ^secrets/
+    key_groups:
+      - age:
+          - *lemonilemon

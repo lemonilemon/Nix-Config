@@ -140,10 +140,18 @@ def main():
     validate_png(f"{outdir}/background.png")
     manifest.append("background.png")
 
-    # Panel: the translucent mocha card; selection: the mauve ring.
+    # Panel: the translucent mocha card; selection: the mauve ring. A styled
+    # box's slice sizes become the item's content insets, so the selection
+    # slices are slim (10px) and mirrored by a fully transparent twin for
+    # unselected items -- identical insets in both states is what keeps the
+    # text from shifting on selection.
     slice9(rounded(96, 18, BASE + (200,)), 24, outdir, "panel")
-    slice9(rounded(64, 12, MAUVE + (66,), outline=MAUVE + (255,), width=2),
-           16, outdir, "select")
+    slice9(rounded(64, 10, MAUVE + (66,), outline=MAUVE + (255,), width=2),
+           10, outdir, "select")
+    slice9(Image.new("RGBA", (64, 64), (0, 0, 0, 0)), 10, outdir, "noselect")
+
+    # Flat opaque center slice for the gfxterm window (see terminal-* below).
+    save(Image.new("RGBA", (8, 8), BASE + (255,)), outdir, "term_c.png")
 
     import os
     os.makedirs(f"{outdir}/icons", exist_ok=True)
@@ -165,6 +173,15 @@ desktop-image-scale-method: "stretch"
 desktop-color: "#1e1e2e"
 terminal-font: "{small_font}"
 
+# The post-ENTER terminal: full screen, borderless, flat mocha -- without
+# this it appears as a white-bordered popup window mid-screen.
+terminal-box: "term_*.png"
+terminal-border: 0
+terminal-left: 0
+terminal-top: 0
+terminal-width: 100%
+terminal-height: 100%
+
 + boot_menu {{
     left = 27%
     top = 39%
@@ -173,13 +190,14 @@ terminal-font: "{small_font}"
     item_font = "{item_font}"
     item_color = "{TEXT}"
     selected_item_color = "{TEXT}"
-    item_height = 56
-    item_spacing = 22
+    item_height = 64
+    item_spacing = 14
     item_padding = 8
     icon_width = 36
     icon_height = 36
     item_icon_space = 16
     menu_pixmap_style = "panel_*.png"
+    item_pixmap_style = "noselect_*.png"
     selected_item_pixmap_style = "select_*.png"
     scrollbar = false
 }}
@@ -209,10 +227,13 @@ terminal-font: "{small_font}"
     with open(f"{outdir}/theme.txt", "w") as f:
         f.write(theme)
 
-    # Every file theme.txt names must exist (pixmap globs expand per-slice).
-    referenced = ["background.png"]
+    # Every file theme.txt names must exist (pixmap globs expand per-slice;
+    # term_* deliberately ships only its center slice -- absent slices are
+    # documented to render empty).
+    referenced = ["background.png", "term_c.png"]
     referenced += [f"panel_{p}.png" for p in "nw n ne w c e sw s se".split()]
     referenced += [f"select_{p}.png" for p in "nw n ne w c e sw s se".split()]
+    referenced += [f"noselect_{p}.png" for p in "nw n ne w c e sw s se".split()]
     missing = [f for f in referenced if f not in manifest]
     if missing:
         raise SystemExit(f"theme.txt references missing files: {missing}")

@@ -4,10 +4,12 @@ Deterministic (seed 387, the generation current when it was designed) so the
 derivation reproduces byte-identical art. Palette is Catppuccin Mocha only.
 Composition keeps the middle third calm: Limine's terminal panel floats there.
 
-Usage: wallpaper.py OUT.png -- generates, then re-parses the PNG header and
-fails the build unless it is exactly what Limine's decoder is promised
-(1920x1080, 8-bit truecolor). The validator is proven against a known-bad
-palettized PNG first; a check that cannot fail is not a check.
+Usage: wallpaper.py OUT.png FONT.ttf -- generates, stamps the antialiased
+SpaceNix wordmark (Limine cannot render TTFs, so the typography lives in the
+wallpaper), then re-parses the PNG header and fails the build unless it is
+exactly what Limine's decoder is promised (1920x1080, 8-bit truecolor). The
+validator is proven against a known-bad palettized PNG first; a check that
+cannot fail is not a check.
 """
 
 import math
@@ -15,7 +17,7 @@ import random
 import struct
 import sys
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 W, H, SCALE = 480, 270, 4
 
@@ -134,6 +136,18 @@ def build() -> Image.Image:
     return img.resize((W * SCALE, H * SCALE), Image.NEAREST)
 
 
+def stamp_wordmark(img, font_path):
+    """SpaceNix in JetBrains Mono SemiBold, centered in the band above the
+    terminal panel (term_margin 320 leaves the top 320px to the wallpaper)."""
+    font = ImageFont.truetype(font_path, 88)
+    draw = ImageDraw.Draw(img)
+    space_w = draw.textlength("Space", font=font)
+    nix_w = draw.textlength("Nix", font=font)
+    x = (img.width - space_w - nix_w) / 2
+    draw.text((x, 160), "Space", font=font, fill=TEXT, anchor="lm")
+    draw.text((x + space_w, 160), "Nix", font=font, fill=MAUVE, anchor="lm")
+
+
 def validate(path: str) -> None:
     """Re-parse the produced PNG's IHDR; exit non-zero on any violation.
 
@@ -159,7 +173,7 @@ def validate(path: str) -> None:
 
 
 def main() -> None:
-    out = sys.argv[1]
+    out, font_path = sys.argv[1], sys.argv[2]
 
     # Prove the validator can fail: a palettized PNG (color type 3), the
     # exact shape of the original GRUB failure.
@@ -172,7 +186,9 @@ def main() -> None:
     else:
         raise SystemExit("validator accepted a palettized PNG; it cannot fail")
 
-    build().save(out, format="PNG", optimize=True)
+    art = build()
+    stamp_wordmark(art, font_path)
+    art.save(out, format="PNG", optimize=True)
     validate(out)
 
 

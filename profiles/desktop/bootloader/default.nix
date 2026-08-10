@@ -57,8 +57,15 @@ in
           elif [ "''${order%%,*}" != "$entry" ]; then
             rest=$(printf '%s\n' "$order" | ${pkgs.coreutils}/bin/tr ',' '\n' \
               | ${pkgs.gnugrep}/bin/grep -vx "$entry" | ${pkgs.coreutils}/bin/paste -sd, -)
-            ${pkgs.efibootmgr}/bin/efibootmgr -o "$entry''${rest:+,$rest}" >/dev/null \
-              || echo "bootloaderOrder: efibootmgr -o failed; BootOrder unchanged" >&2
+            # Loud on purpose: a silent failure here cost a debugging session
+            # (the machine kept booting the benched loader).
+            if writeOut=$(${pkgs.efibootmgr}/bin/efibootmgr -o "$entry''${rest:+,$rest}" 2>&1); then
+              echo "bootloaderOrder: BootOrder set to $entry''${rest:+,$rest}"
+            else
+              echo "bootloaderOrder: efibootmgr -o FAILED, BootOrder unchanged: $writeOut" >&2
+            fi
+          else
+            echo "bootloaderOrder: $entry already boots first"
           fi
         fi
       fi

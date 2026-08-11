@@ -39,6 +39,11 @@ in
     boot.loader.grub2-theme.enable = false; # replaced by the in-repo theme
     boot.loader.grub = {
       theme = theme;
+      # install-grub paints splashImage via background_image BEFORE the theme
+      # loads; the nixpkgs default is a gray NixOS artwork that would flash
+      # off-palette. Painting our own wallpaper makes the pre-theme frame
+      # identical to the themed one (review finding).
+      splashImage = "${wallpaper}";
       # Native mode, and hand the framebuffer to the kernel unchanged so the
       # menu -> Plymouth transition has one less modeset flash.
       gfxmodeEfi = "1920x1080,auto";

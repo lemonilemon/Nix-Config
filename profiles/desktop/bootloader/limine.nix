@@ -23,15 +23,20 @@ in
     boot.loader.grub.enable = false;
     boot.loader.grub2-theme.enable = false;
 
-    # Deliberately NOT catppuccin.limine: at the pinned revs its theme path
-    # does not exist (the port moved its confs into themes/), and its opaque
-    # term_background would defeat the translucent panel below. The style IS
-    # catppuccin-mocha, applied directly through the typed options.
+    # Deliberately NOT catppuccin.limine: its theme sets an opaque
+    # term_background that would defeat the translucent panel below. (An
+    # earlier claim here that its theme path is broken at the pinned revs
+    # was refuted by review -- the port evaluates fine; the opacity conflict
+    # is the real reason.) The style IS catppuccin-mocha, applied directly.
     catppuccin.limine.enable = lib.mkForce false;
 
     boot.loader.limine = {
       enable = true;
       maxGenerations = 5; # matches the GRUB configurationLimit
+      # Keep the kernel-entry mode identical to the menu mode so the
+      # menu -> Plymouth handoff does not renegotiate from EDID (the grub
+      # branch gets the same via gfxpayloadEfi = "keep").
+      resolution = "1920x1080";
       style = {
         wallpapers = [ wallpaper ];
         backdrop = "1e1e2e";
@@ -55,10 +60,16 @@ in
           palette = "1e1e2e;f38ba8;a6e3a1;f9e2af;89b4fa;f5c2e7;94e2d5;cdd6f4";
           brightPalette = "585b70;f38ba8;a6e3a1;f9e2af;89b4fa;f5c2e7;94e2d5;cdd6f4";
           foreground = "cdd6f4";
-          background = "C71E1E2E"; # translucent panel over the wallpaper
-          # The menu floats as a card under the wordmark; entries render in
-          # Spleen doubled to 16x32 on screen.
-          margin = 320;
+          # TT in TTRRGGBB is TRANSPARENCY (review finding): 0x37 = 78%
+          # opaque, matching the mockups. The earlier C7 had it inverted and
+          # rendered a nearly invisible panel.
+          background = "371E1E2E";
+          # The menu floats as a card under the wordmark. Margin 240 keeps
+          # the wordmark band clear AND fits the whole tree: at 2x scale the
+          # terminal gets (1080-480)/32 = 18 rows, minus 8 rows of menu
+          # chrome = 10 for the tree of 7 (dir + 5 generations + Windows).
+          # The previous 320 left 5 rows and scrolled Windows off-screen.
+          margin = 240;
           marginGradient = 24;
           font.scale = "2x2";
         };
@@ -70,7 +81,7 @@ in
         term_font_size: 8x16
       '';
       # Limine has no os-prober; Windows is pinned to its stable ESP path
-      # (present at /boot/EFI/Microsoft, checked 2026-08-10).
+      # (validated at install time below).
       extraEntries = ''
         /Windows
         protocol: efi_chainload
@@ -88,19 +99,36 @@ in
       # entry to Limine and watching the firmware load GRUB from the old
       # path anyway. NVRAM is a suggestion box here; the file at the cached
       # path is the only thing it honors. So the active loader's binary is
-      # placed AT that path (user-approved). GRUB's real binary survives as
-      # GRUBX64-BACKUP.EFI (bootable via the firmware's file browser), and
-      # flipping the option back restores it because grub-install rewrites
-      # its own path.
+      # placed AT that path (user-approved). Review-hardened:
+      #  - copies come from /boot/EFI/limine/BOOTX64.EFI (the installed,
+      #    possibly enrolled/signed binary), not the pristine store file;
+      #  - the GRUB backup is created only once, so a limine version bump
+      #    cannot clobber it;
+      #  - boot-critical writes are tmp+rename and the ESP is syncfs'd;
+      #  - /boot/grub/state is removed so flipping the option back forces a
+      #    full grub-install, which is what actually restores GRUB at the
+      #    cached path (it otherwise skips itself as up-to-date).
       extraInstallCommands = ''
-        ${pkgs.coreutils}/bin/cp /boot/limine/limine.conf /boot/EFI/limine/limine.conf
+        atomic_cp() {
+          ${pkgs.coreutils}/bin/cp "$1" "$2.tmp"
+          ${pkgs.coreutils}/bin/mv "$2.tmp" "$2"
+        }
+        atomic_cp /boot/limine/limine.conf /boot/EFI/limine/limine.conf
         ${pkgs.coreutils}/bin/mkdir -p /boot/EFI/NixOS-boot
-        if [ -f /boot/EFI/NixOS-boot/GRUBX64.EFI ] \
-          && ! ${pkgs.diffutils}/bin/cmp -s ${pkgs.limine}/share/limine/BOOTX64.EFI /boot/EFI/NixOS-boot/GRUBX64.EFI; then
-          ${pkgs.coreutils}/bin/cp /boot/EFI/NixOS-boot/GRUBX64.EFI /boot/EFI/NixOS-boot/GRUBX64-BACKUP.EFI
+        installed=/boot/EFI/limine/BOOTX64.EFI
+        target=/boot/EFI/NixOS-boot/GRUBX64.EFI
+        if ! ${pkgs.diffutils}/bin/cmp -s "$installed" "$target"; then
+          if [ -f "$target" ] && [ ! -f /boot/EFI/NixOS-boot/GRUBX64-BACKUP.EFI ]; then
+            atomic_cp "$target" /boot/EFI/NixOS-boot/GRUBX64-BACKUP.EFI
+          fi
+          atomic_cp "$installed" "$target"
         fi
-        ${pkgs.coreutils}/bin/cp ${pkgs.limine}/share/limine/BOOTX64.EFI /boot/EFI/NixOS-boot/GRUBX64.EFI
-        ${pkgs.coreutils}/bin/cp /boot/limine/limine.conf /boot/EFI/NixOS-boot/limine.conf
+        atomic_cp /boot/limine/limine.conf /boot/EFI/NixOS-boot/limine.conf
+        ${pkgs.coreutils}/bin/rm -f /boot/grub/state
+        if ! [ -f /boot/EFI/Microsoft/Boot/bootmgfw.efi ]; then
+          echo "limine install: WARNING: /boot/EFI/Microsoft/Boot/bootmgfw.efi missing; the /Windows entry is dead" >&2
+        fi
+        ${pkgs.coreutils}/bin/sync -f /boot
       '';
     };
   };

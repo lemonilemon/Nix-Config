@@ -73,11 +73,28 @@ in
       # Limine's EFI app checks <app dir>/limine.conf before any drive scan,
       # and on this machine the fallback scan never finds the module's
       # /limine/limine.conf (first boot came up configless). Mirror the
-      # freshly written config to the most-preferred location; this runs in
+      # freshly written config beside every binary location; this runs in
       # the installer wrapper under `set -e`, so a failed copy fails the
       # install loudly instead of producing an unconfigured boot.
+      #
+      # And the decisive part: this board boots its "NixOS-boot" option from
+      # a CACHED definition -- verified 2026-08-11 by retargeting the NVRAM
+      # entry to Limine and watching the firmware load GRUB from the old
+      # path anyway. NVRAM is a suggestion box here; the file at the cached
+      # path is the only thing it honors. So the active loader's binary is
+      # placed AT that path (user-approved). GRUB's real binary survives as
+      # GRUBX64-BACKUP.EFI (bootable via the firmware's file browser), and
+      # flipping the option back restores it because grub-install rewrites
+      # its own path.
       extraInstallCommands = ''
         ${pkgs.coreutils}/bin/cp /boot/limine/limine.conf /boot/EFI/limine/limine.conf
+        ${pkgs.coreutils}/bin/mkdir -p /boot/EFI/NixOS-boot
+        if [ -f /boot/EFI/NixOS-boot/GRUBX64.EFI ] \
+          && ! ${pkgs.diffutils}/bin/cmp -s ${pkgs.limine}/share/limine/BOOTX64.EFI /boot/EFI/NixOS-boot/GRUBX64.EFI; then
+          ${pkgs.coreutils}/bin/cp /boot/EFI/NixOS-boot/GRUBX64.EFI /boot/EFI/NixOS-boot/GRUBX64-BACKUP.EFI
+        fi
+        ${pkgs.coreutils}/bin/cp ${pkgs.limine}/share/limine/BOOTX64.EFI /boot/EFI/NixOS-boot/GRUBX64.EFI
+        ${pkgs.coreutils}/bin/cp /boot/limine/limine.conf /boot/EFI/NixOS-boot/limine.conf
       '';
     };
   };

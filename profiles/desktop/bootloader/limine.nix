@@ -36,9 +36,15 @@ in
         wallpapers = [ wallpaper ];
         backdrop = "1e1e2e";
         interface = {
+          # Booting via the firmware's cached entry leaves the GOP in a state
+          # the default probe cannot use -- gterm_init failed and Limine fell
+          # back to its unstyled text terminal (observed 2026-08-11: entries
+          # fine, no wallpaper/font/colors). An explicit resolution makes
+          # fb_init walk the mode list and SetMode assertively instead of
+          # trusting the inherited mode.
+          resolution = "1920x1080";
           # The wordmark in the wallpaper is the branding; this suppresses
-          # Limine's own line. To verify at first boot: if an empty string
-          # still renders the "Limine 12.5.2" default, accept the small line.
+          # Limine's own line (confirmed rendering as no title).
           branding = "";
           brandingColor = "cba6f7"; # mauve
           helpColor = "6c7086"; # overlay0

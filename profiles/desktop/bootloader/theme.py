@@ -172,6 +172,9 @@ desktop-image: "background.png"
 desktop-image-scale-method: "stretch"
 desktop-color: "#1e1e2e"
 terminal-font: "{small_font}"
+# gfxmenu draws a built-in "GRUB Boot Menu" title over the wordmark unless
+# the theme overrides it (review finding, confirmed in gfxmenu.mod).
+title-text: ""
 
 # The post-ENTER terminal: full screen, borderless, flat mocha -- without
 # this it appears as a white-bordered popup window mid-screen.

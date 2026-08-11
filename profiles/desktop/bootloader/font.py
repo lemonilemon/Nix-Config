@@ -27,9 +27,15 @@ CP437_GRAPHIC = {
     0x1F: "▼", 0x7F: "⌂",
 }
 
-# Present in the menu chrome (tree markers, help line); a font missing any of
-# these would boot with holes in the interface.
-REQUIRED = set(chr(c) for c in range(0x20, 0x7F)) | {"↑", "↓", "▲", "▼"}
+# Present in the menu chrome (tree markers, help line, menu frame); a font
+# missing any of these would boot with holes in the interface. The frame is
+# single-line box drawing (review finding: it was absent here, so a font
+# swap could silently lose the border).
+REQUIRED = (
+    set(chr(c) for c in range(0x20, 0x7F))
+    | {"↑", "↓", "←", "→", "▲", "▼"}
+    | set("│─┌┐└┘├┤")
+)
 
 
 def read_psf(path):
@@ -43,12 +49,20 @@ def read_psf(path):
         if mode & 2:
             pos = offset + count * charsize
             for idx in range(count):
+                # After 0xFFFE everything until the 0xFFFF terminator is a
+                # combining SEQUENCE; its members are not standalone mappings
+                # (review finding: registering them corrupts base glyphs --
+                # and Spleen's .psfu is PSF1, so this branch is live).
+                in_sequence = False
                 while True:
                     (u,) = struct.unpack_from("<H", data, pos)
                     pos += 2
                     if u == 0xFFFF:
                         break
-                    if u != 0xFFFE:
+                    if u == 0xFFFE:
+                        in_sequence = True
+                        continue
+                    if not in_sequence:
                         unicode_map.setdefault(chr(u), idx)
     elif data[:4] == b"\x72\xb5\x4a\x86":  # PSF2
         _, headersize, flags, count, charsize, height, width = struct.unpack_from("<6I I", data, 4)

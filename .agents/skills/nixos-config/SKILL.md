@@ -82,6 +82,7 @@ a module's `config` block.
 | New profile | `profiles/<name>/` + entry in `flake.nix` `nixosConfigurations` |
 | Neovim plugin | `modules/cli/home/nvim/plugins/<category>/` |
 | New feature flag | declare in the relevant `options.nix`, implement in the module |
+| New sops secret | create with `sops secrets/<name>.<ext>`, declare in the consuming module, add a row to `secrets/README.md` |
 
 ## Flake Input Patterns
 
@@ -125,6 +126,10 @@ just updatep <input>   # update one input
 just changehost <host> # switch to a different host's config
 just gc          # nix-collect-garbage -d
 just push        # build toplevel and push closure to cachix
+just secrets [name]   # no name: print the secrets inventory (secrets/README.md);
+                      # with name: edit secrets/<name>[.<ext>] with sops
+just key-backup  # back up the sops age key to 1Password
+just key-fetch   # restore the sops age key from 1Password (new machine)
 ```
 
 **Definition of done for any config change**: run `just fmt`, then `just check`, then

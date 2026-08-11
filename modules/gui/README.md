@@ -196,7 +196,7 @@ General GUI applications and utilities.
 - **Utilities**: Antigravity
 - **SSH**: SSH config with 1Password agent forwarding; host inventory
   decrypted by sops-nix from `secrets/ssh-hosts.conf` to
-  `~/.ssh/config.inventory` (edit with `sops secrets/ssh-hosts.conf`), plus an
+  `~/.ssh/config.inventory` (edit with `just secrets ssh-hosts`), plus an
   unversioned `~/.ssh/config.local` for scratch hosts
 
 **System Apps** (`nixos/apps/`):

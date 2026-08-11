@@ -203,6 +203,14 @@ just history
 
 # Test configuration for errors
 just test
+
+# List the sops secrets, or edit one by name
+just secrets
+just secrets ssh-hosts
+
+# Back up / restore the sops age key via 1Password
+just key-backup
+just key-fetch
 ```
 
 ### Manual Rebuild

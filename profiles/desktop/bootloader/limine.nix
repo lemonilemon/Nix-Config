@@ -70,6 +70,15 @@ in
         protocol: efi_chainload
         image_path: boot():/EFI/Microsoft/Boot/bootmgfw.efi
       '';
+      # Limine's EFI app checks <app dir>/limine.conf before any drive scan,
+      # and on this machine the fallback scan never finds the module's
+      # /limine/limine.conf (first boot came up configless). Mirror the
+      # freshly written config to the most-preferred location; this runs in
+      # the installer wrapper under `set -e`, so a failed copy fails the
+      # install loudly instead of producing an unconfigured boot.
+      extraInstallCommands = ''
+        ${pkgs.coreutils}/bin/cp /boot/limine/limine.conf /boot/EFI/limine/limine.conf
+      '';
     };
   };
 }

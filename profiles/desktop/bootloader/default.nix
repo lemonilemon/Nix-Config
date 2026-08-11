@@ -45,28 +45,40 @@ in
     # Idempotent, loud on every outcome, and inert when EFI variables are
     # unavailable (installer, nixos-enter) or the entries look unfamiliar.
     system.activationScripts.bootloaderOrder = ''
-      if [ -d /sys/firmware/efi/efivars ]; then
+      # Known limitation (review finding): activation also fires on
+      # `nixos-rebuild test`, where bootloader files are NOT installed, so a
+      # retarget there points NVRAM at a loader state one switch ahead. On
+      # this host the firmware ignores NVRAM anyway (the cached-path copy is
+      # the real mechanism); accept the window rather than grow machinery.
+      if [ -d /sys/firmware/efi/efivars ] && [ -z "''${IN_NIXOS_ENTER:-}" ]; then
         if state=$(${pkgs.efibootmgr}/bin/efibootmgr 2>/dev/null); then
           order=$(printf '%s\n' "$state" | ${pkgs.gnused}/bin/sed -n 's/^BootOrder: //p')
           top=''${order%%,*}
-          topline=$(printf '%s\n' "$state" | ${pkgs.gnugrep}/bin/grep -i "^Boot$top" || true)
-          if printf '%s\n' "$topline" | ${pkgs.gnugrep}/bin/grep -qiF '${loaderPath}'; then
+          topline=""
+          if [ -n "$top" ]; then
+            topline=$(printf '%s\n' "$state" | ${pkgs.gnugrep}/bin/grep -i "^Boot$top" || true)
+          fi
+          if [ -z "$topline" ]; then
+            echo "bootloaderOrder: no readable BootOrder/top entry; leaving NVRAM alone" >&2
+          elif printf '%s\n' "$topline" | ${pkgs.gnugrep}/bin/grep -qiF '${loaderPath}'; then
             echo "bootloaderOrder: Boot$top already boots the active loader"
           elif printf '%s\n' "$topline" | ${pkgs.gnugrep}/bin/grep -qiF '${benchedPath}'; then
             label=$(printf '%s\n' "$topline" \
               | ${pkgs.gnused}/bin/sed -e 's/^Boot[0-9A-Fa-f]\{4\}\*\{0,1\} //' -e 's/\t.*//')
-            espdev=$(${pkgs.util-linux}/bin/findmnt -no SOURCE /boot)
-            partn=$(${pkgs.util-linux}/bin/lsblk -no PARTN "$espdev" | ${pkgs.coreutils}/bin/head -n1)
-            disk="/dev/$(${pkgs.util-linux}/bin/lsblk -no PKNAME "$espdev" | ${pkgs.coreutils}/bin/head -n1)"
-            if out=$(${pkgs.efibootmgr}/bin/efibootmgr -b "$top" -B 2>&1) \
-              && out=$(${pkgs.efibootmgr}/bin/efibootmgr -c -b "$top" -d "$disk" -p "$partn" \
+            espdev=$(${pkgs.util-linux}/bin/findmnt -no SOURCE /boot || true)
+            partn=$(${pkgs.util-linux}/bin/lsblk -no PARTN "$espdev" 2>/dev/null | ${pkgs.coreutils}/bin/head -n1)
+            pkname=$(${pkgs.util-linux}/bin/lsblk -no PKNAME "$espdev" 2>/dev/null | ${pkgs.coreutils}/bin/head -n1)
+            # Validate BEFORE the destructive delete: a failed create after
+            # -B would leave the firmware's favorite entry gone.
+            if [ -z "$espdev" ] || [ -z "$partn" ] || [ -z "$pkname" ]; then
+              echo "bootloaderOrder: cannot resolve ESP disk/partition; leaving NVRAM alone" >&2
+            elif out=$(${pkgs.efibootmgr}/bin/efibootmgr -b "$top" -B 2>&1) \
+              && out=$(${pkgs.efibootmgr}/bin/efibootmgr -c -b "$top" -d "/dev/$pkname" -p "$partn" \
                          -L "$label" -l '${loaderPath}' 2>&1); then
               echo "bootloaderOrder: retargeted Boot$top ($label) -> ${loaderPath}"
             else
               echo "bootloaderOrder: FAILED retargeting Boot$top: $out" >&2
             fi
-          elif [ -z "$topline" ]; then
-            echo "bootloaderOrder: cannot read top entry Boot$top; leaving NVRAM alone" >&2
           else
             # Top entry is not one of our loaders (unexpected on this host):
             # fall back to a plain reorder for firmware that respects it.

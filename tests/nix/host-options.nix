@@ -1,4 +1,17 @@
 { pkgs, nixosConfigurations }:
+# Assertions live here only when the failure they catch would be SILENT --
+# something that still evaluates, still builds, still boots, and is simply
+# wrong. Anything a wrong value would announce by itself (an eval error, a
+# build failure, a missing widget, a machine that suspends when it should not)
+# is left to announce itself.
+#
+# This file used to also restate derived option values back at the config:
+# `powerManagement.cpuFreqGovernor == "performance"`, port lists, per-host
+# eww toggles. Those can only fail when you deliberately change the config,
+# at which point you update the expectation to match -- so they reported
+# nothing the diff had not already shown, and cost an edit on every change.
+# They were removed rather than maintained. Do not add more of that shape:
+# an expectation copied out of `nix eval` output is testing itself.
 let
   inherit (pkgs) lib;
 
@@ -34,207 +47,14 @@ let
   ];
 
   expectations = [
-    # --- form factor ---
+    # --- firewall: rules that fail open ---
     {
-      name = "desktop/formFactor";
-      actual = hosts.desktop.formFactor;
-      expected = "desktop";
-    }
-    {
-      name = "laptop/formFactor";
-      actual = hosts.laptop.formFactor;
-      expected = "laptop";
-    }
-    {
-      name = "wsl/formFactor";
-      actual = hosts.wsl.formFactor;
-      expected = "wsl";
-    }
-
-    # --- derived power options ---
-    {
-      name = "desktop/power.governor";
-      actual = hosts.desktop.nixos.general.power.governor;
-      expected = "performance";
-    }
-    {
-      name = "laptop/power.governor";
-      actual = hosts.laptop.nixos.general.power.governor;
-      expected = "powersave";
-    }
-    {
-      name = "desktop/power.autoCpufreq.enable";
-      actual = hosts.desktop.nixos.general.power.autoCpufreq.enable;
-      expected = false;
-    }
-    {
-      name = "laptop/power.autoCpufreq.enable";
-      actual = hosts.laptop.nixos.general.power.autoCpufreq.enable;
-      expected = true;
-    }
-    {
-      name = "desktop/power.powertop.enable";
-      actual = hosts.desktop.nixos.general.power.powertop.enable;
-      expected = false;
-    }
-    {
-      name = "laptop/power.powertop.enable";
-      actual = hosts.laptop.nixos.general.power.powertop.enable;
-      expected = true;
-    }
-    {
-      name = "desktop/power.upower.enable";
-      actual = hosts.desktop.nixos.general.power.upower.enable;
-      expected = false;
-    }
-    {
-      name = "laptop/power.upower.enable";
-      actual = hosts.laptop.nixos.general.power.upower.enable;
-      expected = true;
-    }
-    {
-      name = "wsl/power.enable";
-      actual = hosts.wsl.nixos.general.power.enable;
-      expected = false;
-    }
-
-    # --- effective NixOS config ---
-    {
-      name = "desktop/services.upower.enable";
-      actual = hosts.desktop.services.upower.enable;
-      expected = false;
-    }
-    {
-      name = "desktop/services.auto-cpufreq.enable";
-      actual = hosts.desktop.services.auto-cpufreq.enable;
-      expected = false;
-    }
-    {
-      name = "desktop/powerManagement.cpuFreqGovernor";
-      actual = hosts.desktop.powerManagement.cpuFreqGovernor;
-      expected = "performance";
-    }
-    {
-      # auto-cpufreq owns the governor on the laptop, so nothing sets it statically.
-      name = "laptop/powerManagement.cpuFreqGovernor";
-      actual = hosts.laptop.powerManagement.cpuFreqGovernor;
-      expected = null;
-    }
-    {
-      name = "laptop/powerManagement.powertop.enable";
-      actual = hosts.laptop.powerManagement.powertop.enable;
-      expected = true;
-    }
-    {
-      name = "laptop/services.auto-cpufreq.enable";
-      actual = hosts.laptop.services.auto-cpufreq.enable;
-      expected = true;
-    }
-    {
-      name = "laptop/services.auto-cpufreq.settings";
-      actual = hosts.laptop.services.auto-cpufreq.settings;
-      expected = {
-        battery = {
-          governor = "powersave";
-          turbo = "never";
-        };
-        charger = {
-          governor = "powersave";
-          turbo = "auto";
-        };
-      };
-    }
-    {
-      name = "laptop/services.upower.enable";
-      actual = hosts.laptop.services.upower.enable;
-      expected = true;
-    }
-    {
-      name = "desktop/services.thermald.enable";
-      actual = hosts.desktop.services.thermald.enable;
-      expected = true;
-    }
-    {
-      name = "desktop/powerManagement.powertop.enable";
-      actual = hosts.desktop.powerManagement.powertop.enable;
-      expected = false;
-    }
-    {
-      name = "wsl/powerManagement.enable";
-      actual = hosts.wsl.powerManagement.enable;
-      expected = false;
-    }
-
-    # --- derived network options ---
-    {
-      name = "desktop/network.manager.enable";
-      actual = hosts.desktop.nixos.general.network.manager.enable;
-      expected = true;
-    }
-    {
-      name = "desktop/network.wifi.enable";
-      actual = hosts.desktop.nixos.general.network.wifi.enable;
-      expected = false;
-    }
-    {
-      name = "laptop/network.wifi.enable";
-      actual = hosts.laptop.nixos.general.network.wifi.enable;
-      expected = true;
-    }
-    {
-      name = "wsl/network.enable";
-      actual = hosts.wsl.nixos.general.network.enable;
-      expected = false;
-    }
-
-    # --- effective networking config ---
-    {
-      name = "desktop/networking.networkmanager.enable";
-      actual = hosts.desktop.networking.networkmanager.enable;
-      expected = true;
-    }
-    {
-      name = "laptop/networking.networkmanager.enable";
-      actual = hosts.laptop.networking.networkmanager.enable;
-      expected = true;
-    }
-    {
-      name = "wsl/networking.networkmanager.enable";
-      actual = hosts.wsl.networking.networkmanager.enable;
-      expected = false;
-    }
-    {
-      name = "desktop/firewall.enable";
-      actual = hosts.desktop.networking.firewall.enable;
-      expected = true;
-    }
-    {
-      # 53317 is not from nixos.general.firewall: programs.localsend.openFirewall
-      # appends it, and listOf merges the definitions rather than one winning,
-      # so the effective list is our three plus whatever modules contribute.
-      name = "desktop/firewall.allowedTCPPorts";
-      actual = hosts.desktop.networking.firewall.allowedTCPPorts;
-      expected = [
-        22
-        80
-        443
-        53317
-      ];
-    }
-    {
-      name = "desktop/firewall.trustedSubnets";
-      actual = hosts.desktop.nixos.general.firewall.trustedSubnets;
-      expected = [ "192.168.0.0/24" ];
-    }
-    {
+      # Witnesses that trustedSubnets reaches the input chain at all. If the
+      # concatMapStringsSep in modules/general/nixos/firewall.nix broke, the
+      # subnet would quietly stop being trusted with nothing to show for it.
       name = "desktop/firewall rule mentions the LAN";
       actual = lib.hasInfix "192.168.0.0/24" hosts.desktop.networking.firewall.extraCommands;
       expected = true;
-    }
-    {
-      name = "laptop/firewall.trustedSubnets";
-      actual = hosts.laptop.nixos.general.firewall.trustedSubnets;
-      expected = [ ];
     }
     {
       # Behaviour change, not just a longer list: profiles/firewall.nix wrote
@@ -247,18 +67,6 @@ let
         22
         80
         443
-      ];
-    }
-    {
-      name = "laptop/firewall.allowedTCPPorts (effective, incl. samba)";
-      actual = hosts.laptop.networking.firewall.allowedTCPPorts;
-      expected = [
-        22
-        80
-        139
-        443
-        445
-        53317
       ];
     }
     {
@@ -279,78 +87,13 @@ let
 
     # --- idle policy ---
     {
-      name = "desktop/idle.suspend.enable";
-      actual = hosts.desktop.home.desktop.hyprland.idle.suspend.enable;
-      expected = false;
-    }
-    {
-      name = "laptop/idle.suspend.enable";
-      actual = hosts.laptop.home.desktop.hyprland.idle.suspend.enable;
-      expected = true;
-    }
-    {
-      # lock + dpms only; the suspend listener is dropped entirely.
-      name = "desktop/hypridle listener count";
-      actual = builtins.length (
-        hosts.desktop.home-manager.users.lemonilemon.services.hypridle.settings.listener
-      );
-      expected = 2;
-    }
-    {
-      name = "laptop/hypridle listener count";
-      actual = builtins.length (
-        hosts.laptop.home-manager.users.lemonilemon.services.hypridle.settings.listener
-      );
-      expected = 3;
-    }
-    {
-      # The desktop must not carry a suspend action at all.
+      # A property of the whole listener list rather than a value: no suspend
+      # action may exist on a desktop, however the listeners are rearranged.
       name = "desktop/hypridle has no suspend action";
       actual = builtins.any (
         l: (l.on-timeout or "") == "systemctl suspend"
       ) hosts.desktop.home-manager.users.lemonilemon.services.hypridle.settings.listener;
       expected = false;
-    }
-    {
-      name = "laptop/hypridle suspends after 1800s";
-      actual = builtins.any (
-        l: (l.on-timeout or "") == "systemctl suspend" && l.timeout == 1800
-      ) hosts.laptop.home-manager.users.lemonilemon.services.hypridle.settings.listener;
-      expected = true;
-    }
-
-    # --- derived bar options ---
-    {
-      name = "laptop/eww.laptopControls.enable";
-      actual =
-        hosts.laptop.home-manager.users.lemonilemon.home.desktop.hyprland.eww.laptopControls.enable;
-      expected = true;
-    }
-    {
-      name = "desktop/eww.laptopControls.enable";
-      actual =
-        hosts.desktop.home-manager.users.lemonilemon.home.desktop.hyprland.eww.laptopControls.enable;
-      expected = false;
-    }
-    {
-      name = "laptop/eww.battery.enable";
-      actual = hosts.laptop.home-manager.users.lemonilemon.home.desktop.hyprland.eww.battery.enable;
-      expected = true;
-    }
-    {
-      name = "desktop/eww.battery.enable";
-      actual = hosts.desktop.home-manager.users.lemonilemon.home.desktop.hyprland.eww.battery.enable;
-      expected = false;
-    }
-    {
-      name = "desktop/eww.wifi.enable";
-      actual = hosts.desktop.home-manager.users.lemonilemon.home.desktop.hyprland.eww.wifi.enable;
-      expected = false;
-    }
-    {
-      name = "laptop/eww.wifi.enable";
-      actual = hosts.laptop.home-manager.users.lemonilemon.home.desktop.hyprland.eww.wifi.enable;
-      expected = true;
     }
 
     # --- home.cli.programs.enable actually gates programs/ ---

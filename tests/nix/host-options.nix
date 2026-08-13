@@ -70,6 +70,18 @@ let
       ];
     }
     {
+      # Every other capability under nixos.general defaults to following
+      # nixos.general.enable. smb deliberately does not, and the reason is
+      # security rather than taste: its media share is served to guests with
+      # no authentication, and samba's openFirewall binds 139/445 and 137/138
+      # on every interface rather than the local subnet. An edit that made it
+      # match its siblings would republish ~/Media to strangers with nothing
+      # anywhere reporting it.
+      name = "laptop/smb.enable (opt-in, off by default)";
+      actual = hosts.laptop.nixos.general.smb.enable;
+      expected = false;
+    }
+    {
       # The rule this replaced named a subnet neither machine is on, and went
       # through nft under an iptables backend. Guard against it coming back.
       name = "laptop/firewall has no stale 192.168.1.0/24 rule";

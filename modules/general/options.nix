@@ -224,6 +224,19 @@ in
           '';
         };
       };
+
+      smb = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          # Off by default, unlike the rest of nixos.general, because the
+          # shares are not a neutral default: media is served to guests with
+          # no authentication, and samba's own openFirewall binds 139/445 and
+          # 137/138 on every interface rather than the local subnet. Opt in
+          # per host that should genuinely serve files.
+          default = false;
+          description = "Enable the Samba file server (shares defined in profiles/smb.nix)";
+        };
+      };
     };
   };
 }

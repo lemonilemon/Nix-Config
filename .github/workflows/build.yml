@@ -3,6 +3,11 @@ name: Build and Push
 on:
   push:
     branches: [main]
+  # Push-to-main was the only trigger, so this workflow could not be exercised
+  # anywhere else -- which is how it kept a Nix pin that could not evaluate the
+  # flake from 6daf741 until the next push to main three weeks later. Manual
+  # dispatch makes it runnable against any branch before it lands.
+  workflow_dispatch:
 
 jobs:
   build:

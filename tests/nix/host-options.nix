@@ -209,12 +209,16 @@ let
       expected = true;
     }
     {
+      # 53317 is not from nixos.general.firewall: programs.localsend.openFirewall
+      # appends it, and listOf merges the definitions rather than one winning,
+      # so the effective list is our three plus whatever modules contribute.
       name = "desktop/firewall.allowedTCPPorts";
       actual = hosts.desktop.networking.firewall.allowedTCPPorts;
       expected = [
         22
         80
         443
+        53317
       ];
     }
     {
@@ -254,6 +258,7 @@ let
         139
         443
         445
+        53317
       ];
     }
     {

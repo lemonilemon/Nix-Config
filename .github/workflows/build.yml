@@ -10,17 +10,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      # Same installer as ci.yml, for the same reason: install-nix-action pins
+      # Nix 2.19.1, which rejects store path names beginning with a dot and so
+      # cannot evaluate this flake -- the pre-commit check has src = ./., which
+      # makes .gitignore a store path of its own. This workflow kept the old
+      # action after ci.yml was fixed because it only runs on push to main, so
+      # the breakage stayed invisible until main was next pushed.
       - name: Install Nix
-        uses: cachix/install-nix-action@v24
+        uses: DeterminateSystems/determinate-nix-action@v3
         with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          extra-conf: |
             substituters = https://cache.nixos.org/ https://nix-community.cachix.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
             
       - name: Setup Cachix
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v17
         with:
           name: lemonilemon
           # This token allows the action to push newly built configurations to your Cachix

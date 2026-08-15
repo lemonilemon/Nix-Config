@@ -264,14 +264,18 @@ tooltip label {
   margin-left: 4px;
 }
 
+/* .power-button is deliberately absent from both of these. It takes $red and a
+   red hover tint of its own further down, and listing it here only added
+   declarations that the later rules already override -- dead weight that reads
+   as if the session button shares the neutral module treatment when it does
+   not. It stays in the shared sizing rule above, which is where its
+   border-radius and min-height actually come from. */
 .module,
-.module-button,
-.power-button {
+.module-button {
   color: $subtext0;
 }
 
-.module-button:hover,
-.power-button:hover {
+.module-button:hover {
   background: rgba(49, 50, 68, 0.78);
 }
 

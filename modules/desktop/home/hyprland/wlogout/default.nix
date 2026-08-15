@@ -79,7 +79,13 @@ let
       accent = palette.yellow;
       label = "Logout";
       key = "e";
-      action = "${hyprshutdown} && ${hyprctl} dispatch exit";
+      # Lua form, not `dispatch exit`. Hyprland 0.56 moved hyprctl's control
+      # surface, and the bare word is now a syntax error inside the generated
+      # hl.dispatch(...) -- it exits 7 and the session stays up, so the Logout
+      # button did nothing but run hyprshutdown. Signature from the shipped API
+      # stub, share/hypr/stubs/hl.meta.lua: `exit fun(...)`, so no argument.
+      # Not exercised in testing for the obvious reason.
+      action = "${hyprshutdown} && ${hyprctl} dispatch 'hl.dsp.exit()'";
     }
     {
       name = "reboot";

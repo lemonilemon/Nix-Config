@@ -107,6 +107,53 @@ func runHyprctl(args ...string) error {
 	return nil
 }
 
+// Hyprland 0.56 moved hyprctl's control surface to Lua, and the positional
+// forms this file used are now syntax errors inside the generated call:
+//
+//	$ hyprctl dispatch dpms off
+//	error: [string "return hl.dispatch(dpms off)"]:1: ')' expected near 'off'
+//	exit 7
+//
+// Every mode calls dpms, so every mode returned early at its first step and NONE
+// of them reached WriteDisplayMode -- the panel kept reporting "Normal desktop"
+// however many times a button was pressed, because ReadDisplayMode was reading a
+// file that was never created. The rest of the repo was migrated (eww.yuck has
+// ten call sites, hyprlock.nix three); this file was missed.
+//
+// The `keyword` form was worse than a syntax error, because it fails with exit 0:
+//
+//	$ hyprctl keyword general:border_size 1
+//	keyword can't work with non-legacy parsers. Use eval.
+//	exit 0
+//
+// runHyprctl sees only the code, so external mode would have reported success,
+// written the mode file and claimed "External monitors active" with the internal
+// panel still lit. The eval form errors with exit 7 like everything else, which
+// is what makes checking the code meaningful again.
+//
+// Verified against Hyprland 0.56.1: both answer "ok" / exit 0, and an unknown
+// field answers exit 7.
+const (
+	hyprDpmsOn  = `hl.dsp.dpms({ action = "on" })`
+	hyprDpmsOff = `hl.dsp.dpms({ action = "off" })`
+)
+
+// hyprDisableMonitor is the Lua replacement for `keyword monitor <name>,disable`.
+//
+// The field is `disabled`; `disable` and `enabled` are both rejected as unknown
+// fields, which is worth recording because the config keyword this replaces
+// spelled it the other way.
+//
+// A partial rule RESETS the fields it omits -- confirmed the hard way, by
+// running this with only output and disabled against a live monitor and
+// watching its scale jump from the configured 1.0 to a default 1.5. That is
+// survivable here only because "normal" runs `hyprctl reload` before anything
+// else, which re-reads the config and the per-output overrides nwg-displays
+// writes to ~/.config/hypr/monitors.lua. Do not "optimise" that reload away.
+func hyprDisableMonitor(name string) string {
+	return fmt.Sprintf("hl.monitor{ output = %q, disabled = true }", name)
+}
+
 func joinArgs(args []string) string {
 	out := ""
 	for i, arg := range args {
@@ -157,13 +204,13 @@ func SetDisplayMode(action string) (Display, error) {
 		return SetDisplayMode("headless")
 
 	case "restore":
-		if err := runHyprctl("dispatch", "dpms", "on"); err != nil {
+		if err := runHyprctl("dispatch", hyprDpmsOn); err != nil {
 			return Display{}, err
 		}
 		return DisplayState("Screens turned on"), nil
 
 	case "normal":
-		if err := runHyprctl("dispatch", "dpms", "on"); err != nil {
+		if err := runHyprctl("dispatch", hyprDpmsOn); err != nil {
 			return Display{}, err
 		}
 		if err := runHyprctl("reload"); err != nil {
@@ -189,7 +236,7 @@ func SetDisplayMode(action string) (Display, error) {
 		if _, err := SetLidInhibited(true); err != nil {
 			return Display{}, err
 		}
-		if err := runHyprctl("dispatch", "dpms", "on"); err != nil {
+		if err := runHyprctl("dispatch", hyprDpmsOn); err != nil {
 			return Display{}, err
 		}
 		for _, monitor := range internal {
@@ -197,7 +244,7 @@ func SetDisplayMode(action string) (Display, error) {
 			if name == "" {
 				continue
 			}
-			if err := runHyprctl("keyword", "monitor", name+",disable"); err != nil {
+			if err := runHyprctl("eval", hyprDisableMonitor(name)); err != nil {
 				return Display{}, err
 			}
 		}
@@ -211,7 +258,7 @@ func SetDisplayMode(action string) (Display, error) {
 		if _, err := SetLidInhibited(true); err != nil {
 			return Display{}, err
 		}
-		if err := runHyprctl("dispatch", "dpms", "off"); err != nil {
+		if err := runHyprctl("dispatch", hyprDpmsOff); err != nil {
 			return Display{}, err
 		}
 		WriteDisplayMode("headless")

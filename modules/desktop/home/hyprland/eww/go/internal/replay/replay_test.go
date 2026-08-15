@@ -118,8 +118,14 @@ func TestGoldenReplay(t *testing.T) {
 
 	byFunction := map[string]int{}
 	var failures []string
+	superseded := 0
 	for i, r := range records {
 		byFunction[r.Fn]++
+
+		if recordsSupersededHyprctl(r) {
+			superseded++
+			continue
+		}
 
 		got, err := Answer(Call{Fn: r.Fn, Args: r.Args})
 		if err != nil {
@@ -162,6 +168,59 @@ func TestGoldenReplay(t *testing.T) {
 	if len(byFunction) < 90 {
 		t.Fatalf("golden file covers only %d functions", len(byFunction))
 	}
+
+	// And a guard on the skip itself: if the display code is ever migrated
+	// again, or these cases are somehow lost, the count moving is the signal.
+	if superseded != supersededHyprctlCases {
+		t.Errorf("skipped %d superseded-hyprctl cases, expected %d -- if the "+
+			"display code changed again, update the constant and the Go tests "+
+			"that replaced these cases", superseded, supersededHyprctlCases)
+	}
+}
+
+// supersededHyprctlCases is how many recorded cases encode hyprctl's pre-0.56
+// command line. Pinned so the skip cannot quietly widen.
+const supersededHyprctlCases = 13
+
+// recordsSupersededHyprctl reports whether a recorded case asserts a hyprctl
+// invocation that Hyprland no longer accepts.
+//
+// THIS IS THE ONLY SANCTIONED SKIP, and it exists because the recording can be
+// wrong about the world in a way that re-running it cannot fix. These 13 cases
+// pin the argv of `hyprctl dispatch dpms on|off` and `hyprctl keyword monitor
+// <name>,disable`. Hyprland 0.56 moved that surface to Lua: the first is now a
+// syntax error inside the generated hl.dispatch(...) and exits 7, and the
+// second answers "keyword can't work with non-legacy parsers" while exiting 0.
+// Keeping these cases green would mean keeping internal/collect/display.go
+// calling commands that cannot work -- which is exactly the bug that made every
+// display-mode button silently do nothing.
+//
+// The recording is NOT edited. It stays the byte-exact artifact the port was
+// verified against; these cases are stepped over here, where the reason is
+// visible, and their coverage is replaced by ordinary Go tests in
+// internal/collect (TestDisplayModeUsesTheLuaHyprctlSurface and friends), which
+// is what the file header asks for anyway.
+//
+// Everything else in the file still means what it always meant: a failure is a
+// regression in the Go, never a stale recording to be refreshed.
+func recordsSupersededHyprctl(r record) bool {
+	if r.Fn != "SetDisplayMode" && r.Fn != "ControlHandle" {
+		return false
+	}
+	// Matched against the RAW JSON of the recorded value, where the journal's
+	// 0x1f separators are written as the six literal characters \u001f. Raw
+	// string literals below so those stay six characters and are not unescaped
+	// by the Go compiler into the byte itself.
+	for _, old := range [...]string{
+		`hyprctl\u001fdispatch\u001fdpms\u001fon`,
+		`hyprctl\u001fdispatch\u001fdpms\u001foff`,
+		`hyprctl\u001fkeyword\u001fmonitor\u001f`,
+	} {
+		if strings.Contains(string(r.Value), old) {
+			return true
+		}
+	}
+	return false
 }
 
 func argsOf(r record) string {

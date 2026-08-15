@@ -284,6 +284,19 @@
     (box :class "display-mode-status" :orientation "h" :space-evenly false
       (label :class "display-mode-chip ${bar_state.idle_inhibited == 'true' ? 'active' : ''}" :text {bar_state.idle_inhibited == "true" ? "Hypridle paused" : "Hypridle active"})
       (label :class "display-mode-chip ${bar_state.display.lid_inhibited == 'true' ? 'active' : ''}" :text {bar_state.display.lid_inhibited == "true" ? "Lid ignored" : "Lid normal"}))
+    ;; display.status is computed on every path and, until now, rendered
+    ;; nowhere -- which is the last reason a broken display mode was invisible:
+    ;; the buttons pass --quiet, :onclick discards the exit code, and the panel
+    ;; had no place to say anything went wrong.
+    ;;
+    ;; Shown only when it is NOT one of the three resting descriptions, since
+    ;; those already appear as the title above. What is left is the interesting
+    ;; case: "Screens turned on", or a hyprctl failure.
+    (label :class "display-mode-note" :halign "start" :wrap true
+      :visible {bar_state.display.status != "Normal desktop mode"
+             && bar_state.display.status != "External display mode"
+             && bar_state.display.status != "Headless server mode"}
+      :text {bar_state.display.status})
     ; The three modes are mutually exclusive, so they read as one radio group:
     ; same shape, one list, exactly one highlighted. Hypridle sits below the rule
     ; because it is a different axis -- picking a mode SETS the inhibitors, and

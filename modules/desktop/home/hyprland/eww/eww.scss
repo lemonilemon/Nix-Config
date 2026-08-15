@@ -435,6 +435,15 @@ tooltip label {
   margin-top: 1px;
 }
 
+/* Yellow, the panel's "something is off but nothing is broken" colour: this
+   carries transient notes like "Screens turned on" as well as hyprctl failures,
+   and $red would overstate the first. */
+.display-mode-note {
+  color: $yellow;
+  font-size: 11px;
+  margin: 6px 15px 0;
+}
+
 .display-mode-status {
   margin: 10px 14px 0;
 }

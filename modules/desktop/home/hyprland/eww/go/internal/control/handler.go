@@ -7,6 +7,7 @@
 package control
 
 import (
+	"errors"
 	"sync"
 
 	"ewwbar/internal/collect"
@@ -178,6 +179,22 @@ func Handle(store *state.Store, payload map[string]any) (Reply, error) {
 		action := payloadString(payload, "action", "status")
 		value, err := collect.SetDisplayMode(action)
 		if err != nil {
+			// Put the failure somewhere a human will see it. Every one of
+			// eww.yuck's 24 eww-barctl call sites passes --quiet, which
+			// suppresses the reply, and an :onclick handler discards the exit
+			// code -- so before this, an operational failure here was invisible
+			// from the desk. That is how a broken `hyprctl dispatch dpms off`
+			// went unnoticed for weeks: the panel simply kept reporting the mode
+			// it was already in.
+			//
+			// Usage errors are deliberately excluded. A bad action name is the
+			// caller's mistake, not a condition of the machine, and rewriting
+			// the panel to describe it would be noise.
+			if !errors.Is(err, collect.ErrDisplayAction) &&
+				!errors.Is(err, collect.ErrNoExternalMonitor) {
+				failed := collect.DisplayState(err.Error())
+				store.Update(func(bar *state.Bar) { bar.Display = failed })
+			}
 			return nil, err
 		}
 		idle := collect.IdleInhibitedState()

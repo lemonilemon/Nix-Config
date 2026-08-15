@@ -624,11 +624,24 @@
           :onclick "eww-barctl --quiet ai refresh"
           :tooltip {bar_state.ai_usage.meta.refreshing == "true" ? "Refreshing…" : "Refresh usage"}
           (label :text ""))))
+    ;; Grouped, not chronological: the two tabs that aggregate across every
+    ;; provider sit together on the left, then the three per-provider
+    ;; drill-downs. History was appended last when it was added, which left the
+    ;; strip reading total / claude / codex / antigravity / history -- the two
+    ;; overview views separated by the three detail views.
+    ;;
+    ;; Total stays first and stays the default. It answers "what am I spending
+    ;; right now", which is the reason to open a popup from a status bar;
+    ;; History answers "what have I spent", which is a deliberate look back.
     (box :class "ai-usage-tabs" :orientation "h" :space-evenly true
       (button :class "ai-usage-tab ${ai_usage_tab == 'total' ? 'active' : ''}" :hexpand true
         :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=total"
         :tooltip "Total usage"
         (image :path "${EWW_CONFIG_DIR}/assets/total.svg" :image-width 18 :image-height 18))
+      (button :class "ai-usage-tab ${ai_usage_tab == 'history' ? 'active' : ''}" :hexpand true
+        :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=history"
+        :tooltip "Usage history"
+        (image :path "${EWW_CONFIG_DIR}/assets/history.svg" :image-width 18 :image-height 18))
       (button :class "ai-usage-tab ${ai_usage_tab == 'claude' ? 'active' : ''}" :hexpand true
         :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=claude"
         :tooltip "Claude subscription"
@@ -640,11 +653,7 @@
       (button :class "ai-usage-tab ${ai_usage_tab == 'antigravity' ? 'active' : ''}" :hexpand true
         :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=antigravity"
         :tooltip "Antigravity subscription"
-        (image :path "${EWW_CONFIG_DIR}/assets/antigravity.svg" :image-width 18 :image-height 18))
-      (button :class "ai-usage-tab ${ai_usage_tab == 'history' ? 'active' : ''}" :hexpand true
-        :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=history"
-        :tooltip "Usage history"
-        (image :path "${EWW_CONFIG_DIR}/assets/history.svg" :image-width 18 :image-height 18)))
+        (image :path "${EWW_CONFIG_DIR}/assets/antigravity.svg" :image-width 18 :image-height 18)))
     (box :class "ai-usage-loading" :orientation "h" :space-evenly false
       :visible {bar_state.ai_usage.meta.refreshing == "true"}
       (box :class "ai-usage-loading-bar" :hexpand true))

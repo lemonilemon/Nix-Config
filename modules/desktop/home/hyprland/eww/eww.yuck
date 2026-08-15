@@ -602,6 +602,13 @@
     ;; activity", which held this popup at ~480px however small :width was set;
     ;; it is shorter and truncating now for that reason alone.
     ;;
+    ;; 400 rather than 380 for the same reason, and it fixes a visible defect:
+    ;; at 380 some tabs' content was fractionally WIDER than the request, so the
+    ;; window came out 380/382/383 depending on which tab was open. The tab strip
+    ;; is space-evenly, so every icon redistributed across the new width and the
+    ;; four icons visibly jumped when switching tabs. Above every tab's natural
+    ;; width the request wins outright and the window is the same size always.
+    ;;
     ;; KNOWN: the popup's height varies with its content and neither of the two
     ;; obvious levers pins it. Measured at 380px wide: Today ~500, Claude ~527,
     ;; Year ~537, because Year lists five agent rows where Today lists two.
@@ -624,7 +631,7 @@
     ;; where it is invisible until hover -- measured, not estimated. The other
     ;; four tabs carry the extra dead space; they are secondary views and the
     ;; popup is still ~12% of a 1920x1200 screen.
-    :width "380px"
+    :width "400px"
     :height "460px"
     :anchor "top right")
   :stacking "fg"

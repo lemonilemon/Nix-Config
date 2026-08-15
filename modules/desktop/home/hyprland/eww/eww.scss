@@ -313,6 +313,19 @@ tooltip label {
   color: $overlay1;
 }
 
+/* ApplyQuotas sets class "warning" when any subscription is near its limit --
+   see the "Tint the bar amber" block in period.go -- and until now there was no
+   rule for it, so the one signal telling you a plan is nearly spent rendered
+   exactly like a healthy bar. Yellow to match .network.linked, which is the
+   same severity in the same strip.
+
+   "active" needs no rule on purpose: it is the ordinary state and the base
+   .ai-usage mauve is what it should look like. */
+.ai-usage.warning {
+  background: rgba(249, 226, 175, 0.10);
+  color: $yellow;
+}
+
 .network {
   color: $peach;
 }
@@ -332,6 +345,31 @@ tooltip label {
 .network.degraded {
   background: rgba(235, 160, 172, 0.14);
   color: $maroon;
+}
+
+/* Hover for the states that paint a background of their own.
+   These are NOT decoration, they restore a hover that the cascade had removed:
+   .module-button:hover sets a background earlier in this file at the SAME
+   specificity (0,2,0), so every state rule above silently won and those buttons
+   stopped responding to the pointer entirely. Same trap applies to
+   .ai-usage.warning, hence its pair below.
+
+   Each brightens its OWN tint rather than washing the neutral grey over it --
+   a red "disconnected" button should not turn grey under the pointer. */
+.network.disconnected:hover {
+  background: rgba(243, 139, 168, 0.22);
+}
+
+.network.linked:hover {
+  background: rgba(249, 226, 175, 0.19);
+}
+
+.network.degraded:hover {
+  background: rgba(235, 160, 172, 0.23);
+}
+
+.ai-usage.warning:hover {
+  background: rgba(249, 226, 175, 0.19);
 }
 
 .volume {

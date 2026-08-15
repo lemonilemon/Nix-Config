@@ -602,13 +602,21 @@
     ;; activity", which held this popup at ~480px however small :width was set;
     ;; it is shorter and truncating now for that reason alone.
     ;;
-    ;; Height is content-driven in BOTH directions here and 460 is only a floor:
-    ;; measured, Today renders ~470 and Year ~542, because Year lists five agents
-    ;; where Today lists two. Raising this number does not pin it -- 560 was tried
-    ;; and the two periods still came out 36px apart. The popup therefore grows
-    ;; downward a little when the period changes, which is acceptable because the
-    ;; period row sits ABOVE the part that changes and does not move under the
-    ;; pointer. Pinning it would need a CSS min-height on .ai-usage-popup.
+    ;; KNOWN: the popup's height varies with its content and neither of the two
+    ;; obvious levers pins it. Measured at 380px wide: Today ~500, Claude ~527,
+    ;; Year ~537, because Year lists five agent rows where Today lists two.
+    ;;
+    ;; Raising :height does not help -- 560 was tried and the periods still came
+    ;; out 36px apart -- because GTK sizes a layer-shell window from the
+    ;; hierarchy's NATURAL height, while eww's :height is a set_size_request,
+    ;; which is a MINIMUM. A `min-height` on .ai-usage-popup was tried for the
+    ;; same reason and ignored for the same reason: also a minimum.
+    ;;
+    ;; What would actually work is giving the short periods real height -- a
+    ;; spacer sized to the difference, or padding each period panel to a common
+    ;; natural height. Not done: it hard-codes one layout's measurements into
+    ;; four widgets, and the period row sits ABOVE the part that changes, so
+    ;; nothing moves under the pointer when it grows.
     ;;
     ;; 460px tall, not 420: the History summary has to hold a total row, a date
     ;; range, an optional unpriced-models warning and five agent rows above the

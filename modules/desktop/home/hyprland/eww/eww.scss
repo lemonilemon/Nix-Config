@@ -975,6 +975,153 @@ tooltip label {
 .ai-usage-agent.gemini .ai-usage-agent-dot { color: $blue; }
 .ai-usage-agent.gemini .ai-usage-agent-bar trough progress { background: $blue; }
 
+/* --- History tab: the contribution grid --- */
+
+/* Its own ground, for the reason the calendar below has one: glass sits at 0.72
+   alpha, which is fine behind a few large rows and not fine behind 371 five-pixel
+   squares each sampling whatever wallpaper is underneath. */
+.ai-heat-card {
+  background: rgba(30, 30, 46, 0.74);
+  border-radius: 8px;
+  margin: 12px 14px 0;
+  /* 11px, not 8px, so the card's content box is EXACTLY the grid's 528px:
+     578 inner - 28 margin - 22 padding = 528. With any slack the centred grid
+     floats a pixel or three off the month labels and the summary below, and the
+     whole panel reads as slightly crooked. */
+  padding: 9px 11px 8px;
+}
+
+/* 8px cell on a 10px pitch, which is what set the popup's 580px width rather
+   than the other way round: after the 1px glass border, this block's 14px
+   margins and its 8px padding, 534px is usable, and 53 columns need
+   53*8 + 52*2 = 528px. GitHub runs 10px on 13px; an earlier 5px/6px pass fitted
+   the old 380px window and read as a smear rather than as discrete days.
+   min-width AND min-height are both required because the stylesheet opens with
+   `* { all: unset }` and an unsized box collapses.
+
+   heatCellPitch and heatCellGap in aiheatmap.go mirror these two numbers to
+   size the month labels; changing one without the other slides the labels off
+   the columns they name. */
+.ai-heat-cell {
+  background: rgba(69, 71, 90, 0.46);
+  border-radius: 2px;
+  min-height: 8px;
+  min-width: 8px;
+}
+
+/* Sapphire, single hue, because this encodes VOLUME and the popup's other
+   ramp -- yellow then red on the quota meters -- encodes ALARM. A heavy day is
+   not a blown limit, and borrowing $red for the top band would say it was.
+   Every other saturated hue is already spoken for in this panel: mauve is
+   Claude, green is Codex, blue is Gemini. Sapphire is the popup's own accent
+   (glass-popup($sapphire)) and appears nowhere else in the content area.
+
+   Level 0 has no rule of its own -- it is the base .ai-heat-cell background,
+   which is the same empty-track token the meters use, so a day with no usage
+   reads as exactly the same empty well as an unused meter. */
+.ai-heat-cell.level-1 { background: rgba(116, 199, 236, 0.25); }
+.ai-heat-cell.level-2 { background: rgba(116, 199, 236, 0.48); }
+.ai-heat-cell.level-3 { background: rgba(116, 199, 236, 0.72); }
+.ai-heat-cell.level-4 { background: $sapphire; }
+
+/* Outside the recorded range: not "no usage", but "not watched". Dimmer than
+   the level-0 trough so an unmonitored month cannot be misread as an idle one,
+   but NOT transparent -- history here starts partway through the window, and
+   with these cells invisible the grid lost its left quarter and read as though
+   the whole widget were misaligned against the month labels above it. A ghost
+   keeps the rectangle whole while still saying nothing was recorded. */
+.ai-heat-cell.blank {
+  background: rgba(69, 71, 90, 0.13);
+}
+
+.ai-heat-months {
+  margin-bottom: 4px;
+}
+
+.ai-heat-month {
+  color: $overlay0;
+  font-size: 10px;
+}
+
+.ai-heat-legend {
+  margin-top: 8px;
+}
+
+.ai-heat-legend-text {
+  color: $overlay0;
+  font-size: 10px;
+  margin: 0 4px;
+}
+
+.ai-heat-summary {
+  /* 25px = the card's 14px margin + its 11px padding, so the total and the
+     agent rows start on the grid's first column and end on its last. */
+  padding: 11px 25px 0;
+}
+
+.ai-heat-total-tokens {
+  color: $text;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ai-heat-total-cost {
+  color: $sapphire;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ai-heat-range {
+  color: $overlay1;
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+/* Yellow, the panel's existing "high but not broken" colour, rather than red:
+   the costs shown are real, just incomplete, and $red already means a blown
+   quota everywhere else in this popup. */
+.ai-heat-warning {
+  color: $yellow;
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.ai-heat-agent-row {
+  margin-top: 6px;
+}
+
+.ai-heat-agent-dot {
+  color: $overlay1;
+  font-size: 8px;
+  margin-right: 6px;
+}
+
+.ai-heat-agent-name {
+  color: $subtext0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ai-heat-agent-tokens {
+  color: $text;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ai-heat-agent-cost {
+  color: $overlay1;
+  font-size: 10px;
+  margin-left: 8px;
+}
+
+/* Same hue per agent as the Total tab's rows, so an agent keeps one colour
+   across the popup. opencode and pi have no row there and are assigned here. */
+.ai-heat-agent-dot.claude { color: $mauve; }
+.ai-heat-agent-dot.codex { color: $green; }
+.ai-heat-agent-dot.gemini { color: $blue; }
+.ai-heat-agent-dot.opencode { color: $peach; }
+.ai-heat-agent-dot.pi { color: $teal; }
+
 .ai-usage-footer {
   border-top: 1px solid rgba(205, 214, 244, 0.07);
   padding: 10px 15px 11px;

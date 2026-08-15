@@ -268,6 +268,106 @@ func ResetAiUsageCache() {
 // monthly rollup with room for a machine that has been off for a while.
 const ccusageSinceDays = 45
 
+// ccusageHistoryDays is how far back the History tab's report reaches.
+//
+// Two years, well past the 371 days the grid can draw, because the extra rows
+// cost almost nothing and are kept: ccusage walks every transcript whatever the
+// window, so --since only trims the output. Measured, 45 days costs 0.21 s and
+// 365 costs 0.30 s. The wider ask exists so a first run captures everything the
+// logs still hold before whatever prunes them gets there.
+const ccusageHistoryDays = 730
+
+// AiHistoryState collects the History tab's grid, folding the fresh report into
+// the durable store and writing it back.
+//
+// Reads before it writes and merges rather than replaces, which is what makes
+// the file a ratchet: a day that has aged out of the transcripts survives in
+// the store, and a refresh that fails leaves what is already there alone.
+func AiHistoryState(path string) AiHistory {
+	since := localTime(nowOr(0) - ccusageHistoryDays*86400).Format("20060102")
+	report := RunText(ccusageTimeout, "ccusage",
+		"daily", "--json", "--offline",
+		"--sections", "daily", "--by-agent", "--since", since,
+	)
+
+	merged := MergeHistoryDays(LoadHistory(path), HistoryDaysFromJSON(report))
+	if len(merged) == 0 {
+		return AiHistoryDefault()
+	}
+	// Failure here is deliberately not propagated. The grid the caller is about
+	// to render is already correct in memory, and a read-only state directory
+	// should cost persistence rather than the tab.
+	_ = SaveHistory(path, merged)
+
+	history := HeatmapFromDays(merged, 0)
+	// From the fresh report, not the merged store: an old day priced at zero by
+	// a table that has since learned the model is history, while the question
+	// worth answering is whether the CURRENT binary can price what is being run
+	// today.
+	history.Warning = WarnUnpriced(UnpricedModels(report))
+	return history
+}
+
+// SeedQuotaCache primes the quota cache from a snapshot so a cold start has
+// cards to show.
+//
+// Separate from QuotaStates rather than folded into it, because QuotaStates'
+// refresh=true path is pinned by recorded cases that expect a probe. This is
+// only ever called by the daemon at startup, where no such expectation exists.
+func SeedQuotaCache(quotas []Quota) {
+	if len(quotas) == 0 {
+		return
+	}
+	quotaCacheLock.Lock()
+	defer quotaCacheLock.Unlock()
+	if cachedQuotas == nil {
+		cachedQuotas = append([]Quota(nil), quotas...)
+	}
+}
+
+// CachedQuotas returns the cached cards without ever probing.
+//
+// The distinction from QuotaStates(false) is the whole point: that falls
+// through to a 41.6 s probe on a cold cache, which is exactly what the fast
+// startup path must not do.
+func CachedQuotas() ([]Quota, bool) {
+	quotaCacheLock.Lock()
+	defer quotaCacheLock.Unlock()
+	if cachedQuotas == nil {
+		return nil, false
+	}
+	return append([]Quota(nil), cachedQuotas...), true
+}
+
+// AiUsageFast builds the bar's AI state from the ccusage report alone.
+//
+// This exists because AiUsageState computes ApplyQuotas(ccusage, QuotaStates())
+// and publishes once, at the end. The ccusage half costs 0.21 s and drives
+// everything on the bar face; the quota half drives only the popup's cards and
+// costs anywhere from 6 s to the 41.6 s recorded at QuotaStates, depending on
+// how the providers are feeling. So a cold start showed "-- " for all of that
+// while the numbers for it sat finished in a local variable.
+//
+// A new function rather than a change to AiUsageState or RefreshAiUsage: both
+// are pinned by recorded cases, and RefreshAiUsage's record includes the exact
+// SEQUENCE of values it publishes, so adding an interim publish there would
+// break it. The daemon calls this once at startup and the normal cycle takes
+// over afterwards.
+func AiUsageFast() AiUsage {
+	since := localTime(nowOr(0) - ccusageSinceDays*86400).Format("20060102")
+	report := RunText(ccusageTimeout, "ccusage",
+		"daily", "--json", "--offline",
+		"--sections", "daily,weekly,monthly",
+		"--by-agent", "--since", since,
+	)
+
+	quotas, cached := CachedQuotas()
+	if !cached {
+		quotas = QuotaDefaults()
+	}
+	return ApplyQuotas(AiUsageStateFromJSON(report, 0), quotas)
+}
+
 // AiUsageState mirrors collectors.ai_usage_state.
 func AiUsageState(refreshQuotas bool) AiUsage {
 	since := localTime(nowOr(0) - ccusageSinceDays*86400).Format("20060102")

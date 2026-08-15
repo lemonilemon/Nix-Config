@@ -12,6 +12,7 @@ import (
 
 	"ewwbar/internal/collect"
 	"ewwbar/internal/control"
+	"ewwbar/internal/paths"
 	"ewwbar/internal/state"
 	"ewwbar/internal/watch"
 )
@@ -132,15 +133,66 @@ func launchWatchers(ctx context.Context, store *state.Store, idleRefresh <-chan 
 		return func(bar *state.Bar) { bar.Clock = clock }
 	})
 
+	// Restore last night's quota cards before anything can probe for new ones,
+	// so the popup opens on real numbers relabelled "as of <time>" rather than
+	// on "Waiting for first update...". Seeding only fills an empty cache, so
+	// this cannot overwrite a probe that has already landed.
+	if restored, ok := collect.LoadQuotaSnapshot(paths.AiQuotas()); ok {
+		collect.SeedQuotaCache(restored)
+	}
+
+	// The fast path, and the reason it is separate from the loop below.
+	//
+	// AiUsageState computes the ccusage report and the quota probe and publishes
+	// once, at the end. ccusage drives the bar face and the probe drives only
+	// the popup's cards, so the bar used to sit at "-- " for as long as the
+	// probe took while the numbers for it sat finished in a local variable.
+	//
+	// How long that is varies a lot -- 6.4 s measured end to end here against
+	// 0.21 s for the ccusage half, and 41.6 s for the probe alone in the
+	// measurement recorded at QuotaStates. The point is not the multiple, which
+	// moves with the provider's latency, but that the bar face no longer
+	// depends on it at all.
+	//
+	// Guarded on the state still being the placeholder: if the cycle happens to
+	// win the race, its answer is strictly better and must not be overwritten.
+	go func() {
+		fast := collect.AiUsageFast()
+		if fast.Source == "missing" {
+			return
+		}
+		store.Update(func(bar *state.Bar) {
+			if bar.AiUsage.Source == "missing" {
+				bar.AiUsage = fast
+			}
+		})
+	}()
+
 	// AiRefreshCycle, not RefreshAiUsage directly: the ccusage report behind
 	// the bar label runs every pass, but the openusage probe behind the
 	// popup's quota cards is fifty times more expensive and only runs every
 	// sixth. The popup refreshes itself on open.
 	cycle := collect.AiRefreshCycle(6)
 	go watch.PeriodicRefresh(ctx, store, 300*time.Second, func(s *state.Store) {
-		cycle(s.Get().AiUsage, func(value collect.AiUsage) {
+		fresh := cycle(s.Get().AiUsage, func(value collect.AiUsage) {
 			s.Update(func(bar *state.Bar) { bar.AiUsage = value })
 		})
+		// Persisted here rather than inside QuotaStates because the collector
+		// has no business knowing a path, and because SaveQuotaSnapshot drops
+		// anything short of a fully live set on its own.
+		_ = collect.SaveQuotaSnapshot(paths.AiQuotas(), fresh.Quotas, 0)
+	})
+
+	// The history grid on its own timer, at ten minutes.
+	//
+	// Not folded into the AI cycle above: that one exists to keep the bar face
+	// current, while this reads a year of daily rollups that change once a day
+	// and pushes a 22 KB variable to eww. Tying them would either make the grid
+	// republish every five minutes for nothing, or slow the bar down to the
+	// grid's cadence.
+	go watch.Periodic(ctx, store, 600*time.Second, func() watch.Update {
+		watch.PublishAiHistory(collect.AiHistoryState(paths.AiHistory()))
+		return nil
 	})
 
 	go watch.Periodic(ctx, store, 7*time.Second, func() watch.Update {

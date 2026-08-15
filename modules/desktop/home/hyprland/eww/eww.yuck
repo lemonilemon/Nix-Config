@@ -15,6 +15,20 @@
 ; down the single-screen path, which is byte-for-byte today's rendering.
 (defvar ws_monitors '{"ws1_owner":"","ws2_owner":"","ws3_owner":"","ws4_owner":"","ws5_owner":"","ws1_active_on":"","ws2_active_on":"","ws3_active_on":"","ws4_active_on":"","ws5_active_on":"","focused":"","monitors":0}')
 
+; The AI usage history grid, pushed by the daemon the same way ws_monitors is,
+; and for the same reason plus one more.
+;
+; The reason it shares: a new key on bar_state.ai_usage breaks 112 recorded
+; golden cases across 7 entry points, and the recording cannot be regenerated.
+;
+; The reason it does not: eww rebuilds every child of a `for` whenever ANY
+; variable the loop expression mentions changes -- the listener watches
+; collect_var_refs(), not the field path. A 53x7 grid read from bar_state would
+; therefore destroy and recreate 371 cells, 53 columns and all their scopes
+; every time the CPU collector ticks, which is every 7 seconds. Read from its
+; own variable it rebuilds only when the history itself changes.
+(defvar ai_history '{"columns":[],"months":[],"agents":[],"tokens":"--","cost":"--","range":"","days":0,"status":"waiting"}')
+
 (defvar show_date false)
 (defvar show_quota_left false)
 (defvar show_reset_exact false)
@@ -566,8 +580,15 @@
   :geometry (geometry
     :x "12px"
     :y "50px"
-    :width "380px"
-    :height "380px"
+    ;; Sized by the History tab, which is the only content here with a hard
+    ;; horizontal requirement: 53 week-columns. At the old 380px the columns
+    ;; came out at a 5px pitch, which stops reading as discrete days and turns
+    ;; the year into a smear. 580px buys an 8px cell on a 10px pitch -- close to
+    ;; GitHub's 10px/13px -- and incidentally gives the five tab buttons 109px
+    ;; each instead of 69px. The extra height keeps the five agent rows clear of
+    ;; the footer now that the grid is 68px tall rather than 41px.
+    :width "580px"
+    :height "420px"
     :anchor "top right")
   :stacking "fg"
   :exclusive false
@@ -593,19 +614,23 @@
       (button :class "ai-usage-tab ${ai_usage_tab == 'total' ? 'active' : ''}" :hexpand true
         :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=total"
         :tooltip "Total usage"
-        (image :path "${EWW_CONFIG_DIR}/assets/total.svg" :image-width 15 :image-height 15))
+        (image :path "${EWW_CONFIG_DIR}/assets/total.svg" :image-width 18 :image-height 18))
       (button :class "ai-usage-tab ${ai_usage_tab == 'claude' ? 'active' : ''}" :hexpand true
         :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=claude"
         :tooltip "Claude subscription"
-        (image :path "${EWW_CONFIG_DIR}/assets/claude.svg" :image-width 15 :image-height 15))
+        (image :path "${EWW_CONFIG_DIR}/assets/claude.svg" :image-width 18 :image-height 18))
       (button :class "ai-usage-tab ${ai_usage_tab == 'codex' ? 'active' : ''}" :hexpand true
         :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=codex"
         :tooltip "Codex subscription"
-        (image :path "${EWW_CONFIG_DIR}/assets/codex.svg" :image-width 15 :image-height 15))
+        (image :path "${EWW_CONFIG_DIR}/assets/codex.svg" :image-width 18 :image-height 18))
       (button :class "ai-usage-tab ${ai_usage_tab == 'antigravity' ? 'active' : ''}" :hexpand true
         :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=antigravity"
         :tooltip "Antigravity subscription"
-        (image :path "${EWW_CONFIG_DIR}/assets/antigravity.svg" :image-width 15 :image-height 15)))
+        (image :path "${EWW_CONFIG_DIR}/assets/antigravity.svg" :image-width 18 :image-height 18))
+      (button :class "ai-usage-tab ${ai_usage_tab == 'history' ? 'active' : ''}" :hexpand true
+        :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=history"
+        :tooltip "Usage history"
+        (image :path "${EWW_CONFIG_DIR}/assets/history.svg" :image-width 18 :image-height 18)))
     (box :class "ai-usage-loading" :orientation "h" :space-evenly false
       :visible {bar_state.ai_usage.meta.refreshing == "true"}
       (box :class "ai-usage-loading-bar" :hexpand true))
@@ -623,9 +648,15 @@
       (period_panel :period {bar_state.ai_usage.periods.today} :key "today")
       (period_panel :period {bar_state.ai_usage.periods.week} :key "week")
       (period_panel :period {bar_state.ai_usage.periods.month} :key "month"))
+    (ai_history_panel)
+    ;; Gated on the provider tabs by name rather than on `!= "total"`. The
+    ;; negative form was correct while every non-total tab was a provider, but
+    ;; it also matches "history", where the scroll would contribute an empty
+    ;; vexpand'd band that pushes the grid up the panel.
     (scroll :class "ai-usage-scroll" :vscroll true :hscroll false :vexpand true
+      :visible {ai_usage_tab == "claude" || ai_usage_tab == "codex" || ai_usage_tab == "antigravity"}
       (box :class "ai-usage-content" :orientation "v" :space-evenly false
-        (box :class "ai-section-heading" :orientation "h" :space-evenly false :visible {ai_usage_tab != "total"}
+        (box :class "ai-section-heading" :orientation "h" :space-evenly false
           (label :class "ai-section-title" :text "Subscription")
           (label :class "ai-section-note" :halign "end" :hexpand true
             :text {show_quota_left == "true" ? "remaining" : "used"}))
@@ -640,6 +671,61 @@
     (box :class "ai-usage-footer" :orientation "h" :space-evenly false
       (label :text {bar_state.ai_usage.agents != "--" ? "Active · ${bar_state.ai_usage.agents}" : "No local activity"})
       (label :halign "end" :hexpand true :text {"Refresh ${bar_state.ai_usage.meta.refresh}"}))))
+
+;; The contribution-graph tab: 53 week-columns of 7 days, oldest on the left.
+;;
+;; Nested `for`, matching the wallpaper grid above -- and the nesting has to be
+;; for -> box -> for, because a `for` may not be the direct body of another
+;; `for` and its body must be exactly one widget. The inner loop iterates the
+;; outer binding directly, so the backing Go value is [][]HeatCell rather than
+;; a list of objects with a cells field.
+;;
+;; Both loops read `ai_history` and nothing else. That is deliberate: eww
+;; watches every variable a loop expression mentions and rebuilds all children
+;; on any change, so touching bar_state here would rebuild 424 widgets every 7
+;; seconds. See the defvar comment at the top of this file.
+;;
+;; Cell colour comes from a CSS class, never from :style -- eww compiles a
+;; :style prop with a full SCSS pass per widget per update, which would be 371
+;; compiles on every refresh.
+(defwidget ai_history_panel []
+  (box :class "ai-usage-history" :orientation "v" :space-evenly false
+    :visible {ai_usage_tab == "history"}
+    (box :class "ai-heat-card" :orientation "v" :space-evenly false
+      (box :class "ai-heat-months" :orientation "h" :space-evenly false :halign "center"
+        (for month in {ai_history.months}
+          (label :class "ai-heat-month" :halign "start" :width {month.width} :text {month.label})))
+      (box :class "ai-heat-grid" :orientation "h" :space-evenly false :spacing 2 :halign "center"
+        (for column in {ai_history.columns}
+          (box :class "ai-heat-col" :orientation "v" :space-evenly false :spacing 2
+            (for cell in {column}
+              (box :class "ai-heat-cell ${cell.class}" :tooltip {cell.tooltip})))))
+      (box :class "ai-heat-legend" :orientation "h" :space-evenly false
+        (label :class "ai-heat-legend-text" :text {ai_history.days > 0 ? "${ai_history.days} active days" : "No recorded usage yet"})
+        (box :orientation "h" :space-evenly false :halign "end" :hexpand true :spacing 1
+          (label :class "ai-heat-legend-text" :text "Less")
+          (box :class "ai-heat-cell")
+          (box :class "ai-heat-cell level-1")
+          (box :class "ai-heat-cell level-2")
+          (box :class "ai-heat-cell level-3")
+          (box :class "ai-heat-cell level-4")
+          (label :class "ai-heat-legend-text" :text "More"))))
+    (box :class "ai-heat-summary" :orientation "v" :space-evenly false
+      (box :class "ai-heat-total-row" :orientation "h" :space-evenly false
+        (label :class "ai-heat-total-tokens" :text {ai_history.tokens})
+        (label :class "ai-heat-total-cost" :halign "end" :hexpand true :text {ai_history.cost}))
+      (label :class "ai-heat-range" :halign "start" :visible {ai_history.range != ""} :text {ai_history.range})
+      ;; The only place the panel can admit its costs are short. ccusage prices
+      ;; a model it does not know at exactly zero and says nothing about it in
+      ;; --json mode, which is how $616 of spend read as free for weeks.
+      (label :class "ai-heat-warning" :halign "start" :wrap true
+        :visible {ai_history.warning != ""} :text {ai_history.warning})
+      (for agent in {ai_history.agents}
+        (box :class "ai-heat-agent-row" :orientation "h" :space-evenly false
+          (label :class "ai-heat-agent-dot ${agent.key}" :text "●")
+          (label :class "ai-heat-agent-name" :text {agent.name})
+          (label :class "ai-heat-agent-tokens" :halign "end" :hexpand true :text {agent.tokens})
+          (label :class "ai-heat-agent-cost" :text {agent.cost}))))))
 
 (defwidget quota_card [quota]
   (box :class "ai-provider-section ${quota.key} ${quota.class}" :orientation "v" :space-evenly false

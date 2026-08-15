@@ -64,6 +64,47 @@ func PublishMonitorWorkspaces(view collect.MonitorWorkspaces) {
 	run.Eww([]string{"update", "ws_monitors=" + encoded})
 }
 
+// The AI usage history grid goes to eww the same way, and for the same reason
+// plus one that is specific to it.
+//
+// Shared: a new key on bar_state.ai_usage breaks 112 recorded cases across 7
+// entry points, ApplyQuotas alone accounting for 39.
+//
+// Specific: eww destroys and rebuilds every child of a `for` whenever any
+// variable the loop expression mentions changes -- it watches the variable, not
+// the field path. The grid is 53 columns of 7 cells, so reading it from
+// bar_state would tear down and recreate 424 widgets and their scopes every
+// time the 7-second CPU collector ticked. From its own variable it rebuilds
+// only when the history actually changes, which is once per refresh.
+var (
+	aiHistoryLock sync.Mutex
+	aiHistoryLast string
+)
+
+// PublishAiHistory sends the grid to eww if it differs from the last one sent.
+//
+// Deduplicated for the same reason as the monitor mapping: each push is a
+// process spawn, and the history moves once every few minutes at most while the
+// refresh that produces it runs far more often than that.
+func PublishAiHistory(history collect.AiHistory) {
+	encoded, err := pyjson.Encode(history, false)
+	if err != nil {
+		return
+	}
+
+	aiHistoryLock.Lock()
+	unchanged := encoded == aiHistoryLast
+	if !unchanged {
+		aiHistoryLast = encoded
+	}
+	aiHistoryLock.Unlock()
+
+	if unchanged {
+		return
+	}
+	run.Eww([]string{"update", "ai_history=" + encoded})
+}
+
 // Update is one batch of assignments into BarState.
 //
 // Collectors run OUTSIDE the store lock and hand back a closure that applies

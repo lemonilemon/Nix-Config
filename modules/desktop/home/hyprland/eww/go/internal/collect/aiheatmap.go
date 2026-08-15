@@ -26,12 +26,21 @@ import (
 // so a grid fed from bar_state would destroy and rebuild 424 widgets every time
 // the CPU collector ticks, which is every 7 seconds.
 
-// heatmapWeeks is how many week-columns the grid renders.
+// heatmapWeeks is how many week-columns the grid renders, and historyDays is
+// how far back the Year period's NUMBERS reach. They are deliberately different.
 //
-// 53 rather than 52 because 52 weeks is 364 days: a year plus the partial
-// current week needs the extra column, which is the same reason GitHub's own
-// graph is 53 wide.
-const heatmapWeeks = 53
+// The grid is bounded by the window: every other popup in this bar is 280-340px
+// wide, and a 53-week grid at a legible cell size forces ~540, which makes this
+// popup read as a different kind of object from its siblings. 26 columns at a
+// 10px cell -- GitHub's own cell size -- fits 380px, which is close enough to
+// the family to belong.
+//
+// The totals are bounded by nothing, so they stay a full year. Shrinking them to
+// match the graph would quietly redefine "Year" as six months.
+const (
+	heatmapWeeks = 26
+	historyDays  = 365
+)
 
 // heatLevels is how many non-zero shades the ramp has, matching the .level-N
 // classes in eww.scss. Level 0 is the base .ai-heat-cell rule and emits no
@@ -60,37 +69,31 @@ type HeatMonth struct {
 	Width int    `json:"width"`
 }
 
-// HistoryAgent is one row of the per-agent summary under the grid.
-type HistoryAgent struct {
-	Key    string `json:"key"`
-	Name   string `json:"name"`
-	Tokens string `json:"tokens"`
-	Cost   string `json:"cost"`
-}
-
 // AiHistory is the ai_history eww variable.
 //
+// Period is an AiPeriod, the same shape bar_state.ai_usage.periods uses, so the
+// year renders through eww.yuck's existing period_panel widget beside Today,
+// Week and Month rather than through a summary of its own. Reusing the type is
+// free: the golden cases pin how AiUsage serialises, not where AiPeriod may be
+// used, and nothing here is reachable from AiUsage.
+//
 // Warning is the only place the popup can admit its cost figures are
-// incomplete. It is rendered here rather than on the bar's own AiUsage because
-// that struct is pinned by 112 recorded cases, and because the History tab is
-// where a wrong total is actually read.
+// incomplete. It lives here rather than on AiUsage because that struct is
+// pinned by 112 recorded cases.
 type AiHistory struct {
-	Columns [][]HeatCell   `json:"columns"`
-	Months  []HeatMonth    `json:"months"`
-	Agents  []HistoryAgent `json:"agents"`
-	Tokens  string         `json:"tokens"`
-	Cost    string         `json:"cost"`
-	Range   string         `json:"range"`
-	Days    int            `json:"days"`
-	Status  string         `json:"status"`
-	Warning string         `json:"warning"`
+	Columns [][]HeatCell `json:"columns"`
+	Months  []HeatMonth  `json:"months"`
+	Period  AiPeriod     `json:"period"`
+	Days    int          `json:"days"`
+	Status  string       `json:"status"`
+	Warning string       `json:"warning"`
 }
 
 // heatCellPitch and heatCellGap mirror .ai-heat-cell's min-width and the grid
 // boxes' :spacing in eww.scss. Duplicated here only to size the month labels;
 // the cells themselves are sized entirely by CSS.
 const (
-	heatCellPitch          = 10 // 8 px cell + 2 px spacing
+	heatCellPitch          = 12 // 10 px cell + 2 px spacing
 	heatCellGap            = 2
 	heatMonthLabelMinWidth = 24
 
@@ -111,10 +114,10 @@ func AiHistoryDefault() AiHistory {
 	return AiHistory{
 		Columns: [][]HeatCell{},
 		Months:  []HeatMonth{},
-		Agents:  []HistoryAgent{},
-		Tokens:  "--",
-		Cost:    "--",
-		Range:   "",
+		Period: AiPeriod{
+			Label: "This year", Range: "", Tokens: "--", Cost: "--",
+			Agents: []PeriodAgent{},
+		},
 		Days:    0,
 		Status:  "waiting",
 		Warning: "",
@@ -215,6 +218,9 @@ func HeatmapFromDays(days []HistoryDay, nowEpoch float64) AiHistory {
 	// the last one and partially filled -- the same as GitHub's trailing edge.
 	start := today.AddDate(0, 0, -int(today.Weekday())-(heatmapWeeks-1)*7)
 
+	// The numbers reach back further than the graph draws; see historyDays.
+	totalsFrom := today.AddDate(0, 0, -historyDays)
+
 	// Days before the first record are not "no usage", they are "not recorded",
 	// and rendering them as an empty well would claim the machine sat idle
 	// through months it was not being watched.
@@ -247,8 +253,15 @@ func HeatmapFromDays(days []HistoryDay, nowEpoch float64) AiHistory {
 
 	history.Columns = columns
 	history.Months = monthRow(monthLabels, monthSpans)
-	history.Agents = historyAgents(days, start, today)
-	history.Tokens, history.Cost, history.Days, history.Range = historyTotals(days, start, today)
+	tokens, cost, count, label, rawTotal := historyTotals(days, totalsFrom, today)
+	history.Days = count
+	history.Period = AiPeriod{
+		Label:  "This year",
+		Range:  label,
+		Tokens: tokens,
+		Cost:   cost,
+		Agents: historyAgents(days, totalsFrom, today, rawTotal),
+	}
 	history.Status = "live"
 	return history
 }
@@ -314,21 +327,21 @@ func monthRow(labels []string, spans []int) []HeatMonth {
 // printed beside them. An earlier version summed the whole store here while the
 // total covered one year, which made the two disagree on any machine with more
 // than a year of history.
-func historyAgents(days []HistoryDay, start, today time.Time) []HistoryAgent {
+func historyAgents(days []HistoryDay, start, today time.Time, total float64) []PeriodAgent {
 	from, to := start.Format("2006-01-02"), today.Format("2006-01-02")
 
-	type total struct {
+	type sums struct {
 		tokens float64
 		cost   float64
 	}
-	totals := map[string]*total{}
+	totals := map[string]*sums{}
 	for _, day := range days {
 		if day.Date < from || day.Date > to {
 			continue
 		}
 		for _, agent := range day.Agents {
 			if totals[agent.Agent] == nil {
-				totals[agent.Agent] = &total{}
+				totals[agent.Agent] = &sums{}
 			}
 			totals[agent.Agent].tokens += agent.Tokens
 			totals[agent.Agent].cost += agent.Cost
@@ -370,7 +383,7 @@ func historyAgents(days []HistoryDay, start, today time.Time) []HistoryAgent {
 		})
 	}
 
-	agents := make([]HistoryAgent, 0, len(rows))
+	agents := make([]PeriodAgent, 0, len(rows))
 	for _, r := range rows {
 		name := AgentDisplayName(r.key)
 		key := r.key
@@ -379,11 +392,12 @@ func historyAgents(days []HistoryDay, start, today time.Time) []HistoryAgent {
 			// AgentDisplayName would title-case it into "+2 More".
 			name, key = r.key, "more"
 		}
-		agents = append(agents, HistoryAgent{
-			Key:    key,
-			Name:   name,
-			Tokens: FormatTokens(r.tokens),
-			Cost:   FormatCost(r.cost),
+		agents = append(agents, PeriodAgent{
+			Key:     key,
+			Name:    name,
+			Tokens:  FormatTokens(r.tokens),
+			Cost:    FormatCost(r.cost),
+			Percent: PercentPart(r.tokens, total),
 		})
 	}
 	return agents
@@ -394,7 +408,7 @@ func historyAgents(days []HistoryDay, start, today time.Time) []HistoryAgent {
 // Scoped to the rendered window rather than the whole store on purpose: the
 // footer sits directly under the grid, and a total covering days the grid does
 // not draw would not add up to what is on screen.
-func historyTotals(days []HistoryDay, start, today time.Time) (tokens, cost string, count int, label string) {
+func historyTotals(days []HistoryDay, start, today time.Time) (tokens, cost string, count int, label string, rawTokens float64) {
 	from := start.Format("2006-01-02")
 	to := today.Format("2006-01-02")
 
@@ -420,5 +434,5 @@ func historyTotals(days []HistoryDay, start, today time.Time) (tokens, cost stri
 			label = parsed.Format("2 Jan 2006") + " – " + today.Format("2 Jan 2006")
 		}
 	}
-	return FormatTokens(sumTokens), FormatCost(sumCost), count, label
+	return FormatTokens(sumTokens), FormatCost(sumCost), count, label, sumTokens
 }

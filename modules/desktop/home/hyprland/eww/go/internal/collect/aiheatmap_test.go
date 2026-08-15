@@ -11,11 +11,15 @@ import (
 // cells that would make the counts below ambiguous.
 const heatNow = 1786795200 // 2026-08-15 12:00:00 UTC
 
-// heatDays is a year of usage with a known first record and a known shape.
+// heatDays is a run of usage with a known first record and a known shape.
+//
+// It starts 2026-03-01, a fortnight after the 26-week grid's left edge of
+// 2026-02-15, so the first column is still entirely before any record and the
+// blank-versus-idle distinction stays testable.
 func heatDays() []HistoryDay {
 	days := []HistoryDay{}
-	start := time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)
-	for i := range 200 {
+	start := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	for i := range 165 {
 		date := start.AddDate(0, 0, i)
 		tokens := float64((i%10)+1) * 1_000_000
 		if i%7 == 0 {
@@ -95,7 +99,7 @@ func TestDaysOutsideTheRecordedRangeAreBlank(t *testing.T) {
 
 	history := HeatmapFromDays(heatDays(), heatNow)
 
-	// The grid starts 2025-08-17; the first record is 2025-12-01. Column 0 is
+	// The grid starts 2026-02-15; the first record is 2026-03-01. Column 0 is
 	// therefore entirely before any data.
 	for i, cell := range history.Columns[0] {
 		if cell.Class != "blank" {
@@ -163,12 +167,12 @@ func TestAgentRowsReconcileWithTheStatedTotal(t *testing.T) {
 	// One agent holding every day's tokens, so the sum is checkable exactly.
 	history := HeatmapFromDays(heatDays(), heatNow)
 
-	if len(history.Agents) != 1 {
-		t.Fatalf("agents = %v, want one", history.Agents)
+	if len(history.Period.Agents) != 1 {
+		t.Fatalf("agents = %v, want one", history.Period.Agents)
 	}
-	if history.Agents[0].Tokens != history.Tokens {
+	if history.Period.Agents[0].Tokens != history.Period.Tokens {
 		t.Errorf("the only agent shows %s but the total says %s",
-			history.Agents[0].Tokens, history.Tokens)
+			history.Period.Agents[0].Tokens, history.Period.Tokens)
 	}
 }
 
@@ -192,12 +196,12 @@ func TestAgentRowsBeyondTheFifthFoldIntoOneVisibleRow(t *testing.T) {
 
 	history := HeatmapFromDays(days, heatNow)
 
-	if len(history.Agents) != maxHistoryAgentRows {
+	if len(history.Period.Agents) != maxHistoryAgentRows {
 		t.Fatalf("rendered %d rows, want %d: %v",
-			len(history.Agents), maxHistoryAgentRows, history.Agents)
+			len(history.Period.Agents), maxHistoryAgentRows, history.Period.Agents)
 	}
 
-	last := history.Agents[len(history.Agents)-1]
+	last := history.Period.Agents[len(history.Period.Agents)-1]
 	if last.Name != "+3 more" {
 		t.Errorf("last row = %q, want %q", last.Name, "+3 more")
 	}
@@ -229,12 +233,12 @@ func TestExactlyFiveAgentsAllRender(t *testing.T) {
 
 	history := HeatmapFromDays(days, heatNow)
 
-	if len(history.Agents) != 5 {
-		t.Fatalf("rendered %d rows, want 5", len(history.Agents))
+	if len(history.Period.Agents) != 5 {
+		t.Fatalf("rendered %d rows, want 5", len(history.Period.Agents))
 	}
-	for _, agent := range history.Agents {
+	for _, agent := range history.Period.Agents {
 		if agent.Key == "more" {
-			t.Errorf("five agents folded when they all fit: %v", history.Agents)
+			t.Errorf("five agents folded when they all fit: %v", history.Period.Agents)
 		}
 	}
 }
@@ -249,8 +253,8 @@ func TestEmptyHistoryYieldsTheDefaultGrid(t *testing.T) {
 	if history.Status != "waiting" {
 		t.Errorf("status = %q, want waiting", history.Status)
 	}
-	if history.Tokens != "--" {
-		t.Errorf("tokens = %q, want --", history.Tokens)
+	if history.Period.Tokens != "--" {
+		t.Errorf("tokens = %q, want --", history.Period.Tokens)
 	}
 }
 

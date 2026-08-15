@@ -35,7 +35,7 @@
 ; not see this defvar, so nothing but the eye catches drift:
 ;
 ;   go run ./internal/collect/diffgen <<< '{"fn":"AiHistoryDefault","args":[]}'
-(defvar ai_history '{"columns":[],"months":[],"agents":[],"tokens":"--","cost":"--","range":"","days":0,"status":"waiting","warning":""}')
+(defvar ai_history '{"columns":[],"months":[],"period":{"label":"This year","range":"","tokens":"--","cost":"--","agents":[]},"days":0,"status":"waiting","warning":""}')
 
 (defvar show_date false)
 (defvar show_quota_left false)
@@ -588,12 +588,27 @@
   :geometry (geometry
     :x "12px"
     :y "50px"
-    ;; Sized by the History tab, which is the only content here with a hard
-    ;; horizontal requirement: 53 week-columns. At the old 380px the columns
-    ;; came out at a 5px pitch, which stops reading as discrete days and turns
-    ;; the year into a smear. 580px buys an 8px cell on a 10px pitch -- close to
-    ;; GitHub's 10px/13px -- and incidentally gives the five tab buttons 109px
-    ;; each instead of 69px.
+    ;; 380px because every other popup in this bar is 280-340 wide, and a popup
+    ;; at 540 reads as a different kind of object from its siblings rather than
+    ;; as one of them. That width buys 26 week-columns at a 10px cell -- GitHub's
+    ;; own cell size -- instead of 53 at 7px.
+    ;;
+    ;; Only the GRAPH is six months. The Year period's numbers still cover a full
+    ;; 365 days; see historyDays in aiheatmap.go.
+    ;;
+    ;; Both numbers are MINIMUMS, not sizes -- GTK will not shrink a window below
+    ;; its content's natural width, so a window is only as small as its widest
+    ;; child lets it be. The header's eyebrow used to be "Subscriptions and local
+    ;; activity", which held this popup at ~480px however small :width was set;
+    ;; it is shorter and truncating now for that reason alone.
+    ;;
+    ;; Height is content-driven in BOTH directions here and 460 is only a floor:
+    ;; measured, Today renders ~470 and Year ~542, because Year lists five agents
+    ;; where Today lists two. Raising this number does not pin it -- 560 was tried
+    ;; and the two periods still came out 36px apart. The popup therefore grows
+    ;; downward a little when the period changes, which is acceptable because the
+    ;; period row sits ABOVE the part that changes and does not move under the
+    ;; pointer. Pinning it would need a CSS min-height on .ai-usage-popup.
     ;;
     ;; 460px tall, not 420: the History summary has to hold a total row, a date
     ;; range, an optional unpriced-models warning and five agent rows above the
@@ -601,7 +616,7 @@
     ;; where it is invisible until hover -- measured, not estimated. The other
     ;; four tabs carry the extra dead space; they are secondary views and the
     ;; popup is still ~12% of a 1920x1200 screen.
-    :width "580px"
+    :width "380px"
     :height "460px"
     :anchor "top right")
   :stacking "fg"
@@ -617,31 +632,29 @@
         (label :text "󰙴"))
       (box :class "ai-usage-title-stack" :orientation "v" :space-evenly false
         (label :class "ai-usage-title" :halign "start" :text "AI usage")
-        (label :class "ai-usage-eyebrow" :halign "start" :text "Subscriptions and local activity"))
+        ;; Shortened AND truncating, because this label was silently setting the
+        ;; window's width. GTK will not shrink a window below its content's
+        ;; natural size, so "Subscriptions and local activity" held the popup at
+        ;; ~480px no matter what :width said -- the geometry was a suggestion the
+        ;; header overruled. Truncate lets the label give way; the shorter text
+        ;; means it never has to.
+        (label :class "ai-usage-eyebrow" :halign "start" :truncate true
+          :text "Quotas and usage"))
       (box :class "ai-usage-header-actions" :orientation "h" :space-evenly false :halign "end" :hexpand true
         (label :class "ai-usage-updated" :text {bar_state.ai_usage.updated != "" ? "Updated ${bar_state.ai_usage.updated}" : "Waiting"})
         (button :class "ai-usage-refresh ${bar_state.ai_usage.meta.refreshing == 'true' ? 'busy' : ''}"
           :onclick "eww-barctl --quiet ai refresh"
           :tooltip {bar_state.ai_usage.meta.refreshing == "true" ? "Refreshing…" : "Refresh usage"}
           (label :text ""))))
-    ;; Grouped, not chronological: the two tabs that aggregate across every
-    ;; provider sit together on the left, then the three per-provider
-    ;; drill-downs. History was appended last when it was added, which left the
-    ;; strip reading total / claude / codex / antigravity / history -- the two
-    ;; overview views separated by the three detail views.
-    ;;
-    ;; Total stays first and stays the default. It answers "what am I spending
-    ;; right now", which is the reason to open a popup from a status bar;
-    ;; History answers "what have I spent", which is a deliberate look back.
+    ;; Four tabs: one aggregate view, then the three per-provider drill-downs.
+    ;; History was briefly a fifth tab of its own; it is now the year grid at the
+    ;; top of this one, with the period row below choosing which slice the
+    ;; numbers describe. Same information, one fewer place to look.
     (box :class "ai-usage-tabs" :orientation "h" :space-evenly true
       (button :class "ai-usage-tab ${ai_usage_tab == 'total' ? 'active' : ''}" :hexpand true
         :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=total"
         :tooltip "Total usage"
         (image :path "${EWW_CONFIG_DIR}/assets/total.svg" :image-width 18 :image-height 18))
-      (button :class "ai-usage-tab ${ai_usage_tab == 'history' ? 'active' : ''}" :hexpand true
-        :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=history"
-        :tooltip "Usage history"
-        (image :path "${EWW_CONFIG_DIR}/assets/history.svg" :image-width 18 :image-height 18))
       (button :class "ai-usage-tab ${ai_usage_tab == 'claude' ? 'active' : ''}" :hexpand true
         :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_tab=claude"
         :tooltip "Claude subscription"
@@ -658,6 +671,7 @@
       :visible {bar_state.ai_usage.meta.refreshing == "true"}
       (box :class "ai-usage-loading-bar" :hexpand true))
     (box :class "ai-usage-total" :orientation "v" :space-evenly false :visible {ai_usage_tab == "total"}
+      (heat_card)
       (box :class "ai-usage-period-tabs" :orientation "h" :space-evenly true
         (button :class "ai-usage-period-tab ${ai_usage_period == 'today' ? 'active' : ''}" :hexpand true
           :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_period=today"
@@ -667,15 +681,21 @@
           (label :text "Week"))
         (button :class "ai-usage-period-tab ${ai_usage_period == 'month' ? 'active' : ''}" :hexpand true
           :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_period=month"
-          (label :text "Month")))
+          (label :text "Month"))
+        ;; The year comes from ai_history rather than bar_state. It is the same
+        ;; AiPeriod shape, but renders through year_panel rather than
+        ;; period_panel: it reaches back far enough to surface every agent ever
+        ;; run, and five agents with a progress bar each is 185px where five
+        ;; compact rows are 90.
+        (button :class "ai-usage-period-tab ${ai_usage_period == 'year' ? 'active' : ''}" :hexpand true
+          :onclick "eww --config '${EWW_CONFIG_DIR}' update ai_usage_period=year"
+          (label :text "Year")))
       (period_panel :period {bar_state.ai_usage.periods.today} :key "today")
       (period_panel :period {bar_state.ai_usage.periods.week} :key "week")
-      (period_panel :period {bar_state.ai_usage.periods.month} :key "month"))
-    (ai_history_panel)
-    ;; Gated on the provider tabs by name rather than on `!= "total"`. The
-    ;; negative form was correct while every non-total tab was a provider, but
-    ;; it also matches "history", where the scroll would contribute an empty
-    ;; vexpand'd band that pushes the grid up the panel.
+      (period_panel :period {bar_state.ai_usage.periods.month} :key "month")
+      (year_panel))
+    ;; Gated on the provider tabs by name rather than on `!= "total"`, so the
+    ;; vexpand'd scroll contributes no empty band on the aggregate tab.
     (scroll :class "ai-usage-scroll" :vscroll true :hscroll false :vexpand true
       :visible {ai_usage_tab == "claude" || ai_usage_tab == "codex" || ai_usage_tab == "antigravity"}
       (box :class "ai-usage-content" :orientation "v" :space-evenly false
@@ -711,45 +731,33 @@
 ;; Cell colour comes from a CSS class, never from :style -- eww compiles a
 ;; :style prop with a full SCSS pass per widget per update, which would be 371
 ;; compiles on every refresh.
-(defwidget ai_history_panel []
-  (box :class "ai-usage-history" :orientation "v" :space-evenly false :vexpand true
-    :visible {ai_usage_tab == "history"}
-    (box :class "ai-heat-card" :orientation "v" :space-evenly false
-      (box :class "ai-heat-months" :orientation "h" :space-evenly false :halign "center"
-        (for month in {ai_history.months}
-          (label :class "ai-heat-month" :halign "start" :width {month.width} :text {month.label})))
-      (box :class "ai-heat-grid" :orientation "h" :space-evenly false :spacing 2 :halign "center"
-        (for column in {ai_history.columns}
-          (box :class "ai-heat-col" :orientation "v" :space-evenly false :spacing 2
-            (for cell in {column}
-              (box :class "ai-heat-cell ${cell.class}" :tooltip {cell.tooltip})))))
-      (box :class "ai-heat-legend" :orientation "h" :space-evenly false
-        (label :class "ai-heat-legend-text" :text {ai_history.days > 0 ? "${ai_history.days} active days" : "No recorded usage yet"})
-        (box :orientation "h" :space-evenly false :halign "end" :hexpand true :spacing 1
-          (label :class "ai-heat-legend-text" :text "Less")
-          (box :class "ai-heat-cell")
-          (box :class "ai-heat-cell level-1")
-          (box :class "ai-heat-cell level-2")
-          (box :class "ai-heat-cell level-3")
-          (box :class "ai-heat-cell level-4")
-          (label :class "ai-heat-legend-text" :text "More"))))
-    (scroll :class "ai-heat-summary-scroll" :vscroll true :hscroll false :vexpand true
-      (box :class "ai-heat-summary" :orientation "v" :space-evenly false
-        (box :class "ai-heat-total-row" :orientation "h" :space-evenly false
-          (label :class "ai-heat-total-tokens" :text {ai_history.tokens})
-          (label :class "ai-heat-total-cost" :halign "end" :hexpand true :text {ai_history.cost}))
-        (label :class "ai-heat-range" :halign "start" :visible {ai_history.range != ""} :text {ai_history.range})
-        ;; The only place the panel can admit its costs are short. ccusage prices
-        ;; a model it does not know at exactly zero and says nothing about it in
-        ;; --json mode, which is how $616 of spend read as free for weeks.
-        (label :class "ai-heat-warning" :halign "start" :wrap true
-          :visible {ai_history.warning != ""} :text {ai_history.warning})
-        (for agent in {ai_history.agents}
-          (box :class "ai-heat-agent-row" :orientation "h" :space-evenly false
-            (label :class "ai-heat-agent-dot ${agent.key}" :text "●")
-            (label :class "ai-heat-agent-name" :text {agent.name})
-            (label :class "ai-heat-agent-tokens" :halign "end" :hexpand true :text {agent.tokens})
-            (label :class "ai-heat-agent-cost" :text {agent.cost})))))))
+(defwidget heat_card []
+  (box :class "ai-heat-card" :orientation "v" :space-evenly false
+    (box :class "ai-heat-months" :orientation "h" :space-evenly false :halign "center"
+      (for month in {ai_history.months}
+        (label :class "ai-heat-month" :halign "start" :width {month.width} :text {month.label})))
+    (box :class "ai-heat-grid" :orientation "h" :space-evenly false :spacing 2 :halign "center"
+      (for column in {ai_history.columns}
+        (box :class "ai-heat-col" :orientation "v" :space-evenly false :spacing 2
+          (for cell in {column}
+            (box :class "ai-heat-cell ${cell.class}" :tooltip {cell.tooltip})))))
+    (box :class "ai-heat-legend" :orientation "h" :space-evenly false
+      (label :class "ai-heat-legend-text" :text {ai_history.days > 0 ? "${ai_history.days} active days" : "No recorded usage yet"})
+      (box :orientation "h" :space-evenly false :halign "end" :hexpand true :spacing 1
+        (label :class "ai-heat-legend-text" :text "Less")
+        (box :class "ai-heat-cell")
+        (box :class "ai-heat-cell level-1")
+        (box :class "ai-heat-cell level-2")
+        (box :class "ai-heat-cell level-3")
+        (box :class "ai-heat-cell level-4")
+        (label :class "ai-heat-legend-text" :text "More")))
+    ;; The only place the panel can admit its costs are short, and it sits with
+    ;; the graph rather than in a period because it is true of every period:
+    ;; ccusage prices a model it does not know at exactly zero and says nothing
+    ;; about it in --json mode, which is how $616 of spend read as free for
+    ;; weeks.
+    (label :class "ai-heat-warning" :halign "start" :wrap true
+      :visible {ai_history.warning != ""} :text {ai_history.warning})))
 
 (defwidget quota_card [quota]
   (box :class "ai-provider-section ${quota.key} ${quota.class}" :orientation "v" :space-evenly false
@@ -813,6 +821,31 @@
           :text {bar_state.ai_usage.meta.refreshing == "true" ? "Loading…" : "No local activity"}))
       (for agent in {period.agents}
         (agent_row :agent agent)))))
+
+;; The year's own panel. Same data shape as period_panel, deliberately denser:
+;; the longer window surfaces more agents, and at five rows the per-agent bars
+;; overflow the popup. The bars are kept for today/week/month, where two or
+;; three rows is the norm.
+(defwidget year_panel []
+  (box :class "ai-usage-period ai-year" :orientation "v" :space-evenly false
+    :visible {ai_usage_period == "year"}
+    (box :class "ai-usage-summary-row" :orientation "h" :space-evenly false
+      (box :class "ai-usage-summary-title" :orientation "v" :space-evenly false
+        (label :class "ai-usage-summary-label" :halign "start" :text {ai_history.period.label})
+        (label :class "ai-usage-summary-source" :halign "start"
+          :text {ai_history.period.range != "" ? ai_history.period.range : "Local token activity"}))
+      (box :class "ai-usage-summary-total" :orientation "v" :space-evenly false :halign "end" :hexpand true
+        (label :class "ai-usage-summary-value" :halign "end" :text {ai_history.period.tokens})
+        (label :class "ai-usage-summary-cost" :halign "end" :text {ai_history.period.cost})))
+    (box :class "ai-year-agents" :orientation "v" :space-evenly false
+      (label :class "ai-quota-empty-text" :halign "start"
+        :visible {arraylength(ai_history.period.agents) == 0} :text "No recorded usage yet")
+      (for agent in {ai_history.period.agents}
+        (box :class "ai-year-row ${agent.key}" :orientation "h" :space-evenly false
+          (label :class "ai-usage-agent-dot ${agent.key}" :text "●")
+          (label :class "ai-usage-agent-name" :text {agent.name})
+          (label :class "ai-year-tokens" :halign "end" :hexpand true :text {agent.tokens})
+          (label :class "ai-year-cost" :text {agent.cost}))))))
 
 (defwidget agent_row [agent]
   (box :class "ai-usage-agent ${agent.key}" :orientation "v" :space-evenly false

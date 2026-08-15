@@ -543,6 +543,29 @@ tooltip label {
 
 .ai-usage-eyebrow,
 .ai-usage-updated,
+/* The year's compact rows. period_panel's agent rows carry a progress bar each,
+   which is right for the two or three agents a day or a week usually shows and
+   overflows the popup at the five a year surfaces. */
+.ai-year-agents {
+  margin-top: 9px;
+}
+
+.ai-year-row {
+  margin-top: 4px;
+}
+
+.ai-year-tokens {
+  color: $text;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ai-year-cost {
+  color: $overlay1;
+  font-size: 10px;
+  margin-left: 8px;
+}
+
 .ai-usage-footer {
   color: $overlay1;
   font-size: 10px;
@@ -623,14 +646,12 @@ tooltip label {
   margin-right: 3px;
 }
 
-.ai-usage-scroll scrollbar,
-.ai-heat-summary-scroll scrollbar {
+.ai-usage-scroll scrollbar {
   background: transparent;
   min-width: 5px;
 }
 
-.ai-usage-scroll scrollbar slider,
-.ai-heat-summary-scroll scrollbar slider {
+.ai-usage-scroll scrollbar slider {
   background: rgba(127, 132, 156, 0.34);
   border-radius: 999px;
   min-width: 3px;
@@ -976,6 +997,15 @@ tooltip label {
 .ai-usage-agent.codex .ai-usage-agent-bar trough progress { background: $green; }
 .ai-usage-agent.gemini .ai-usage-agent-dot { color: $blue; }
 .ai-usage-agent.gemini .ai-usage-agent-bar trough progress { background: $blue; }
+/* The Year period reaches further back than today/week/month usually do, so it
+   surfaces agents the shorter periods rarely show. Without these they fall
+   through to the neutral $overlay1 and two different tools read as the same
+   one. `more` is the folded "+N more" row and keeps the neutral colour on
+   purpose: it is an aggregate, not an agent. */
+.ai-usage-agent.opencode .ai-usage-agent-dot { color: $peach; }
+.ai-usage-agent.opencode .ai-usage-agent-bar trough progress { background: $peach; }
+.ai-usage-agent.pi .ai-usage-agent-dot { color: $teal; }
+.ai-usage-agent.pi .ai-usage-agent-bar trough progress { background: $teal; }
 
 /* --- History tab: the contribution grid --- */
 
@@ -985,7 +1015,7 @@ tooltip label {
 .ai-heat-card {
   background: rgba(30, 30, 46, 0.74);
   border-radius: 8px;
-  margin: 12px 14px 0;
+  margin: 10px 14px 0;
   /* 11px, not 8px, so the card's content box is EXACTLY the grid's 528px:
      578 inner - 28 margin - 22 padding = 528. With any slack the centred grid
      floats a pixel or three off the month labels and the summary below, and the
@@ -993,11 +1023,11 @@ tooltip label {
   padding: 9px 11px 8px;
 }
 
-/* 8px cell on a 10px pitch, which is what set the popup's 580px width rather
-   than the other way round: after the 1px glass border, this block's 14px
-   margins and its 8px padding, 534px is usable, and 53 columns need
-   53*8 + 52*2 = 528px. GitHub runs 10px on 13px; an earlier 5px/6px pass fitted
-   the old 380px window and read as a smear rather than as discrete days.
+/* 10px cell on a 12px pitch -- GitHub's own cell size. The popup is 380px wide
+   to stay in the same class as its 280-340px siblings, which after the 1px glass
+   border, this block's 14px margins and its 11px padding leaves 328px usable;
+   26 columns need 26*10 + 25*2 = 310px. Fitting 53 columns instead would have
+   forced either a 540px window or a 7px cell.
    min-width AND min-height are both required because the stylesheet opens with
    `* { all: unset }` and an unsized box collapses.
 
@@ -1007,8 +1037,8 @@ tooltip label {
 .ai-heat-cell {
   background: rgba(69, 71, 90, 0.46);
   border-radius: 2px;
-  min-height: 8px;
-  min-width: 8px;
+  min-height: 10px;
+  min-width: 10px;
 }
 
 /* Sapphire, single hue, because this encodes VOLUME and the popup's other
@@ -1055,36 +1085,6 @@ tooltip label {
   margin: 0 4px;
 }
 
-.ai-heat-summary-scroll {
-  min-height: 0;
-}
-
-.ai-heat-summary {
-  /* 25px = the card's 14px margin + its 11px padding, so the total and the
-     agent rows start on the grid's first column and end on its last.
-     The vertical padding is 6px, not 8: at 420px the panel's natural height
-     with five agents came out ~2px over the window, and the scroll below
-     clipped the last row rather than growing. */
-  padding: 6px 25px;
-}
-
-.ai-heat-total-tokens {
-  color: $text;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.ai-heat-total-cost {
-  color: $sapphire;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.ai-heat-range {
-  color: $overlay1;
-  font-size: 10px;
-}
-
 /* Yellow, the panel's existing "high but not broken" colour, rather than red:
    the costs shown are real, just incomplete, and $red already means a blown
    quota everywhere else in this popup. */
@@ -1094,41 +1094,6 @@ tooltip label {
   margin-top: 3px;
 }
 
-.ai-heat-agent-row {
-  margin-top: 3px;
-}
-
-.ai-heat-agent-dot {
-  color: $overlay1;
-  font-size: 8px;
-  margin-right: 6px;
-}
-
-.ai-heat-agent-name {
-  color: $subtext0;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.ai-heat-agent-tokens {
-  color: $text;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.ai-heat-agent-cost {
-  color: $overlay1;
-  font-size: 10px;
-  margin-left: 8px;
-}
-
-/* Same hue per agent as the Total tab's rows, so an agent keeps one colour
-   across the popup. opencode and pi have no row there and are assigned here. */
-.ai-heat-agent-dot.claude { color: $mauve; }
-.ai-heat-agent-dot.codex { color: $green; }
-.ai-heat-agent-dot.gemini { color: $blue; }
-.ai-heat-agent-dot.opencode { color: $peach; }
-.ai-heat-agent-dot.pi { color: $teal; }
 
 .ai-usage-footer {
   border-top: 1px solid rgba(205, 214, 244, 0.07);

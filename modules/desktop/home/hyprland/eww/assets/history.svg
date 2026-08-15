@@ -1,8 +1,0 @@
-<!-- Sapphire, matching total.svg: the two tabs that aggregate across providers
-     take the popup's own accent, while claude/codex/antigravity carry their
-     vendor colours. A 4x3 grid of cells rather than a clock face, so the icon
-     names what the tab actually shows. Squares are 4.5 on a 6.5 pitch, sized to
-     fill the 24 viewBox exactly and stay legible at the 15px the tab renders. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#74c7ec">
-  <path d="M0 3.25h4.5v4.5H0zM6.5 3.25h4.5v4.5H6.5zM13 3.25h4.5v4.5H13zM19.5 3.25H24v4.5h-4.5zM0 9.75h4.5v4.5H0zM6.5 9.75h4.5v4.5H6.5zM13 9.75h4.5v4.5H13zM19.5 9.75H24v4.5h-4.5zM0 16.25h4.5v4.5H0zM6.5 16.25h4.5v4.5H6.5zM13 16.25h4.5v4.5H13zM19.5 16.25H24v4.5h-4.5z"/>
-</svg>

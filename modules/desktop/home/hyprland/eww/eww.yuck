@@ -27,7 +27,15 @@
 ; therefore destroy and recreate 371 cells, 53 columns and all their scopes
 ; every time the CPU collector ticks, which is every 7 seconds. Read from its
 ; own variable it rebuilds only when the history itself changes.
-(defvar ai_history '{"columns":[],"months":[],"agents":[],"tokens":"--","cost":"--","range":"","days":0,"status":"waiting"}')
+;
+; Keep this literal in step with collect.AiHistoryDefault(). A key missing here
+; reads as `null` in simplexpr rather than as absent, so `warning != ""` was
+; true before the first push and the panel rendered the literal text "null" in
+; the warning's yellow. The line-1 check in tests/nix/check_yuck_initial.py does
+; not see this defvar, so nothing but the eye catches drift:
+;
+;   go run ./internal/collect/diffgen <<< '{"fn":"AiHistoryDefault","args":[]}'
+(defvar ai_history '{"columns":[],"months":[],"agents":[],"tokens":"--","cost":"--","range":"","days":0,"status":"waiting","warning":""}')
 
 (defvar show_date false)
 (defvar show_quota_left false)
@@ -585,10 +593,16 @@
     ;; came out at a 5px pitch, which stops reading as discrete days and turns
     ;; the year into a smear. 580px buys an 8px cell on a 10px pitch -- close to
     ;; GitHub's 10px/13px -- and incidentally gives the five tab buttons 109px
-    ;; each instead of 69px. The extra height keeps the five agent rows clear of
-    ;; the footer now that the grid is 68px tall rather than 41px.
+    ;; each instead of 69px.
+    ;;
+    ;; 460px tall, not 420: the History summary has to hold a total row, a date
+    ;; range, an optional unpriced-models warning and five agent rows above the
+    ;; footer. At 420 the warning displaced the last agent row into the scroll,
+    ;; where it is invisible until hover -- measured, not estimated. The other
+    ;; four tabs carry the extra dead space; they are secondary views and the
+    ;; popup is still ~12% of a 1920x1200 screen.
     :width "580px"
-    :height "420px"
+    :height "460px"
     :anchor "top right")
   :stacking "fg"
   :exclusive false
@@ -689,7 +703,7 @@
 ;; :style prop with a full SCSS pass per widget per update, which would be 371
 ;; compiles on every refresh.
 (defwidget ai_history_panel []
-  (box :class "ai-usage-history" :orientation "v" :space-evenly false
+  (box :class "ai-usage-history" :orientation "v" :space-evenly false :vexpand true
     :visible {ai_usage_tab == "history"}
     (box :class "ai-heat-card" :orientation "v" :space-evenly false
       (box :class "ai-heat-months" :orientation "h" :space-evenly false :halign "center"
@@ -710,22 +724,23 @@
           (box :class "ai-heat-cell level-3")
           (box :class "ai-heat-cell level-4")
           (label :class "ai-heat-legend-text" :text "More"))))
-    (box :class "ai-heat-summary" :orientation "v" :space-evenly false
-      (box :class "ai-heat-total-row" :orientation "h" :space-evenly false
-        (label :class "ai-heat-total-tokens" :text {ai_history.tokens})
-        (label :class "ai-heat-total-cost" :halign "end" :hexpand true :text {ai_history.cost}))
-      (label :class "ai-heat-range" :halign "start" :visible {ai_history.range != ""} :text {ai_history.range})
-      ;; The only place the panel can admit its costs are short. ccusage prices
-      ;; a model it does not know at exactly zero and says nothing about it in
-      ;; --json mode, which is how $616 of spend read as free for weeks.
-      (label :class "ai-heat-warning" :halign "start" :wrap true
-        :visible {ai_history.warning != ""} :text {ai_history.warning})
-      (for agent in {ai_history.agents}
-        (box :class "ai-heat-agent-row" :orientation "h" :space-evenly false
-          (label :class "ai-heat-agent-dot ${agent.key}" :text "●")
-          (label :class "ai-heat-agent-name" :text {agent.name})
-          (label :class "ai-heat-agent-tokens" :halign "end" :hexpand true :text {agent.tokens})
-          (label :class "ai-heat-agent-cost" :text {agent.cost}))))))
+    (scroll :class "ai-heat-summary-scroll" :vscroll true :hscroll false :vexpand true
+      (box :class "ai-heat-summary" :orientation "v" :space-evenly false
+        (box :class "ai-heat-total-row" :orientation "h" :space-evenly false
+          (label :class "ai-heat-total-tokens" :text {ai_history.tokens})
+          (label :class "ai-heat-total-cost" :halign "end" :hexpand true :text {ai_history.cost}))
+        (label :class "ai-heat-range" :halign "start" :visible {ai_history.range != ""} :text {ai_history.range})
+        ;; The only place the panel can admit its costs are short. ccusage prices
+        ;; a model it does not know at exactly zero and says nothing about it in
+        ;; --json mode, which is how $616 of spend read as free for weeks.
+        (label :class "ai-heat-warning" :halign "start" :wrap true
+          :visible {ai_history.warning != ""} :text {ai_history.warning})
+        (for agent in {ai_history.agents}
+          (box :class "ai-heat-agent-row" :orientation "h" :space-evenly false
+            (label :class "ai-heat-agent-dot ${agent.key}" :text "●")
+            (label :class "ai-heat-agent-name" :text {agent.name})
+            (label :class "ai-heat-agent-tokens" :halign "end" :hexpand true :text {agent.tokens})
+            (label :class "ai-heat-agent-cost" :text {agent.cost})))))))
 
 (defwidget quota_card [quota]
   (box :class "ai-provider-section ${quota.key} ${quota.class}" :orientation "v" :space-evenly false

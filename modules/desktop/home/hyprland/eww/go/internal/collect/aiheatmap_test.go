@@ -53,6 +53,23 @@ func TestMonthLabelsSpanExactlyTheGridWidth(t *testing.T) {
 	}
 }
 
+func TestNarrowTrailingMonthLabelIsBlankWithoutLosingWidth(t *testing.T) {
+	months := monthRow([]string{"Jul", "Aug"}, []int{51, 2})
+
+	if months[1].Label != "" {
+		t.Errorf("trailing label = %q, want blank", months[1].Label)
+	}
+
+	var width int
+	for _, month := range months {
+		width += month.Width
+	}
+	want := 53*heatCellPitch - heatCellGap
+	if width != want {
+		t.Errorf("month row is %d px after blanking trailing label, want %d px", width, want)
+	}
+}
+
 // eww's nested `for` reads the outer binding directly, so every column must be a
 // full seven-cell array. A short column would silently render a stubby week.
 func TestGridIsAlwaysFullyRectangular(t *testing.T) {
@@ -152,6 +169,73 @@ func TestAgentRowsReconcileWithTheStatedTotal(t *testing.T) {
 	if history.Agents[0].Tokens != history.Tokens {
 		t.Errorf("the only agent shows %s but the total says %s",
 			history.Agents[0].Tokens, history.Tokens)
+	}
+}
+
+// The summary lives inside a scroll, so rows past the fifth are simply off
+// screen with no scrollbar visible until hover. Dropping them silently is the
+// exact failure the list exists to prevent: these rows are what explain the
+// total printed above them, and seven agents rendering as five made the panel
+// quietly disagree with itself.
+func TestAgentRowsBeyondTheFifthFoldIntoOneVisibleRow(t *testing.T) {
+	pinClock(t, heatNow)
+
+	days := []HistoryDay{{Date: "2026-08-14", Tokens: 280, Cost: 28, Agents: []HistoryAgentDay{
+		{Agent: "claude", Tokens: 100, Cost: 10},
+		{Agent: "codex", Tokens: 60, Cost: 6},
+		{Agent: "gemini", Tokens: 50, Cost: 5},
+		{Agent: "opencode", Tokens: 40, Cost: 4},
+		{Agent: "pi", Tokens: 20, Cost: 2},
+		{Agent: "kimi", Tokens: 7, Cost: 0.7},
+		{Agent: "droid", Tokens: 3, Cost: 0.3},
+	}}}
+
+	history := HeatmapFromDays(days, heatNow)
+
+	if len(history.Agents) != maxHistoryAgentRows {
+		t.Fatalf("rendered %d rows, want %d: %v",
+			len(history.Agents), maxHistoryAgentRows, history.Agents)
+	}
+
+	last := history.Agents[len(history.Agents)-1]
+	if last.Name != "+3 more" {
+		t.Errorf("last row = %q, want %q", last.Name, "+3 more")
+	}
+	// 20 + 7 + 3: the fold has to carry the tail's numbers, or the rows stop
+	// adding up to the total beside them.
+	if last.Tokens != FormatTokens(30) {
+		t.Errorf("folded tokens = %q, want %q", last.Tokens, FormatTokens(30))
+	}
+	if last.Cost != FormatCost(3) {
+		t.Errorf("folded cost = %q, want %q", last.Cost, FormatCost(3))
+	}
+	// A provider dot colour on an aggregate row would claim it is one agent.
+	if last.Key == "pi" || last.Key == "kimi" || last.Key == "droid" {
+		t.Errorf("folded row kept an agent key %q", last.Key)
+	}
+}
+
+// Exactly at the cap, nothing folds.
+func TestExactlyFiveAgentsAllRender(t *testing.T) {
+	pinClock(t, heatNow)
+
+	days := []HistoryDay{{Date: "2026-08-14", Tokens: 150, Cost: 15, Agents: []HistoryAgentDay{
+		{Agent: "claude", Tokens: 50, Cost: 5},
+		{Agent: "codex", Tokens: 40, Cost: 4},
+		{Agent: "gemini", Tokens: 30, Cost: 3},
+		{Agent: "opencode", Tokens: 20, Cost: 2},
+		{Agent: "pi", Tokens: 10, Cost: 1},
+	}}}
+
+	history := HeatmapFromDays(days, heatNow)
+
+	if len(history.Agents) != 5 {
+		t.Fatalf("rendered %d rows, want 5", len(history.Agents))
+	}
+	for _, agent := range history.Agents {
+		if agent.Key == "more" {
+			t.Errorf("five agents folded when they all fit: %v", history.Agents)
+		}
 	}
 }
 

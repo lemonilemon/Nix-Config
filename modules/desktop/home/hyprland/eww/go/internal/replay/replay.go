@@ -475,6 +475,17 @@ func Answer(c Call) (any, error) {
 		// encoder chain has to reproduce.
 		return state.New().Snapshot()
 
+	case "AiHistoryDefault":
+		// The ai_history defvar's default, so drift between it and the literal
+		// in eww.yuck can be checked by hand. It is NOT covered by
+		// check_yuck_initial.py, which reads only line 1 of the file -- and a
+		// key missing from that literal renders as the text "null" rather than
+		// as absent, which is how the warning label once shipped saying "null".
+		//
+		// Not in the golden recording, and safe to add: TestGoldenReplay
+		// iterates the recorded cases, so a new fn here is never invoked by it.
+		return collect.AiHistoryDefault(), nil
+
 	case "CPUStateFromSamples":
 		var first, second string
 		if err := args(c, &first, &second); err != nil {

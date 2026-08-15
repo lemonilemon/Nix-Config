@@ -3,6 +3,7 @@ package collect
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -89,8 +90,15 @@ type AiHistory struct {
 // boxes' :spacing in eww.scss. Duplicated here only to size the month labels;
 // the cells themselves are sized entirely by CSS.
 const (
-	heatCellPitch = 10 // 8 px cell + 2 px spacing
-	heatCellGap   = 2
+	heatCellPitch          = 10 // 8 px cell + 2 px spacing
+	heatCellGap            = 2
+	heatMonthLabelMinWidth = 24
+
+	// How many agent rows the summary shows before folding the tail into a
+	// single "+N more". Five is what fits above the footer at the window's
+	// 420px; the scroll around the summary is the safety net for the warning
+	// line, not a place to hide agents.
+	maxHistoryAgentRows = 5
 )
 
 // AiHistoryDefault is the value the ai_history defvar carries before the first
@@ -281,9 +289,10 @@ func heatCell(date, today time.Time, firstRecorded string,
 // grid, and since both are centred the difference split in half and offset
 // every label by 6 px against the days it names.
 //
-// The first label is dropped when its month owns fewer than two columns: a
-// one-column "Jan" at the left edge collides with the next label, and the
-// leading partial month is the least informative one on the row.
+// A one-column leading label and a trailing label with less than 24 px are
+// dropped: edge labels otherwise overflow their allocation and collide with the
+// adjacent month or card edge. Their width is retained so the row stays pinned
+// to the grid exactly.
 func monthRow(labels []string, spans []int) []HeatMonth {
 	months := make([]HeatMonth, 0, len(labels))
 	for i, label := range labels {
@@ -291,7 +300,7 @@ func monthRow(labels []string, spans []int) []HeatMonth {
 		if i == len(labels)-1 {
 			width -= heatCellGap
 		}
-		if i == 0 && spans[i] < 2 {
+		if (i == 0 && spans[i] < 2) || (i == len(labels)-1 && width < heatMonthLabelMinWidth) {
 			label = ""
 		}
 		months = append(months, HeatMonth{Label: label, Width: width})
@@ -326,25 +335,57 @@ func historyAgents(days []HistoryDay, start, today time.Time) []HistoryAgent {
 		}
 	}
 
-	agents := make([]HistoryAgent, 0, len(totals))
+	type row struct {
+		key    string
+		tokens float64
+		cost   float64
+	}
+	rows := make([]row, 0, len(totals))
 	for key, sum := range totals {
-		agents = append(agents, HistoryAgent{
-			Key:    key,
-			Name:   AgentDisplayName(key),
-			Tokens: FormatTokens(sum.tokens),
-			Cost:   FormatCost(sum.cost),
+		rows = append(rows, row{key: key, tokens: sum.tokens, cost: sum.cost})
+	}
+	sort.Slice(rows, func(a, b int) bool {
+		if rows[a].tokens != rows[b].tokens {
+			return rows[a].tokens > rows[b].tokens
+		}
+		return rows[a].key < rows[b].key
+	})
+
+	// Fold the tail into one row once there are more agents than the panel can
+	// show. The summary sits in a scroll, so without this the extra rows are
+	// simply not on screen and nothing says they exist -- which is the failure
+	// this list is supposed to prevent, since the rows are what explain the
+	// total above them. Aggregating keeps them adding up.
+	if len(rows) > maxHistoryAgentRows {
+		var rest row
+		for _, r := range rows[maxHistoryAgentRows-1:] {
+			rest.tokens += r.tokens
+			rest.cost += r.cost
+		}
+		hidden := len(rows) - (maxHistoryAgentRows - 1)
+		rows = append(rows[:maxHistoryAgentRows-1], row{
+			key:    fmt.Sprintf("+%d more", hidden),
+			tokens: rest.tokens,
+			cost:   rest.cost,
 		})
 	}
-	// On the raw totals, not the formatted ones: FormatTokens rounds to one
-	// decimal, so 1_240_000 and 1_249_999 both render "1.2M" and comparing the
-	// strings would order them by text.
-	sort.Slice(agents, func(a, b int) bool {
-		left, right := totals[agents[a].Key].tokens, totals[agents[b].Key].tokens
-		if left != right {
-			return left > right
+
+	agents := make([]HistoryAgent, 0, len(rows))
+	for _, r := range rows {
+		name := AgentDisplayName(r.key)
+		key := r.key
+		if strings.HasPrefix(r.key, "+") {
+			// Not an agent id: it must not pick up a provider dot colour, and
+			// AgentDisplayName would title-case it into "+2 More".
+			name, key = r.key, "more"
 		}
-		return agents[a].Key < agents[b].Key
-	})
+		agents = append(agents, HistoryAgent{
+			Key:    key,
+			Name:   name,
+			Tokens: FormatTokens(r.tokens),
+			Cost:   FormatCost(r.cost),
+		})
+	}
 	return agents
 }
 

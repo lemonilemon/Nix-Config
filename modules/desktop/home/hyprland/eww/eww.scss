@@ -275,8 +275,21 @@ tooltip label {
   color: $subtext0;
 }
 
+/* $surface1 at 0.82, NOT $surface0 at 0.78, and this is the difference between
+   a hover you can see and one you cannot.
+
+   .bar-island:hover fires at the same time and lifts the island to #383449.
+   rgba(49,50,68) is $surface0 = #313244, which composites DARKER than that --
+   the button sank 3.7 levels below the island it sits in, so hovering a module
+   did visibly nothing. $surface1 at 0.82 lands on #434457, +13.7 against the
+   island, matching what .clock:hover achieves with its green tint (+12.7).
+
+   The colour lift is the second signal, the one .workspace:hover has always
+   relied on: its background is inert for exactly the same reason, but its text
+   brightens, which is why the workspaces read as responsive and these did not. */
 .module-button:hover {
-  background: rgba(49, 50, 68, 0.78);
+  background: rgba(69, 71, 90, 0.82);
+  color: $text;
 }
 
 .tray {

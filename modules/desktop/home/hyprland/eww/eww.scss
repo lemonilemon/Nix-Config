@@ -415,6 +415,23 @@ tooltip label {
   color: $green;
 }
 
+/* Same cascade trap as the network states above: each rule here sets a
+   background at the same specificity as .module-button:hover but later in the
+   file, so without these the battery button silently stops responding to the
+   pointer in every state except the plain one -- which is most of the time,
+   since "charging" is a state. Each brightens its own tint. */
+.battery.warning:hover {
+  background: rgba(249, 226, 175, 0.19);
+}
+
+.battery.critical:hover {
+  background: rgba(243, 139, 168, 0.23);
+}
+
+.battery.charging:hover {
+  background: rgba(166, 227, 161, 0.19);
+}
+
 .temperature.critical {
   background: rgba(243, 139, 168, 0.14);
   color: $red;
@@ -423,6 +440,13 @@ tooltip label {
 .memory.critical {
   background: rgba(243, 139, 168, 0.14);
   color: $red;
+}
+
+/* .memory is a module-button, so it needs the pair for the reason the network
+   and battery states do. .temperature.critical above deliberately has none:
+   that one is a plain label, not a button, and never hovers. */
+.memory.critical:hover {
+  background: rgba(243, 139, 168, 0.23);
 }
 
 @keyframes blink {

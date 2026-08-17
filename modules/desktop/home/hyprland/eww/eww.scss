@@ -152,7 +152,7 @@ tooltip label {
 }
 
 .clock:hover {
-  background: rgba(166, 227, 161, 0.10);
+  background: rgba(166, 227, 161, 0.09);
 }
 
 .workspaces {
@@ -210,7 +210,7 @@ tooltip label {
 }
 
 .workspace:hover {
-  background: rgba(49, 50, 68, 0.76);
+  background: rgba(69, 71, 90, 0.58);
   color: $text;
 }
 
@@ -218,6 +218,15 @@ tooltip label {
   background: rgba(49, 50, 68, 0.68);
   color: $green;
   box-shadow: inset 0 -2px 0 rgba(166, 227, 161, 0.86);
+}
+
+/* Without this the ACTIVE dot is the one workspace that never responds to the
+   pointer: .workspace.active sets background and color at the same specificity
+   as .workspace:hover but later in the file, so it wins outright and takes both
+   of that rule's declarations with it. Only the background is restated here, so
+   the green text and the inset accent below still come from the rule above. */
+.workspace.active:hover {
+  background: rgba(69, 71, 90, 0.58);
 }
 
 /* Parked, not deleted: Hyprland 0.56's `hyprctl clients -j` has no urgent key,
@@ -275,20 +284,24 @@ tooltip label {
   color: $subtext0;
 }
 
-/* $surface1 at 0.82, NOT $surface0 at 0.78, and this is the difference between
-   a hover you can see and one you cannot.
+/* EVERY hover on the bar lifts its element by the same +12 levels of brightness
+   over that element's own resting colour. Alphas differ between rules only
+   because the tints differ; the perceived step is identical, which is the whole
+   point -- a mixed set reads as some modules responding more than others.
+   Solve a new one as:  alpha = resting_alpha + 12 / (mean(tint) - mean(island))
+   with the island composited at rgba(17,17,27,0.60) over the wallpaper.
 
-   .bar-island:hover fires at the same time and lifts the island to #383449.
-   rgba(49,50,68) is $surface0 = #313244, which composites DARKER than that --
-   the button sank 3.7 levels below the island it sits in, so hovering a module
-   did visibly nothing. $surface1 at 0.82 lands on #434457, +13.7 against the
-   island, matching what .clock:hover achieves with its green tint (+12.7).
+   The old value here was $surface0 at 0.78, which composited to within 0.07
+   levels of the island: the button painted itself the colour it already was,
+   which is why hovering a module did nothing visible.
 
-   The colour lift is the second signal, the one .workspace:hover has always
-   relied on: its background is inert for exactly the same reason, but its text
-   brightens, which is why the workspaces read as responsive and these did not. */
+   GTK's :hover is not the browser's. It maps to GTK_STATE_FLAG_PRELIGHT on the
+   widget under the pointer, and a GtkBox has no window of its own, so
+   .bar-island:hover does NOT fire when a child button is hovered -- a child's
+   rgba background composites over the island's RESTING colour, never a hovered
+   one. Getting this backwards is what produced the earlier oversized value. */
 .module-button:hover {
-  background: rgba(69, 71, 90, 0.82);
+  background: rgba(69, 71, 90, 0.58);
   color: $text;
 }
 
@@ -305,7 +318,7 @@ tooltip label {
 }
 
 .tray-toggle:hover {
-  background: rgba(49, 50, 68, 0.78);
+  background: rgba(69, 71, 90, 0.58);
   color: $text;
 }
 
@@ -378,7 +391,7 @@ tooltip label {
 }
 
 .network.linked:hover {
-  background: rgba(249, 226, 175, 0.19);
+  background: rgba(249, 226, 175, 0.17);
 }
 
 .network.degraded:hover {
@@ -386,7 +399,7 @@ tooltip label {
 }
 
 .ai-usage.warning:hover {
-  background: rgba(249, 226, 175, 0.19);
+  background: rgba(249, 226, 175, 0.17);
 }
 
 .volume {
@@ -408,7 +421,7 @@ tooltip label {
 }
 
 .power-button:hover {
-  background: rgba(243, 139, 168, 0.14);
+  background: rgba(243, 139, 168, 0.09);
   color: $red;
 }
 
@@ -434,7 +447,7 @@ tooltip label {
    pointer in every state except the plain one -- which is most of the time,
    since "charging" is a state. Each brightens its own tint. */
 .battery.warning:hover {
-  background: rgba(249, 226, 175, 0.19);
+  background: rgba(249, 226, 175, 0.17);
 }
 
 .battery.critical:hover {

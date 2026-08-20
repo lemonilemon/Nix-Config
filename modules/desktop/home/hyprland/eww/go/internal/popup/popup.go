@@ -97,8 +97,17 @@ func popupEwwCalls(command string, args []string, openIDs map[string]bool) ([][]
 			// Was closed: open the backdrop first so the popup stacks above it,
 			// then the popup, both on the clicked screen. (If it was open, the
 			// close above already dismissed it — a toggle-off.)
-			calls = append(calls, []string{"open", backdropWindow, "--screen", screen})
-			calls = append(calls, []string{"open", name, "--screen", screen})
+			//
+			// --no-daemonize for the reason the open-bars script in
+			// eww/default.nix spells out: an `eww open` the daemon is too busy
+			// to answer within ~100 ms otherwise makes the client fork a daemon
+			// of its own, and that daemon's backend opens a second bar. A popup
+			// click during a speed test is exactly the busy moment that does it.
+			// The cost of the flag is that such a click opens nothing instead of
+			// opening a whole second desktop's worth of eww; clicking again
+			// works.
+			calls = append(calls, []string{"--no-daemonize", "open", backdropWindow, "--screen", screen})
+			calls = append(calls, []string{"--no-daemonize", "open", name, "--screen", screen})
 		}
 		return calls, nil
 	}

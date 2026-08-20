@@ -278,7 +278,28 @@ func HyprlandSocketPath() (string, bool) {
 // whether someone else has already opened the window -- the startup script, or
 // eww's own config reload -- because re-opening an open id makes the bar
 // flicker.
+//
+// This is the only place the backend opens or closes a bar window, which is why
+// the ownership guard lives here rather than in ReconcileBarWindows: it covers
+// the reconcile at startup and the live monitoradded/monitorremoved events with
+// one check.
 func ApplyMonitorEvent(ctx context.Context, action, name string) {
+	// A backend whose parent eww is a client rather than a daemon is a rogue
+	// daemon's backend, and the bar windows on this socket are not its to
+	// manage. Opening one is what turns a stray second daemon into a stray
+	// second BAR; closing one would take down a bar belonging to the daemon
+	// that does own the socket. See collect.ParentIsEwwDaemon.
+	//
+	// Logged rather than silent: a bar that never appears after a hotplug is
+	// hard enough to diagnose without the reason being invisible, and this line
+	// lands in the same journal that made the duplicate legible in the first
+	// place.
+	if !collect.ParentIsEwwDaemon() {
+		fmt.Fprintf(os.Stderr, "eww-bar: ignoring monitor %s %s -- this "+
+			"backend's eww parent is a client, not the daemon\n", action, name)
+		return
+	}
+
 	attempts := 1
 	if action == "added" {
 		attempts = 5

@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"ewwbar/internal/collect"
+	"ewwbar/internal/paths"
 	"ewwbar/internal/pyjson"
 	"ewwbar/internal/state"
 )
@@ -58,6 +59,53 @@ func QueueAiRefresh(store *state.Store) bool {
 		collect.RefreshAiUsage(store.Get().AiUsage, func(value collect.AiUsage) {
 			store.Update(func(bar *state.Bar) { bar.AiUsage = value })
 		}, true)
+	}()
+	return true
+}
+
+var speedtestLock sync.Mutex
+var speedtestBusy bool
+
+// QueueSpeedtest starts one measurement, or reports that one is already going.
+//
+// Same drop-don't-queue shape as QueueAiRefresh, for a sharper reason: this
+// moves about 70 MB and saturates the link for nine seconds, so a double-click
+// that queued a second run would spend the data twice and report the first
+// run's numbers measured against the second run's congestion.
+//
+// The publish closure updates only bar.Network.Speed rather than re-running
+// CollectNetwork. That keeps the four state changes of a single run down to no
+// forks at all: the identity and connectivity already in the state are what the
+// card needs, and re-collecting them would fork nmcli four more times to learn
+// what has not changed.
+func QueueSpeedtest(store *state.Store) bool {
+	speedtestLock.Lock()
+	if speedtestBusy {
+		speedtestLock.Unlock()
+		return false
+	}
+	speedtestBusy = true
+	speedtestLock.Unlock()
+
+	go func() {
+		defer func() {
+			speedtestLock.Lock()
+			speedtestBusy = false
+			speedtestLock.Unlock()
+		}()
+
+		collect.RunSpeedtest(func() {
+			store.Update(func(bar *state.Bar) {
+				bar.Network.Speed = collect.SpeedtestCardFor(
+					bar.Network.ConnUUID, bar.Network.Class,
+					bar.Network.Connectivity, 0)
+			})
+		})
+
+		// Persisted here rather than inside RunSpeedtest for the reason
+		// SaveQuotaSnapshot is called from app.go: the collector has no
+		// business knowing a path.
+		_ = collect.SaveSpeedtestRecords(paths.Speedtest())
 	}()
 	return true
 }
@@ -137,12 +185,19 @@ func Handle(store *state.Store, payload map[string]any) (Reply, error) {
 
 	case "network":
 		action := payloadString(payload, "action", "")
-		if action != "wifi-toggle" {
-			return nil, errValue("network action must be wifi-toggle")
+		switch action {
+		case "wifi-toggle":
+			value := collect.ToggleWifi()
+			store.Update(func(bar *state.Bar) { bar.Network = value })
+			return ok("network", pair("action", action), pair("network", value)), nil
+		case "speedtest":
+			status := "already-running"
+			if QueueSpeedtest(store) {
+				status = "started"
+			}
+			return ok("network", pair("action", action), pair("status", status)), nil
 		}
-		value := collect.ToggleWifi()
-		store.Update(func(bar *state.Bar) { bar.Network = value })
-		return ok("network", pair("action", action), pair("network", value)), nil
+		return nil, errValue("network action must be wifi-toggle or speedtest")
 
 	case "idle":
 		action := payloadString(payload, "action", "toggle")

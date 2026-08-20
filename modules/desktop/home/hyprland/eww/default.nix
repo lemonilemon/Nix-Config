@@ -55,6 +55,13 @@ let
       bash
       bluez
       blueman
+      # The network popup's speed test (see internal/collect/speedtest.go).
+      # cfspeedtest rather than speedtest-cli or speedtest-go: both of those
+      # fetch speedtest.net's config endpoint, which now answers an
+      # unauthenticated GET with a Cloudflare bot challenge, so they fail before
+      # transferring a byte. Ookla's own client works and is unfree, needs a
+      # licence acknowledgement on every run and has no binary cache.
+      cfspeedtest
       coreutils
       dbus
       dunst
@@ -96,7 +103,22 @@ let
     # defwindow takes a fixed size, and network_panel has nothing that expands,
     # so a window sized for the Wi-Fi row would leave a dead band inside the
     # card once that row is hidden. The row is ~40px including its margin.
-    networkPopupHeight = if cfg.wifi.enable then "200px" else "160px";
+    #
+    # Still only two values after the speed card, which is the whole reason that
+    # card renders in every state instead of appearing after a run: a
+    # conditional card would have crossed with this and needed four.
+    #
+    # +114px over the original 200/160, measured rather than derived: the same
+    # popup was rendered against a scratch eww daemon with and without the new
+    # content, in a deliberately oversized window, and the footer's baseline
+    # compared. GTK's natural heights do not agree with the arithmetic -- adding
+    # up the min-heights and paddings under-predicted and would have clipped the
+    # footer.
+    #
+    # 86 of it is the speed card and 28 the restrictions line. That line was a
+    # row of SSH/DNS/IPv6 chips first, which cost 69px; folding it into the speed
+    # card as one sentence gave 41px back and removed the legend nobody had.
+    networkPopupHeight = if cfg.wifi.enable then "314px" else "274px";
   };
 
   openBar = pkgs.writeShellScript "eww-open-bar" ''

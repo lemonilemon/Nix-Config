@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -30,20 +31,44 @@ import (
 //	boottime                      CLOCK_BOOTTIME seconds
 //	resolve\x1f<path>              what that path resolves to
 //	env.<NAME>                    an environment variable
+//	dial\x1f<address>              "1" if a TCP connect to it should succeed
+//	lookup\x1f<host>               resolved addresses, one per line
 //
 // A command or file with no key reads as absent, which is what a missing
 // binary or unreadable file produces in production.
 //
-// NOT concurrency-safe, and does not need to be: diffgen answers one call at a
-// time, and nothing in production reassigns these.
+// Installing a fixture is NOT concurrency-safe and does not need to be: diffgen
+// answers one call at a time, and nothing in production reassigns these. The
+// JOURNAL below is a separate matter and is locked, because a collector running
+// under a fixture may now fan out across goroutines.
 func InstallFixture(fixture map[string]string) func() {
 	savedRun, savedRead := RunText, ReadTextFile
 	savedStatus, savedWrite, savedRemove := RunStatus, WriteTextFile, RemoveFile
 	savedHTTP, savedNow := httpGetText, timeNow
 	savedList, savedResolve, savedExists := ListDir, ResolvePath, FileExists
 	savedBoottime := BoottimeSeconds
+	savedDial, savedLookup := DialTCP, LookupHost
 	savedEnv := map[string]*string{}
+	fixtureJournalLock.Lock()
 	fixtureJournal = nil
+	fixtureJournalLock.Unlock()
+
+	// The network seams default to FAILING rather than to succeeding, unlike
+	// RunStatus above. A probe that quietly reached the real internet from `go
+	// test` is exactly what this rail exists to prevent, and "everything is
+	// blocked" is the safe reading of an unconfigured fixture.
+	DialTCP = func(address string, _ time.Duration) bool {
+		record("dial\x1f" + address)
+		return fixture["dial\x1f"+address] == "1"
+	}
+	LookupHost = func(host string) ([]string, error) {
+		record("lookup\x1f" + host)
+		value, ok := fixture["lookup\x1f"+host]
+		if !ok || value == "" {
+			return nil, fixtureError("no such host: " + host)
+		}
+		return SplitLines(value), nil
+	}
 
 	RunText = func(_ time.Duration, name string, argv ...string) string {
 		key := strings.Join(append([]string{name}, argv...), "\x1f")
@@ -141,6 +166,7 @@ func InstallFixture(fixture map[string]string) func() {
 		httpGetText, timeNow = savedHTTP, savedNow
 		ListDir, ResolvePath, FileExists = savedList, savedResolve, savedExists
 		BoottimeSeconds = savedBoottime
+		DialTCP, LookupHost = savedDial, savedLookup
 		for name, previous := range savedEnv {
 			restoreEnv(name, previous)
 		}
@@ -174,14 +200,31 @@ func restoreEnv(name string, previous *string) {
 // content is which hyprctl and systemctl calls it makes and in what order, and
 // a test that only compared the returned Display would pass with the body
 // deleted.
-var fixtureJournal []string
+//
+// Guarded, unlike the seam variables themselves. Installing a fixture is still a
+// single-threaded act, but the collectors running under one are no longer all
+// sequential: ProbeNetPolicy fans out to five goroutines that each hit a seam,
+// and an unlocked append from those raced under -race. The lock covers the
+// journal only -- swapping the seams during a run would still be a mistake.
+var (
+	fixtureJournalLock sync.Mutex
+	fixtureJournal     []string
+)
 
-func record(entry string) { fixtureJournal = append(fixtureJournal, entry) }
+func record(entry string) {
+	fixtureJournalLock.Lock()
+	defer fixtureJournalLock.Unlock()
+	fixtureJournal = append(fixtureJournal, entry)
+}
 
 // FixtureJournal returns the operations recorded since InstallFixture ran.
+//
+// A copy, so a caller reading it while a concurrent collector is still
+// recording cannot observe the slice being reallocated underneath.
 func FixtureJournal() []string {
-	if fixtureJournal == nil {
-		return []string{}
-	}
-	return fixtureJournal
+	fixtureJournalLock.Lock()
+	defer fixtureJournalLock.Unlock()
+	out := make([]string, len(fixtureJournal))
+	copy(out, fixtureJournal)
+	return out
 }

@@ -1,4 +1,4 @@
-(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"","ws2_class":"empty","ws2_text":"","ws3_class":"empty","ws3_text":"","ws4_class":"empty","ws4_text":"","ws5_class":"empty","ws5_text":""},"submap":"","clock":{"time":" --:--","date":" ----","tooltip":""},"media":{"text":"","status":"","icon":"","class":"","tooltip":""},"ai_usage":{"text":"󰙴 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":" --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":" --°C","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false"},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"󰂄","alt":"󰂄","capacity":100,"class":"charging","status":"Unknown","time":"N/A","health":"--","power":"—"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"tray_count":0,"notifications":{"paused":"false","new":0,"count":0,"groups":[]},"wallpaper":{"current":"","count":0,"rows":[]},"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"\uf10c","ws2_class":"empty","ws2_text":"\uf10c","ws3_class":"empty","ws3_text":"\uf10c","ws4_class":"empty","ws4_text":"\uf10c","ws5_class":"empty","ws5_text":"\uf10c"},"submap":"","clock":{"time":"\uf017 --:--","date":"\uf073 ----","tooltip":""},"media":{"text":"","status":"","icon":"\uf001","class":"","tooltip":""},"ai_usage":{"text":"\udb81\ude74 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":"\uf2db --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"\uf2cb --\u00b0C","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false","connectivity":"unknown","conn_uuid":"","conn_name":"","speed":{"status":"none","down":"\u2014","up":"\u2014","latency":"\u2014","caption":"Not measured on this network"},"policy":{"status":"none","class":"quiet","caption":"Not checked on this network","detail":"Nothing has been checked on this network yet","ssh":"unknown","dns":"unknown","ipv6":"unknown"}},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"\udb80\udc84","alt":"\udb80\udc84","capacity":100,"class":"charging","status":"Unknown","time":"N/A","health":"--","power":"\u2014"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"tray_count":0,"notifications":{"paused":"false","new":0,"count":0,"groups":[]},"wallpaper":{"current":"","count":0,"rows":[]},"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
 
 (defvar laptop_controls "@laptopControls@")
 (defvar battery_module "@batteryModule@")
@@ -7,8 +7,14 @@
 ; Which monitor owns each workspace, and which monitor is displaying it.
 ;
 ; Pushed by the daemon with `eww update` rather than arriving on bar_state,
-; because the golden replay pins the whole bar state as a byte-exact string in
-; 46 recorded cases and a new key there would break all of them permanently.
+; because the golden replay pinned the whole bar state as a byte-exact string in
+; 46 recorded cases and a new key there would have broken all of them.
+;
+; That constraint is gone: narrowSnapshot in internal/replay/replay_test.go now
+; compares only the keys the recording actually holds, so bar_state can grow
+; again -- the network popup's speed card was the first field added since. This
+; variable stays where it is because moving it now would be churn for nothing,
+; not because it still has to.
 ;
 ; The default below is the daemon's zero value, and it is what renders before
 ; the first push and after any failed read. monitors = 0 sends every workspace
@@ -18,8 +24,10 @@
 ; The AI usage history grid, pushed by the daemon the same way ws_monitors is,
 ; and for the same reason plus one more.
 ;
-; The reason it shares: a new key on bar_state.ai_usage breaks 112 recorded
+; The reason it shared: a new key on bar_state.ai_usage broke 112 recorded
 ; golden cases across 7 entry points, and the recording cannot be regenerated.
+; See ws_monitors above -- narrowSnapshot has since lifted that. The reason
+; below has not been lifted and is the one that keeps this variable separate.
 ;
 ; The reason it does not: eww rebuilds every child of a `for` whenever ANY
 ; variable the loop expression mentions changes -- the listener watches
@@ -36,6 +44,31 @@
 ;
 ;   go run ./internal/collect/diffgen <<< '{"fn":"AiHistoryDefault","args":[]}'
 (defvar ai_history '{"columns":[],"months":[],"period":{"label":"This year","range":"","tokens":"--","cost":"--","agents":[]},"days":0,"status":"waiting","warning":""}')
+
+; Live throughput on the interface carrying the default route, pushed by the
+; daemon with `eww update` like ws_monitors and ai_history above.
+;
+; Only the second of ai_history's two reasons applies here -- narrowSnapshot
+; lifted the golden-replay one -- and it is enough on its own. This ticks every
+; 2 seconds, against 7 for the fastest thing on bar_state, so carrying it there
+; would tear down and rebuild every `for` reading bar_state at that rate. The
+; notification list and the wallpaper grid are among them, and rebuilding those
+; twice a second while one is open and being scrolled is a visible fault, not
+; just a wasteful one.
+;
+; Keep this literal in step with collect.NetRateDefault(). The line-1 check in
+; tests/nix/check_yuck_initial.py does not see this defvar, so nothing but the
+; eye catches drift:
+;
+;   go run ./internal/collect/diffgen <<< '{"fn":"NetRateDefault","args":[]}'
+;
+; Write non-ASCII here as a LITERAL character, never as a \uXXXX escape. Yuck
+; unescapes a string literal before the JSON in it is ever parsed, so "\u2014"
+; reaches the widget as the four characters u2014 and renders as that -- checked
+; against a scratch daemon, which is the only place it shows. Comparing the
+; decoded JSON against the Go value passes either way, because that compares
+; content and the bug is in the layer below it.
+(defvar net_rate '{"down":"—","up":"—","device":""}')
 
 (defvar show_date false)
 (defvar show_quota_left false)
@@ -360,15 +393,128 @@
   :namespace "eww-bluetooth"
   (bluetooth_panel))
 
+;; One line of the throughput column: glyph, figure, unit.
+;;
+;; Three labels in a fixed-width row rather than one formatted string, because
+;; a right-aligned string leaves the glyphs ragged whenever the two figures
+;; differ in width -- "120" above "8.4" pushed the arrows a character apart.
+;; Pinning the width lets the glyph hold the left edge and the unit the right,
+;; with the figure right-aligned between them, so only the digits move.
+(defwidget network_rate_line [icon value]
+  (box :class "network-rate-line" :orientation "h" :space-evenly false :width 70
+    (label :class "network-rate-icon" :text icon)
+    (label :class "network-rate-value" :halign "end" :hexpand true :text value)
+    (label :class "network-rate-unit" :text "Mb/s")))
+
+;; One metric of the speed card. The unit sits UNDER the figure rather than
+;; beside it: three metrics and a button share the card's ~246px of inner
+;; width, and a trailing "Mb/s" on each would not fit.
+;;
+;; Latency carries no glyph where the other two do, and that is a decision
+;; rather than an omission. At the 9px this row renders, md-timer-outline
+;; collapses into an indistinct dot -- the "interior detail finer than about two
+;; pixels" that appIcons in internal/collect/impure.go warns about. The arrows
+;; survive because they are two strokes; "ms" needs no icon to be unambiguous.
+(defwidget speedtest_metric [icon unit value muted]
+  (box :class "speedtest-metric" :orientation "v" :space-evenly false
+    (label :class "speedtest-value ${muted ? 'muted' : ''}" :halign "start" :text value)
+    (box :class "speedtest-unit-row" :orientation "h" :space-evenly false :halign "start"
+      (label :class "speedtest-unit-icon" :visible {icon != ""} :text icon)
+      (label :class "speedtest-unit" :text unit))))
+
+;; Always rendered -- with the radio off, with no connection, and with nothing
+;; ever measured on this network.
+;;
+;; That is what keeps the geometry simple. A defwindow takes a fixed height and
+;; default.nix already templates two of them because the Wi-Fi row is optional;
+;; a card that appeared only after a run would need a third, plus a dead band
+;; inside the popup whenever it was hidden. One placeholder state costs nothing
+;; and removes the problem entirely.
+(defwidget speedtest_card []
+  (box :class "speedtest-card" :orientation "v" :space-evenly false
+    (box :orientation "h" :space-evenly false
+      (box :class "speedtest-metrics" :orientation "h" :space-evenly false
+        (speedtest_metric :icon "󰇚" :unit "Mb/s" :muted {bar_state.network.speed.status != "ready"}
+          :value {bar_state.network.speed.down})
+        (speedtest_metric :icon "󰕒" :unit "Mb/s" :muted {bar_state.network.speed.status != "ready"}
+          :value {bar_state.network.speed.up})
+        (speedtest_metric :icon "" :unit "ms"
+          :muted {bar_state.network.speed.status != "ready"
+                   && bar_state.network.speed.status != "running"}
+          :value {bar_state.network.speed.latency}))
+      ;; Inside the card, top right, the way ai-usage-refresh sits in the AI
+      ;; header. A popup-action row of its own would cost 40px of window height
+      ;; for a button pressed once a week.
+      ;;
+      ;; The tooltip states the data cost BEFORE the click, not after. On a
+      ;; capped hotel line or a phone hotspot that is the number worth knowing.
+      (button :class "speedtest-run ${bar_state.network.speed.status == 'running' ? 'busy' : ''}"
+        :halign "end" :valign "start" :hexpand true
+        :onclick "eww-barctl --quiet network speedtest"
+        :tooltip {bar_state.network.speed.status == "running"
+                   ? "Testing…" : "Speed test — uses about 70 MB"}
+        (label :text "󰓅")))
+    ;; ai-usage-loading-bar reused wholesale: same sapphire, same 3px, same
+    ;; 0.9s alternate pulse. Two loading indicators in one bar should not be two
+    ;; different animations.
+    (box :class "speedtest-loading" :orientation "h" :space-evenly false
+      (box :class "speedtest-loading-bar ${bar_state.network.speed.status == 'running' ? 'busy' : ''}"
+        :hexpand true))
+    (label :class "speedtest-caption ${bar_state.network.speed.status == 'running' ? 'live' : ''}"
+      :halign "start" :truncate true :text {bar_state.network.speed.caption})
+    ;; What the network ALLOWS, under what it can do.
+    ;;
+    ;; One line rather than the row of SSH/DNS/IPv6 chips this replaced. Three
+    ;; coloured dots needed a legend the popup had nowhere to put, spent most of
+    ;; their pixels saying things worked, and rendered an ordinary v4-only
+    ;; network as a grey dot beside two green ones -- which reads as a fault.
+    ;;
+    ;; The line names a consequence and goes quiet when there is nothing to say;
+    ;; all three findings live in the tooltip, which is read deliberately.
+    (label :class "policy-line ${bar_state.network.policy.class}"
+      :halign "start" :truncate true
+      :tooltip {bar_state.network.policy.detail}
+      :text {bar_state.network.policy.caption})))
+
 (defwidget network_panel []
   (box :class "popup accent-network" :orientation "v" :space-evenly false
     (popup_header :icon "" :title "Network"
-      :subtitle {bar_state.network.class == "disconnected" ? "Disconnected" : "Connected"})
+      ;; The subtitle answers what joining an unfamiliar network actually
+      ;; raises. A captive portal reads as "connected" everywhere else on the
+      ;; desktop, which is how an evening gets spent blaming the Wi-Fi for a
+      ;; sign-in page nobody ever saw. NetworkManager already knows; this is
+      ;; only asking it.
+      :subtitle {bar_state.network.class == "disconnected" ? "Disconnected"
+                  : bar_state.network.connectivity == "portal" ? "Sign-in required"
+                  : bar_state.network.connectivity == "limited" ? "No internet"
+                  : bar_state.network.connectivity == "none" ? "No internet"
+                  : "Connected"})
     (box :class "popup-body" :orientation "v" :space-evenly false
-      (box :class "network-card" :orientation "v" :space-evenly false
-        (label :class "network-primary" :halign "start"
-          :text {bar_state.network.text != "" ? bar_state.network.text : "No connection"})
-        (label :class "network-detail" :halign "start" :text {bar_state.network.tooltip}))
+      ;; Identity on the left, live throughput on the right.
+      ;;
+      ;; A column rather than a row of its own, and that is the whole reason the
+      ;; meter cost no window height: the card had ~130px of dead space to the
+      ;; right of the SSID, and a stacked pair of 10px readings fits inside it.
+      ;; A third line would have meant a third @networkPopupHeight@ measurement.
+      ;;
+      ;; The left labels truncate now that they share the row. Without it a long
+      ;; SSID pushes the rate off the edge instead of ellipsising itself.
+      (box :class "network-card" :orientation "h" :space-evenly false
+        (box :orientation "v" :space-evenly false :hexpand true
+          (label :class "network-primary" :halign "start" :truncate true
+            :text {bar_state.network.text != "" ? bar_state.network.text : "No connection"})
+          (label :class "network-detail" :halign "start" :truncate true
+            :text {bar_state.network.tooltip}))
+        ;; Mb/s, matching the speed card below, so the two can be read against
+        ;; each other -- "9.6 of a measured 86" is the useful comparison, and
+        ;; MB/s here would make it silently wrong by a factor of eight.
+        (box :class "network-rate" :orientation "v" :space-evenly false
+          :halign "end" :valign "center"
+          :tooltip {net_rate.device != "" ? "Live throughput on ${net_rate.device}"
+                     : "No interface carrying the default route"}
+          (network_rate_line :icon "󰇚" :value {net_rate.down})
+          (network_rate_line :icon "󰕒" :value {net_rate.up})))
+      (speedtest_card)
       (button :class "popup-action network-wifi ${bar_state.network.wifi_enabled == 'true' ? 'active' : ''}"
         :visible {wifi_controls == "true"}
         :onclick "eww-barctl --quiet network wifi-toggle"
@@ -376,9 +522,16 @@
           (label :class "popup-action-icon" :text {bar_state.network.wifi_enabled == "true" ? "" : "󰖪"})
           (label :class "popup-action-label" :halign "start"
             :text {bar_state.network.wifi_enabled == "true" ? "Wi-Fi on" : "Wi-Fi off"})))
-      (button :class "popup-footer-action"
-        :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty -- nmtui\")'"
-        (label :text "Advanced…")))))
+      ;; Behind a portal the footer stops offering the thing you do not need and
+      ;; offers the thing you do. The URL is NetworkManager's own connectivity
+      ;; check target -- precisely the request a portal intercepts -- so opening
+      ;; it is what surfaces the sign-in page rather than a cached tab.
+      (button :class "popup-footer-action ${bar_state.network.connectivity == 'portal' ? 'portal' : ''}"
+        :onclick {bar_state.network.connectivity == "portal"
+                   ? "hyprctl dispatch 'hl.dsp.exec_cmd(\"xdg-open http://nmcheck.gnome.org/check_network_status.txt\")'"
+                   : "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty -- nmtui\")'"}
+        (label :text {bar_state.network.connectivity == "portal"
+                       ? "Sign in to network" : "Advanced…"})))))
 
 (defwindow network_popup
   :monitor 0

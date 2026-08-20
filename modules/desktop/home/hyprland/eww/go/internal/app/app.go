@@ -64,6 +64,20 @@ func Run() int {
 		go control.Serve(store, listener)
 	}
 
+	// Before seed(), not beside the quota restore in launchWatchers, and the
+	// ordering is load-bearing: seed() calls CollectNetwork, which builds the
+	// speed card by looking a connection up in this cache. Restoring afterwards
+	// would leave the popup claiming "Not measured on this network" for a
+	// network that has a record, until the 60 s watcher corrected it a minute
+	// later. The quota restore has no such constraint -- nothing reads that
+	// cache until the first probe returns.
+	if restored, ok := collect.LoadSpeedtestSnapshot(paths.Speedtest()); ok {
+		collect.SeedSpeedtestRecords(restored)
+	}
+	if restored, ok := collect.LoadNetPolicySnapshot(paths.NetPolicy()); ok {
+		collect.SeedNetPolicyRecords(restored)
+	}
+
 	seed(store)
 	launchWatchers(ctx, store, idleRefresh)
 
@@ -223,6 +237,56 @@ func launchWatchers(ctx context.Context, store *state.Store, idleRefresh <-chan 
 	go watch.Periodic(ctx, store, 5*time.Second, func() watch.Update {
 		count := collect.CollectTrayCount()
 		return func(bar *state.Bar) { bar.TrayCount = count }
+	})
+
+	// Live throughput, at 2 s -- the fastest thing here, and the cheapest.
+	//
+	// Two file reads and no forks, against the 60 s network state's half-dozen
+	// nmcli calls. The interval is chosen for the eye rather than the cost: a
+	// meter that updates every 5 s reads as broken while you watch it, and the
+	// reason it can afford 2 s is that PublishNetRate drops unchanged values, so
+	// an idle connection spawns nothing.
+	//
+	// Returns nil rather than an Update: this publishes to its own eww variable
+	// and writes nothing into the store. See PublishNetRate for why.
+	go watch.Periodic(ctx, store, 2*time.Second, func() watch.Update {
+		watch.PublishNetRate(collect.CollectNetRate())
+		return nil
+	})
+
+	// The connectivity-policy probe: what this network will and will not let
+	// through. Runs itself rather than waiting to be asked, because it costs a
+	// few kilobytes and finishes in under three seconds -- the opposite trade
+	// from the speed test, which moves 70 MB and stays behind a button.
+	//
+	// The 5 s poll is also what makes the connectivity gate work: a network
+	// joined behind a captive portal is simply not probed until NetworkManager
+	// reports "full", and each tick re-asks. Nothing is cached in the meantime.
+	//
+	// A poll rather than a hook on the network watchers, because there are two
+	// of them -- the 60 s timer and the nmcli monitor -- and neither hands its
+	// callback the store. EnsureNetPolicy is a no-op unless the attached
+	// connection has never been probed, so the cost of asking every 5 s is one
+	// map lookup; the 5 s is only how long a newly joined network waits before
+	// the probe starts.
+	//
+	// Never re-probed on a timer. A firewall policy is not a reading that
+	// drifts, and re-running it would spend connections to learn what is
+	// already on file.
+	go watch.PeriodicRefresh(ctx, store, 5*time.Second, func(s *state.Store) {
+		current := s.Get().Network
+		collect.EnsureNetPolicy(current.ConnUUID, current.ConnName, current.Connectivity,
+			func() {
+				s.Update(func(bar *state.Bar) {
+					bar.Network.Policy = collect.NetPolicyCardFor(
+						bar.Network.ConnUUID, bar.Network.Class, 0)
+				})
+			},
+			// Persisted from here rather than inside the probe, for the reason
+			// SaveQuotaSnapshot is called from this file: the collector has no
+			// business knowing a path.
+			func() { _ = collect.SaveNetPolicyRecords(paths.NetPolicy()) },
+		)
 	})
 
 	go watch.WatchCommand(ctx, store, nil, func() watch.Update {

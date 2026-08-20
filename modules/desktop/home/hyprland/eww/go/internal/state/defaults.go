@@ -51,6 +51,11 @@ func Default() Bar {
 		Network: collect.NetworkStateFull{
 			Text: "", Tooltip: "",
 			Class: "", WifiEnabled: "false",
+			// "unknown" rather than "none": nothing has been asked yet, and
+			// the popup renders the two differently on purpose.
+			Connectivity: "unknown", ConnUUID: "", ConnName: "",
+			Speed:  collect.SpeedtestDefault(),
+			Policy: collect.NetPolicyDefault(),
 		},
 		Volume: collect.VolumeState{
 			Text: "", Percent: 0, Muted: "false",

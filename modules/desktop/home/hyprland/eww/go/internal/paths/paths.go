@@ -51,6 +51,16 @@ func AiHistory() string { return StateFile("ai-history.json") }
 // numbers instead of "waiting" while the 42 s probe runs.
 func AiQuotas() string { return StateFile("ai-quotas.json") }
 
+// Speedtest is the last measured throughput per network, keyed by
+// NetworkManager connection UUID, so the popup can say what this network
+// managed last time instead of asking again every time it opens.
+func Speedtest() string { return StateFile("speedtest.json") }
+
+// NetPolicy is what each network allows -- SSH, DNS integrity, IPv6 -- keyed by
+// NetworkManager connection UUID. Separate from Speedtest() because a firewall
+// policy outlives a throughput reading by years.
+func NetPolicy() string { return StateFile("netpolicy.json") }
+
 // DisplayMode is paths.display_mode_path.
 func DisplayMode() string { return RuntimeFile("eww-display-mode") }
 

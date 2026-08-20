@@ -475,6 +475,18 @@ func Answer(c Call) (any, error) {
 		// encoder chain has to reproduce.
 		return state.New().Snapshot()
 
+	case "NetPolicyDefault":
+		// The net_policy defvar's default; see NetRateDefault below.
+		return collect.NetPolicyDefault(), nil
+
+	case "NetRateDefault":
+		// The net_rate defvar's default, checkable by hand for the same reason
+		// AiHistoryDefault is: check_yuck_initial.py reads only line 1, so
+		// nothing in the build compares this literal against the Go value.
+		//
+		// Not in the golden recording, and safe to add for the same reason.
+		return collect.NetRateDefault(), nil
+
 	case "AiHistoryDefault":
 		// The ai_history defvar's default, so drift between it and the literal
 		// in eww.yuck can be checked by hand. It is NOT covered by

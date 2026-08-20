@@ -1377,7 +1377,112 @@ tooltip label {
 .network-card { background: rgba(30, 30, 46, 0.74); border-radius: 8px; padding: 10px 12px; }
 .network-primary { color: $text; font-size: 14px; font-weight: 800; }
 .network-detail { color: $overlay1; font-size: 10px; margin-top: 2px; }
+
+/* Live throughput, right-aligned opposite the SSID.
+
+   $subtext0 rather than $text: this is the only value in the popup that moves
+   on its own, and at full contrast a number changing twice a second pulls the
+   eye away from the identity line every time you open the panel. One step down
+   keeps it readable while letting the SSID stay the thing you land on. */
+.network-rate { margin-left: 10px; }
+.network-rate-line { font-size: 10px; }
+.network-rate-line:first-child { margin-bottom: 2px; }
+.network-rate-icon { color: $overlay1; font-size: 9px; margin-right: 4px; }
+.network-rate-value { color: $subtext0; }
+/* The unit is the same on both lines and never the thing being read, so it sits
+   a step further back than the figure it labels. */
+.network-rate-unit { color: $overlay0; margin-left: 3px; }
 .network-wifi.active { background: rgba(250, 179, 135, 0.12); color: $peach; }
+
+/* Speed test card.
+
+   Same ground as .network-card above rather than a tint of its own: the two sit
+   directly on top of each other and a second surface colour would read as two
+   unrelated panels instead of one identity block. */
+.speedtest-card {
+  background: rgba(30, 30, 46, 0.74);
+  border-radius: 8px;
+  margin-top: 8px;
+  padding: 10px 12px;
+}
+
+/* space-evenly is false on the row, so the metrics need their own rhythm. 18px
+   is what fits three of them beside a 26px button inside 246px without the
+   third crowding the button. */
+.speedtest-metric { margin-right: 18px; }
+.speedtest-metric:last-child { margin-right: 0; }
+
+.speedtest-value {
+  color: $text;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* Placeholder and reading share a slot, so they must not share a colour --
+   $surface1 recedes far enough that an unmeasured metric reads as empty at a
+   glance rather than as a number that failed to parse. Set per metric, not per
+   card, because a run in flight lights the latency while the two throughput
+   figures are still placeholders. */
+.speedtest-value.muted { color: $surface1; }
+
+.speedtest-unit-row { margin-top: 1px; }
+.speedtest-unit-icon { color: $overlay1; font-size: 9px; margin-right: 3px; }
+.speedtest-unit { color: $overlay1; font-size: 9px; font-weight: 700; }
+
+.speedtest-run {
+  background: rgba(205, 214, 244, 0.04);
+  border: 1px solid rgba(205, 214, 244, 0.10);
+  border-radius: 6px;
+  color: $overlay1;
+  min-height: 26px;
+  min-width: 26px;
+}
+.speedtest-run:hover { background: rgba(49, 50, 68, 0.78); color: $text; }
+.speedtest-run.busy {
+  background: rgba(116, 199, 236, 0.08);
+  border-color: rgba(116, 199, 236, 0.28);
+  color: $sapphire;
+}
+
+/* Inside the card, unlike .ai-usage-loading which spans the popup: this one
+   belongs to the card it reports on, and a rail running the full width would
+   read as the whole popup being busy.
+
+   Present in every state rather than revealed on demand, and that is structural
+   rather than cosmetic. The popup is a fixed-height defwindow; a rail that
+   appeared only while running would make the card 11px taller than the window
+   at exactly the moment the user is watching it, and GTK would clip the footer.
+   Reserving the space costs a hairline of empty track and keeps one height. */
+.speedtest-loading { margin-top: 8px; }
+.speedtest-loading-bar {
+  background: rgba(205, 214, 244, 0.06);
+  border-radius: 999px;
+  min-height: 3px;
+}
+.speedtest-loading-bar.busy {
+  background: $sapphire;
+  animation: ai-usage-pulse 0.9s ease-in-out infinite alternate;
+}
+
+.speedtest-caption { color: $overlay1; font-size: 10px; margin-top: 7px; }
+.speedtest-caption.live { color: $sapphire; }
+
+/* What the network allows, as one line under the speed measurement.
+
+   Colour is the only signal here, so it has to mean something exact: grey is
+   "nothing to report", peach is "something is restricted but the link works",
+   red is "something is broken". The all-clear case is deliberately the quietest
+   thing in the popup -- it exists to be skipped over. */
+.policy-line { color: $overlay1; font-size: 10px; margin-top: 3px; }
+.policy-line.alert { color: $peach; }
+.policy-line.bad { color: $red; }
+.policy-line.live { color: $sapphire; }
+
+/* The portal footer takes the warning colour rather than .popup-footer-action's
+   sapphire, because it is the one footer that reports a condition instead of
+   offering a destination. */
+.popup-footer-action.portal { color: $yellow; }
+.popup-footer-action.portal:hover { background: rgba(249, 226, 175, 0.12); }
 
 /* Battery popup specifics */
 .battery-capacity { color: $text; font-size: 22px; font-weight: 900; }

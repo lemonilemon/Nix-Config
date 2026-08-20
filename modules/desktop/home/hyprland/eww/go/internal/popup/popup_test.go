@@ -29,8 +29,8 @@ func TestToggleClosedOpensBackdropThenPopup(t *testing.T) {
 	}
 	want := [][]string{
 		closeCall(),
-		{"open", "popup_backdrop", "--screen", "eDP-1"},
-		{"open", "volume_popup", "--screen", "eDP-1"},
+		{"--no-daemonize", "open", "popup_backdrop", "--screen", "eDP-1"},
+		{"--no-daemonize", "open", "volume_popup", "--screen", "eDP-1"},
 	}
 	if !reflect.DeepEqual(calls, want) {
 		t.Errorf("calls = %v, want %v", calls, want)
@@ -98,8 +98,8 @@ func TestRunPopupToggleInvokesEwwInOrder(t *testing.T) {
 	}
 	want := [][]string{
 		closeCall(),
-		{"open", "popup_backdrop", "--screen", "HDMI-A-1"},
-		{"open", "volume_popup", "--screen", "HDMI-A-1"},
+		{"--no-daemonize", "open", "popup_backdrop", "--screen", "HDMI-A-1"},
+		{"--no-daemonize", "open", "volume_popup", "--screen", "HDMI-A-1"},
 	}
 	if !reflect.DeepEqual(seen, want) {
 		t.Errorf("eww calls = %v, want %v", seen, want)
@@ -119,7 +119,7 @@ func TestToggleWithoutScreenUsesFocusedMonitor(t *testing.T) {
 	if code != 0 {
 		t.Errorf("exit code = %d, want 0", code)
 	}
-	want := []string{"open", "display_mode_popup", "--screen", "HDMI-A-1"}
+	want := []string{"--no-daemonize", "open", "display_mode_popup", "--screen", "HDMI-A-1"}
 	found := false
 	for _, call := range seen {
 		if reflect.DeepEqual(call, want) {

@@ -133,7 +133,7 @@ let
       sleep 0.1
     done
 
-    # bail rather than let `eww open` fork a rogue daemon
+    # bail rather than open against a daemon that never came up
     if [ "$daemon_ready" != true ]; then
       echo "eww daemon not reachable" >&2
       exit 1
@@ -141,18 +141,62 @@ let
 
     eww close-all >/dev/null 2>&1 || true
 
+    # --no-daemonize belongs on every `eww open` this config issues -- here, in
+    # collect.BarWindowCommand and in internal/popup -- and it is the only thing
+    # standing between a slow daemon and a SECOND bar.
+    #
+    # eww's client starts a daemon of its own whenever a server action fails,
+    # gated on `action.can_start_daemon() && !opts.no_daemonize`, and `open` is
+    # one of the two actions that can. The failure that fires it is not "no
+    # daemon is running": the client gives the daemon ~100 ms to answer, and
+    # building this bar's widget tree takes longer than that on a loaded
+    # machine. The daemon opens the window regardless, so what the client reads
+    # as a failure is really a slow success -- and the fallback then rebinds the
+    # IPC socket, reloads the config, and spawns an eww-bar-backend of its own,
+    # whose ReconcileBarWindows opens a bar into the new daemon. Two stacked
+    # bars, two backends, and the systemd-managed daemon left unreachable behind
+    # a socket it no longer owns. Seen on 2026-08-20 with a speed test running.
+    #
+    # With the flag that timeout is an ordinary non-zero exit, which the retry
+    # below can react to instead of eww silently forking.
+    open_bar() {
+      bar_id=$1
+      shift
+      for _ in 1 2 3 4 5; do
+        # Re-checked before every attempt, not just the first: a timed-out open
+        # has usually already opened the window, and blindly re-issuing it is
+        # itself a way to end up with two.
+        if eww active-windows 2>/dev/null | grep -q "^$bar_id:"; then
+          return 0
+        fi
+        if eww --no-daemonize open bar "$@"; then
+          return 0
+        fi
+        sleep 0.5
+      done
+      echo "could not open bar window $bar_id" >&2
+      return 1
+    }
+
     # Startup only — monitors hotplugged later are handled by the backend
     # (internal/watch's WatchHyprland reacts to socket2
     # monitoradded/monitorremoved with the same open/close commands).
     monitors=$(hyprctl monitors -j | jq -r '.[].name')
     if [ -z "$monitors" ]; then
-      eww open bar --arg output=0
-      exit 0
+      # No --id, so the window lands under its own name, "bar".
+      open_bar bar --arg output=0
+      exit $?
     fi
 
+    # rc, not `status`: writeShellScript is bash, where the name is free, but
+    # zsh reserves it as a read-only alias for $? and this script is short
+    # enough to be worth pasting into a shell while debugging.
+    rc=0
     for monitor in $monitors; do
-      eww open bar --id "bar-$monitor" --screen "$monitor" --arg "output=$monitor"
+      open_bar "bar-$monitor" \
+        --id "bar-$monitor" --screen "$monitor" --arg "output=$monitor" || rc=1
     done
+    exit $rc
   '';
 in
 {

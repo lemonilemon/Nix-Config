@@ -174,9 +174,18 @@ func MonitorEvent(line string) (action, name string, ok bool) {
 //
 // Must mirror the open-bars script in eww/default.nix so hotplugged monitors
 // get the same bar-<name> windows as service startup.
+//
+// --no-daemonize is the one place this deliberately diverges from the Python it
+// mirrors, and the open-bars script carries the full reason: without it, an
+// `eww open` that the daemon answers too slowly makes the CLIENT fork a second
+// daemon, which brings up a second bar and a second backend. `close` does not
+// need it -- eww's can_start_daemon() is true for `open` and `open-many` alone.
 func BarWindowCommand(action, name string) []string {
 	if action == "added" {
-		return []string{"eww", "open", "bar", "--id", "bar-" + name, "--screen", name, "--arg", "output=" + name}
+		return []string{
+			"eww", "--no-daemonize", "open", "bar",
+			"--id", "bar-" + name, "--screen", name, "--arg", "output=" + name,
+		}
 	}
 	return []string{"eww", "close", "bar-" + name}
 }

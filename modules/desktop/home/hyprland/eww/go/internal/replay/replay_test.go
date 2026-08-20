@@ -120,6 +120,7 @@ func TestGoldenReplay(t *testing.T) {
 	var failures []string
 	superseded := 0
 	supersededNetwork := 0
+	supersededBarWindow := 0
 	for i, r := range records {
 		byFunction[r.Fn]++
 
@@ -129,6 +130,10 @@ func TestGoldenReplay(t *testing.T) {
 		}
 		if recordsSupersededNetwork(r) {
 			supersededNetwork++
+			continue
+		}
+		if recordsSupersededBarWindow(r) {
+			supersededBarWindow++
 			continue
 		}
 
@@ -197,6 +202,15 @@ func TestGoldenReplay(t *testing.T) {
 			"network control command changed again, update the constant and "+
 			"the Go tests that replaced these cases",
 			supersededNetwork, supersededNetworkCases)
+	}
+
+	// And a guard on the third skip. Three cases is every `added` the recording
+	// holds; if a fourth appears, the flag was dropped from one of them.
+	if supersededBarWindow != supersededBarWindowCases {
+		t.Errorf("skipped %d superseded-bar-window cases, expected %d -- if the "+
+			"bar open command changed again, update the constant and the Go "+
+			"test that replaced these cases",
+			supersededBarWindow, supersededBarWindowCases)
 	}
 
 	if byFunction["ControlHandle"] != controlHandleCases {
@@ -391,6 +405,35 @@ func recordsSupersededNetwork(r record) bool {
 		return false
 	}
 	return payload["command"] == "network"
+}
+
+// supersededBarWindowCases is how many recorded cases pin the argv that opens a
+// bar on a hotplugged monitor. Pinned like the two constants above.
+const supersededBarWindowCases = 3
+
+// recordsSupersededBarWindow reports whether a recorded case asserts the shape
+// of `eww open bar` from before it gained --no-daemonize.
+//
+// The three `BarWindowCommand("added", ...)` cases, and the divergence is the
+// fix rather than a drift: eww's client forks a daemon of its own when an
+// `open` fails, it counts a daemon that did not answer within ~100 ms as a
+// failure, and the daemon opens the window anyway -- so a monitor hotplugged
+// while the bar was busy could leave two eww daemons up, each with a bar and a
+// backend. The recording predates the flag because the Python had the same bug.
+//
+// Only `added` is skipped. The `removed` and `other` cases both build `eww
+// close`, which eww's can_start_daemon() excludes, so they still mean what they
+// meant. TestBarWindowCommandCannotForkADaemon in internal/collect replaces the
+// coverage.
+func recordsSupersededBarWindow(r record) bool {
+	if r.Fn != "BarWindowCommand" || len(r.Args) < 1 {
+		return false
+	}
+	var action string
+	if err := json.Unmarshal(r.Args[0], &action); err != nil {
+		return false
+	}
+	return action == "added"
 }
 
 func argsOf(r record) string {

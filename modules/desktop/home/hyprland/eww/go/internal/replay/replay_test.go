@@ -119,11 +119,16 @@ func TestGoldenReplay(t *testing.T) {
 	byFunction := map[string]int{}
 	var failures []string
 	superseded := 0
+	supersededNetwork := 0
 	for i, r := range records {
 		byFunction[r.Fn]++
 
 		if recordsSupersededHyprctl(r) {
 			superseded++
+			continue
+		}
+		if recordsSupersededNetwork(r) {
+			supersededNetwork++
 			continue
 		}
 
@@ -133,14 +138,21 @@ func TestGoldenReplay(t *testing.T) {
 				fmt.Sprintf("%s%s: errored: %v", r.Fn, argsOf(r), err))
 			continue
 		}
+		var want any
+		if err := json.Unmarshal(r.Value, &want); err != nil {
+			t.Fatalf("record %d has an unreadable value: %v", i, err)
+		}
+
+		// The one place the recording is allowed to be incomplete rather than
+		// wrong. See narrowSnapshot.
+		if r.Fn == "ControlHandle" {
+			want, got = narrowSnapshot(want, got)
+		}
+
 		gotJSON, err := canonical(got)
 		if err != nil {
 			failures = append(failures, fmt.Sprintf("%s: unencodable: %v", r.Fn, err))
 			continue
-		}
-		var want any
-		if err := json.Unmarshal(r.Value, &want); err != nil {
-			t.Fatalf("record %d has an unreadable value: %v", i, err)
 		}
 		wantJSON, err := canonical(want)
 		if err != nil {
@@ -176,6 +188,129 @@ func TestGoldenReplay(t *testing.T) {
 			"display code changed again, update the constant and the Go tests "+
 			"that replaced these cases", superseded, supersededHyprctlCases)
 	}
+
+	// And a guard on the narrowing, for the same reason: narrowSnapshot is the
+	// only concession the golden file makes to state that grew after the
+	// recording, and it applies to exactly these cases.
+	if supersededNetwork != supersededNetworkCases {
+		t.Errorf("skipped %d superseded-network cases, expected %d -- if the "+
+			"network control command changed again, update the constant and "+
+			"the Go tests that replaced these cases",
+			supersededNetwork, supersededNetworkCases)
+	}
+
+	if byFunction["ControlHandle"] != controlHandleCases {
+		t.Errorf("golden holds %d ControlHandle cases, expected %d -- "+
+			"narrowSnapshot applies to these and nothing else",
+			byFunction["ControlHandle"], controlHandleCases)
+	}
+}
+
+// controlHandleCases is how many recorded cases bundle a whole bar snapshot
+// into their answer. Pinned for the same reason supersededHyprctlCases is: the
+// narrowing below applies to exactly these, and it must not spread.
+const controlHandleCases = 46
+
+// narrowSnapshot restricts a ControlHandle answer to the state keys the
+// recording actually has an opinion about.
+//
+// ControlHandle is the only recorded function that carries a whole bar snapshot
+// in its answer, and that snapshot is a photograph of the state as it stood
+// while CPython was still around. Any field added to the bar afterwards changes
+// all 46 recorded answers at once, in a way no amount of correctness in the Go
+// can avoid -- the network popup's connectivity, connection identity and speed
+// card were the first, and they will not be the last.
+//
+// So the recording keeps every assertion it can still make and loses only the
+// one it cannot: that no field was ever added. A key it recorded is compared
+// exactly as before, so a changed value, a deleted key and a rename all still
+// fail. A key it never saw is dropped from the comparison.
+//
+// Both sides are re-encoded through the same marshaller afterwards. The
+// recorded snapshot is a string holding CPython's own byte-for-byte encoding,
+// which pyjson reproduces; re-encoding only one side would compare Go's
+// separators against Python's and fail every case for a reason that has nothing
+// to do with the state.
+//
+// This is NOT the sanctioned skip above and must not become it. Those 13 cases
+// are dropped whole because the recording is wrong about the world; these 46
+// stay green on everything they recorded, including their reply and their
+// side-effect journal. New state fields get ordinary Go tests, exactly as the
+// golden file's own note requires.
+func narrowSnapshot(recorded, produced any) (any, any) {
+	recordedMap, recordedOK := recorded.(map[string]any)
+	producedMap, producedOK := produced.(map[string]any)
+	if !recordedOK || !producedOK {
+		return recorded, produced
+	}
+	recordedText, recordedOK := recordedMap["snapshot"].(string)
+	producedText, producedOK := producedMap["snapshot"].(string)
+	if !recordedOK || !producedOK {
+		return recorded, produced
+	}
+
+	var recordedState, producedState any
+	if json.Unmarshal([]byte(recordedText), &recordedState) != nil ||
+		json.Unmarshal([]byte(producedText), &producedState) != nil {
+		return recorded, produced
+	}
+
+	recordedEncoded, recordedErr := json.Marshal(recordedState)
+	producedEncoded, producedErr := json.Marshal(projectOnto(recordedState, producedState))
+	if recordedErr != nil || producedErr != nil {
+		return recorded, produced
+	}
+
+	return withSnapshot(recordedMap, string(recordedEncoded)),
+		withSnapshot(producedMap, string(producedEncoded))
+}
+
+// withSnapshot copies an answer with its snapshot field replaced, leaving the
+// reply and journal beside it untouched.
+func withSnapshot(answer map[string]any, snapshot string) map[string]any {
+	out := make(map[string]any, len(answer))
+	for key, value := range answer {
+		out[key] = value
+	}
+	out["snapshot"] = snapshot
+	return out
+}
+
+// projectOnto returns produced with every key the recorded value does not
+// mention removed, recursively.
+//
+// A key the recording HAS is never synthesised when produced lacks it, which is
+// what keeps a deleted or renamed field failing: the recorded side still holds
+// it and the projected side does not.
+func projectOnto(recorded, produced any) any {
+	if recordedMap, ok := recorded.(map[string]any); ok {
+		if producedMap, ok := produced.(map[string]any); ok {
+			out := make(map[string]any, len(recordedMap))
+			for key, recordedValue := range recordedMap {
+				producedValue, present := producedMap[key]
+				if !present {
+					continue
+				}
+				out[key] = projectOnto(recordedValue, producedValue)
+			}
+			return out
+		}
+		return produced
+	}
+
+	if recordedList, ok := recorded.([]any); ok {
+		producedList, ok := produced.([]any)
+		// A length change is a real disagreement, so it is left alone to fail.
+		if ok && len(recordedList) == len(producedList) {
+			out := make([]any, len(producedList))
+			for i := range producedList {
+				out[i] = projectOnto(recordedList[i], producedList[i])
+			}
+			return out
+		}
+	}
+
+	return produced
 }
 
 // supersededHyprctlCases is how many recorded cases encode hyprctl's pre-0.56
@@ -221,6 +356,41 @@ func recordsSupersededHyprctl(r record) bool {
 		}
 	}
 	return false
+}
+
+// supersededNetworkCases is how many recorded cases pin the `network` control
+// command's behaviour from before it gained a second action. Pinned so this
+// skip cannot quietly widen, exactly as supersededHyprctlCases is.
+const supersededNetworkCases = 2
+
+// recordsSupersededNetwork reports whether a recorded case asserts something
+// about the `network` control command that the speed test legitimately changed.
+//
+// Two cases, and neither is a snapshot difference -- narrowSnapshot already
+// absorbs those. What changed here is behaviour the recording is right to
+// notice:
+//
+//   - `network wifi-toggle` records the side-effect journal, and the journal
+//     grew. ToggleWifi re-reads the network state on the way out, and that read
+//     now also asks nmcli which connection is active and what NetworkManager
+//     makes of its connectivity. The extra forks are the feature.
+//   - `network bogus` records the usage error, which said "network action must
+//     be wifi-toggle". It cannot keep saying that while speedtest is also
+//     valid; a usage message that omits half the actions is worse than one the
+//     recording does not recognise.
+//
+// Their coverage is replaced by ordinary Go tests in internal/control
+// (TestNetworkSpeedtestQueues and friends), which is what the file header asks
+// for. Everything else in the file still means what it always meant.
+func recordsSupersededNetwork(r record) bool {
+	if r.Fn != "ControlHandle" || len(r.Args) < 2 {
+		return false
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(r.Args[1], &payload); err != nil {
+		return false
+	}
+	return payload["command"] == "network"
 }
 
 func argsOf(r record) string {

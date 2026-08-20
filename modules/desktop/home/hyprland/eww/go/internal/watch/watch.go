@@ -105,6 +105,46 @@ func PublishAiHistory(history collect.AiHistory) {
 	run.Eww([]string{"update", "ai_history=" + encoded})
 }
 
+// Live throughput takes its own variable too, and only the `for` half of the
+// reasoning above applies -- the golden replay no longer blocks new bar_state
+// keys (see narrowSnapshot in internal/replay). That half is enough on its own.
+//
+// This ticks every 2 s, where the fastest thing on bar_state today is the CPU
+// collector at 7. Putting a 2 s value there would tear down and rebuild every
+// `for` reading bar_state at that rate -- the notification list and the
+// wallpaper grid among them -- which is a visible problem while one of those
+// popups is open and being scrolled, not merely a wasteful one.
+var (
+	netRateLock sync.Mutex
+	netRateLast string
+)
+
+// PublishNetRate sends the throughput readout to eww if it changed.
+//
+// The deduplication matters more here than anywhere else it is used, because it
+// is what makes a 2 s ticker affordable. An idle connection reports "0.0" every
+// tick forever, and every one of those is identical -- so the common case
+// spawns no process at all, and pushes happen only while traffic is actually
+// moving.
+func PublishNetRate(rate collect.NetRate) {
+	encoded, err := pyjson.Encode(rate, false)
+	if err != nil {
+		return
+	}
+
+	netRateLock.Lock()
+	unchanged := encoded == netRateLast
+	if !unchanged {
+		netRateLast = encoded
+	}
+	netRateLock.Unlock()
+
+	if unchanged {
+		return
+	}
+	run.Eww([]string{"update", "net_rate=" + encoded})
+}
+
 // Update is one batch of assignments into BarState.
 //
 // Collectors run OUTSIDE the store lock and hand back a closure that applies

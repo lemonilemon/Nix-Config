@@ -113,6 +113,113 @@ func DefaultRouteDevice(routeText string) string {
 	return bestDevice
 }
 
+// NetworkIdentity names the connection carrying traffic, as NetworkManager
+// knows it.
+//
+// UUID is the key every speed test record is filed under, and it is the right
+// one for the job where the obvious alternatives are not. An SSID is not
+// unique -- every branch of a chain is "Starbucks", and keying on it would show
+// one cafe's numbers in another. A BSSID is too granular: a hotel with twenty
+// access points would accumulate twenty records and roaming would invalidate
+// them constantly. A gateway MAC works but is a heuristic to maintain, and
+// NetworkManager already computes a stable per-profile identity.
+//
+// The one case UUID does not separate: two genuinely different networks that
+// share an SSID also share one NetworkManager profile, so they share one
+// record. Accepted -- splitting them needs a gateway-MAC sub-key and buys
+// almost nothing.
+type NetworkIdentity struct {
+	UUID string
+	Name string
+}
+
+// splitNmcliTerse splits one `nmcli -t` line into its fields.
+//
+// Not strings.Split(line, ":"), which is what the older collectors above use.
+// Terse mode escapes a colon inside a VALUE as `\:` and a backslash as `\\`,
+// and a connection name is free text -- an SSID of "Guest: Lobby" would
+// otherwise split into two fields and shift every column after it, so the UUID
+// would be read out of the wrong position.
+//
+// NetworkStateFromText above has the same exposure and does NOT use this: it
+// splits an ACTIVE:SSID:SIGNAL line on bare colons, so an SSID containing one
+// reads as a truncated name and a signal of nonsense. That is a live bug, left
+// alone deliberately -- that function is pinned byte-for-byte by recorded cases
+// in the golden replay, which cannot be regenerated, so correcting it needs the
+// supersession treatment rather than an edit in passing.
+func splitNmcliTerse(line string) []string {
+	fields := []string{}
+	current := strings.Builder{}
+	escaped := false
+	for _, char := range line {
+		switch {
+		case escaped:
+			current.WriteRune(char)
+			escaped = false
+		case char == '\\':
+			escaped = true
+		case char == ':':
+			fields = append(fields, current.String())
+			current.Reset()
+		default:
+			current.WriteRune(char)
+		}
+	}
+	return append(fields, current.String())
+}
+
+// ActiveConnectionFromText picks the identity out of
+// `nmcli -t -f UUID,NAME,TYPE,DEVICE connection show --active`.
+//
+// The connection owning the default route wins, because that is the one
+// actually carrying traffic -- a docked laptop, or a machine with a VPN up,
+// has several active at once. Falling back to the first non-loopback line
+// rather than to nothing keeps the card working when the route text is
+// unavailable, which is the same trade DefaultRouteDevice's callers make.
+//
+// Loopback is always skipped: it is active on every machine and would otherwise
+// win the fallback on a disconnected one, filing records under an identity that
+// says nothing about the network.
+func ActiveConnectionFromText(activeText, routeText string) NetworkIdentity {
+	preferred := DefaultRouteDevice(routeText)
+	fallback := NetworkIdentity{}
+
+	for _, line := range SplitLines(activeText) {
+		fields := splitNmcliTerse(line)
+		if len(fields) < 4 {
+			continue
+		}
+		uuid, name, kind, device := fields[0], fields[1], fields[2], fields[3]
+		if uuid == "" || kind == "loopback" {
+			continue
+		}
+		if preferred != "" && device == preferred {
+			return NetworkIdentity{UUID: uuid, Name: name}
+		}
+		if fallback.UUID == "" {
+			fallback = NetworkIdentity{UUID: uuid, Name: name}
+		}
+	}
+	return fallback
+}
+
+// ConnectivityFromText maps `nmcli networking connectivity` onto the popup's
+// vocabulary.
+//
+// The four words are NetworkManager's own and are passed through unchanged;
+// anything else, including the empty string run_text() produces when nmcli is
+// missing or times out, becomes "unknown". That distinction matters at the
+// widget: "none" is a claim that there is no internet, "unknown" is an
+// admission that nothing was asked, and the popup must not render the second
+// as the first.
+func ConnectivityFromText(text string) string {
+	switch state := Strip(text); state {
+	case "full", "portal", "limited", "none":
+		return state
+	}
+	return "unknown"
+}
+
 func indexOf(fields []string, want string) int {
 	for i, field := range fields {
 		if field == want {

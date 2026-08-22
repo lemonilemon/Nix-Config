@@ -137,6 +137,11 @@
 
         src = inputs.openusage-community;
 
+        # The summary endpoint only says how many Codex manual resets exist.
+        # Fetch their read-only detail endpoint too so the bar can show when
+        # the earliest available reset expires. Drop after this lands upstream.
+        patches = [ ./patches/openusage-codex-reset-credits.patch ];
+
         cargoLock = {
           lockFile = "${inputs.openusage-community}/Cargo.lock";
           outputHashes = {

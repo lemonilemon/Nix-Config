@@ -97,6 +97,7 @@ A dynamic tiling Wayland compositor with modern features.
 **Eww** (`eww/`):
 - Top status bar replacement for Waybar
 - Workspace, media, system, AI usage, and session controls
+- Codex quota details include available manual resets and their earliest expiry
 - Hypridle pause backed by a systemd user inhibitor
 - Optional laptop controls for external-only and headless/server display modes
 

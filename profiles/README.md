@@ -184,7 +184,8 @@ Common baseline settings for all systems:
 
 ### `boot.nix`
 Boot loader configuration:
-- GRUB bootloader setup
+- Selectable GRUB and Limine bootloader setup
+- Firmware boot priority remains managed in BIOS
 - GRUB theme configuration
 - Boot menu settings
 

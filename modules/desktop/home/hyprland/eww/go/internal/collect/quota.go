@@ -212,6 +212,35 @@ func OpenusageMeta(line map[string]any) (QuotaMeta, bool) {
 	}, true
 }
 
+// OpenusageTextMeta admits the one text line that describes subscription
+// capacity rather than local token history. The patched Codex plugin leaves the
+// expiry as ISO so this process, not the plugin's JavaScript runtime, owns the
+// conversion to the desktop's local timezone.
+func OpenusageTextMeta(line map[string]any) (QuotaMeta, bool) {
+	if line["type"] != "text" || line["label"] != "Manual reset" {
+		return QuotaMeta{}, false
+	}
+
+	value, isText := line["value"].(string)
+	if !isText || Strip(value) == "" {
+		return QuotaMeta{}, false
+	}
+	value = Strip(value)
+	tooltip := ""
+	if expires, parsed := ParseISOEpoch(line["subtitle"]); parsed {
+		due := FormatClockTime(expires)
+		value += " · expires " + due
+		tooltip = "OpenAI manual reset expires " + due
+	}
+
+	return QuotaMeta{
+		Label:   "Manual reset",
+		Value:   value,
+		Tooltip: tooltip,
+		Class:   "active",
+	}, true
+}
+
 // maxQuotaWindows caps how many windows a card shows. Every window is a heavy
 // widget, so the ones nearest their limit are kept and the card stays short.
 const maxQuotaWindows = 4
@@ -247,6 +276,10 @@ func QuotaFromOpenusage(snapshot any, key, name string, nowEpoch float64) Quota 
 	windows := []QuotaWindow{}
 	meta := []QuotaMeta{}
 	for _, line := range lines {
+		if entry, ok := OpenusageTextMeta(line); ok {
+			meta = append(meta, entry)
+			continue
+		}
 		if line["type"] != "progress" {
 			continue
 		}

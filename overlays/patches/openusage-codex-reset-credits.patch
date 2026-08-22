@@ -1,0 +1,170 @@
+--- a/plugins/codex/plugin.js
++++ b/plugins/codex/plugin.js
+@@ -5,6 +5,7 @@
+   const CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
+   const REFRESH_URL = "https://auth.openai.com/oauth/token"
+   const USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
++  const RESET_CREDITS_URL = "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits"
+   const REFRESH_AGE_MS = 8 * 24 * 60 * 60 * 1000
+   const ERR_NOT_LOGGED_IN = "Not logged in. Run `codex` to authenticate."
+   const ERR_SESSION_EXPIRED = "Session expired. Run `codex` to log in again."
+@@ -274,6 +275,57 @@
+     })
+   }
+ 
++  function fetchResetCredits(ctx, accessToken, accountId) {
++    const headers = {
++      Authorization: "Bearer " + accessToken,
++      Accept: "application/json",
++      "User-Agent": "OpenUsage",
++    }
++    if (accountId) {
++      headers["ChatGPT-Account-Id"] = accountId
++    }
++    return ctx.util.request({
++      method: "GET",
++      url: RESET_CREDITS_URL,
++      headers,
++      timeoutMs: 10000,
++    })
++  }
++
++  function manualResetLine(ctx, accessToken, accountId) {
++    try {
++      const resp = fetchResetCredits(ctx, accessToken, accountId)
++      if (!resp || resp.status < 200 || resp.status >= 300) {
++        ctx.host.log.warn("reset credits request failed; omitting details")
++        return null
++      }
++      const data = ctx.util.tryParseJson(resp.bodyText)
++      if (!data || typeof data !== "object") return null
++
++      const availableCount = Number(data.available_count)
++      if (!Number.isFinite(availableCount) || availableCount <= 0) return null
++
++      let expiresAt = null
++      if (Array.isArray(data.credits)) {
++        const available = data.credits
++          .filter((credit) => credit && credit.status === "available" && credit.is_supported_by_plan !== false)
++          .map((credit) => typeof credit.expires_at === "string" ? credit.expires_at : null)
++          .filter((value) => value && Number.isFinite(Date.parse(value)))
++          .sort((a, b) => Date.parse(a) - Date.parse(b))
++        if (available.length > 0) expiresAt = available[0]
++      }
++
++      return ctx.line.text({
++        label: "Manual reset",
++        value: String(Math.floor(availableCount)) + " available",
++        subtitle: expiresAt,
++      })
++    } catch (e) {
++      ctx.host.log.warn("reset credits request failed; omitting details: " + String(e))
++      return null
++    }
++  }
++
+   function readPercent(value) {
+     const n = Number(value)
+     return Number.isFinite(n) ? n : null
+@@ -469,7 +521,8 @@
+         resp = ctx.util.retryOnceOnAuth({
+           request: (token) => {
+             try {
+-              return fetchUsage(ctx, token || accessToken, accountId)
++              accessToken = token || accessToken
++              return fetchUsage(ctx, accessToken, accountId)
+             } catch (e) {
+               ctx.host.log.error("usage request exception: " + String(e))
+               if (didRefresh) {
+@@ -612,6 +665,9 @@
+         }
+       }
+ 
++      const resetLine = manualResetLine(ctx, accessToken, accountId)
++      if (resetLine) lines.push(resetLine)
++
+       const creditsRemaining = readCreditsRemaining(resp, data)
+       if (creditsRemaining !== null) {
+         const remaining = creditsRemaining
+--- a/plugins/codex/plugin.test.js
++++ b/plugins/codex/plugin.test.js
+@@ -223,6 +223,45 @@
+     expect(credits.used).toBe(900)
+   })
+ 
++  it("reports an available manual reset and its earliest expiration", async () => {
++    const ctx = makeCtx()
++    ctx.host.fs.writeText("~/.codex/auth.json", JSON.stringify({
++      tokens: { access_token: "token", account_id: "acc" },
++      last_refresh: new Date().toISOString(),
++    }))
++    ctx.host.http.request.mockImplementation((opts) => {
++      if (String(opts.url).includes("rate-limit-reset-credits")) {
++        expect(opts.headers["ChatGPT-Account-Id"]).toBe("acc")
++        return {
++          status: 200,
++          bodyText: JSON.stringify({
++            available_count: 2,
++            credits: [
++              { status: "available", is_supported_by_plan: true, expires_at: "2026-09-20T22:56:54Z" },
++              { status: "available", is_supported_by_plan: true, expires_at: "2026-09-10T22:56:54Z" },
++              { status: "redeemed", is_supported_by_plan: true, expires_at: "2026-09-01T22:56:54Z" },
++            ],
++          }),
++        }
++      }
++      return {
++        status: 200,
++        headers: {},
++        bodyText: JSON.stringify({
++          plan_type: "plus",
++          rate_limit: { primary_window: { used_percent: 10, reset_after_seconds: 60 } },
++        }),
++      }
++    })
++
++    const plugin = await loadPlugin()
++    const result = plugin.probe(ctx)
++    const reset = result.lines.find((line) => line.label === "Manual reset")
++    expect(reset).toBeTruthy()
++    expect(reset.value).toBe("2 available")
++    expect(reset.subtitle).toBe("2026-09-10T22:56:54Z")
++  })
++
+   it("maps prolite plan to Pro 5x", async () => {
+     const ctx = makeCtx()
+     ctx.host.fs.writeText("~/.codex/auth.json", JSON.stringify({
+--- a/crates/openusage-cli/src/embedded_plugins.rs
++++ b/crates/openusage-cli/src/embedded_plugins.rs
+@@ -41,3 +41,14 @@
+     fs::create_dir_all(&dest)?;
+     materialize_dir(&PLUGINS_ROOT, &dest)
+ }
++
++/// Refreshes one bundled plugin without replacing any other installed or
++/// user-provided plugin.
++pub fn materialize_plugin_into_app_data(app_data: &Path, id: &str) -> io::Result<()> {
++    let dir = PLUGINS_ROOT.get_dir(id).ok_or_else(|| {
++        io::Error::new(io::ErrorKind::NotFound, format!("embedded plugin {id}"))
++    })?;
++    let dest = app_data.join("plugins");
++    fs::create_dir_all(&dest)?;
++    materialize_dir(dir, &dest)
++}
+--- a/crates/openusage-cli/src/main.rs
++++ b/crates/openusage-cli/src/main.rs
+@@ -232,6 +232,14 @@
+     } = resolve_install_paths()?;
+ 
+     let version = env!("CARGO_PKG_VERSION").to_string();
++    // Keep the locally patched Codex probe current while preserving every
++    // other installed or user-provided plugin.
++    if let Err(e) = embedded_plugins::materialize_plugin_into_app_data(&app_data, "codex") {
++        log::warn!(
++            "embedded plugins: could not refresh codex in {}: {e}",
++            app_data.display()
++        );
++    }
+     let (_plugin_dir, mut plugins) =
+         plugin_engine::initialize_plugins(&app_data, resource_dir.as_deref());
+     if plugins.is_empty() {

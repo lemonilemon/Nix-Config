@@ -152,8 +152,8 @@ in
 
         thermald.enable = lib.mkOption {
           type = lib.types.bool;
-          default = config.nixos.general.power.enable;
-          description = "Enable thermald; Intel-only, inert on AMD hardware";
+          default = config.formFactor == "laptop";
+          description = "Enable thermald; intended for Intel mobile platforms";
         };
 
         upower.enable = lib.mkOption {

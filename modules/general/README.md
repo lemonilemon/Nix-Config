@@ -70,7 +70,7 @@ nixos.general.power.governor            # "powersave" on laptop, "performance" o
 nixos.general.power.autoCpufreq.enable  # laptop only; owns the governor when on
 nixos.general.power.autoCpufreq.settings
 nixos.general.power.powertop.enable     # laptop only
-nixos.general.power.thermald.enable     # follows power.enable; Intel-only in practice
+nixos.general.power.thermald.enable     # laptop only; intended for Intel mobile platforms
 nixos.general.power.upower.enable       # laptop only
 
 nixos.general.network.enable            # off on wsl

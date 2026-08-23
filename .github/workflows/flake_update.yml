@@ -1,6 +1,7 @@
 name: "Flake.lock: update Nix dependencies"
 on:
-  workflow_dispatch: # allows manual triggering
+  # Manual trigger: Actions → Flake.lock: update Nix dependencies → Run workflow.
+  workflow_dispatch:
   schedule:
     - cron: "0 0 * * 0" # runs weekly on Sunday at 00:00
 jobs:
@@ -12,7 +13,11 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Scheduled workflows are loaded from main, but updates belong in the
+      # active integration branch.
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
       - uses: DeterminateSystems/determinate-nix-action@v3
       # Pinned rather than tracking main: this job holds contents: write,
       # pull-requests: write and a PAT, so it should not run whatever happens to
@@ -20,7 +25,10 @@ jobs:
       - uses: DeterminateSystems/update-flake-lock@v28
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
-          pr-title: "Update Nix flake inputs" # Title of PR to be created
-          pr-labels: | # Labels to be set on the PR
+          base: dev
+          branch: automation/flake-updates
+          commit-msg: "chore: update flake inputs"
+          pr-title: "chore: update flake inputs"
+          pr-labels: |
             dependencies
             automated

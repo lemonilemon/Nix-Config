@@ -4,6 +4,13 @@
   ...
 }:
 {
+  imports = [
+    # SpaceNix-themed loaders; nixos.desktop.bootloader picks one. Lives here
+    # because this file is exactly the set of hosts that have a bootloader:
+    # laptop and desktop import it, WSL does not.
+    ./bootloader
+  ];
+
   # bootloader
   boot = {
     plymouth = {
@@ -58,7 +65,8 @@
         enable = lib.mkDefault true;
         theme = lib.mkDefault "stylish";
         footer = lib.mkDefault false;
-        customResolution = lib.mkDefault "1920x1080";
+        # customResolution is set from nixos.desktop.bootloaderResolution in
+        # bootloader/grub.nix, so the theme assets and gfxmode cannot disagree.
       };
     };
   };

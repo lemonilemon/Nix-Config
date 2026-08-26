@@ -12,7 +12,6 @@
     ./hardware-configuration.nix
     ./config.nix
     ./nvidia.nix # For NVIDIA graphics cards
-    ./bootloader # SpaceNix-themed loaders; nixos.desktop.bootloader picks one
     ../base.nix
     ../i18n.nix
     ../boot.nix

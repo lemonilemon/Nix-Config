@@ -5,6 +5,8 @@
   ...
 }:
 let
+  cfg = config.nixos.desktop;
+
   jbm = "${pkgs.jetbrains-mono}/share/fonts/truetype";
 
   # Same art as the GRUB branch -- identical expression, one store path.
@@ -19,7 +21,7 @@ let
   } ''python3 ${./font.py} ${pkgs.spleen}/share/consolefonts/spleen-8x16.psfu "$out"'';
 in
 {
-  config = lib.mkIf (config.nixos.desktop.bootloader == "limine") {
+  config = lib.mkIf (cfg.bootloader == "limine") {
     boot.loader.grub.enable = false;
     boot.loader.grub2-theme.enable = false;
 
@@ -36,7 +38,7 @@ in
       # Keep the kernel-entry mode identical to the menu mode so the
       # menu -> Plymouth handoff does not renegotiate from EDID (the grub
       # branch gets the same via gfxpayloadEfi = "keep").
-      resolution = "1920x1080";
+      resolution = cfg.bootloaderResolution;
       style = {
         wallpapers = [ wallpaper ];
         backdrop = "1e1e2e";
@@ -47,7 +49,7 @@ in
           # fine, no wallpaper/font/colors). An explicit resolution makes
           # fb_init walk the mode list and SetMode assertively instead of
           # trusting the inherited mode.
-          resolution = "1920x1080";
+          resolution = cfg.bootloaderResolution;
           # The wordmark in the wallpaper is the branding; this suppresses
           # Limine's own line (confirmed rendering as no title).
           branding = "";
@@ -93,13 +95,16 @@ in
       # freshly written config beside every binary location; this runs in
       # the installer wrapper under `set -e`, so a failed copy fails the
       # install loudly instead of producing an unconfigured boot.
-      #
-      # And the decisive part: this board boots its "NixOS-boot" option from
-      # a CACHED definition -- verified 2026-08-11 by retargeting the NVRAM
-      # entry to Limine and watching the firmware load GRUB from the old
-      # path anyway. NVRAM is a suggestion box here; the file at the cached
-      # path is the only thing it honors. So the active loader's binary is
-      # placed AT that path (user-approved). Review-hardened:
+      extraInstallCommands = ''
+        atomic_cp() {
+          ${pkgs.coreutils}/bin/cp "$1" "$2.tmp"
+          ${pkgs.coreutils}/bin/mv "$2.tmp" "$2"
+        }
+        atomic_cp /boot/limine/limine.conf /boot/EFI/limine/limine.conf
+      ''
+      # The cached-boot-path workaround, gated because it overwrites the
+      # binary behind the machine's only Linux boot entry. See
+      # bootloaderFirmwareIgnoresNvram for what earns it. Review-hardened:
       #  - copies come from /boot/EFI/limine/BOOTX64.EFI (the installed,
       #    possibly enrolled/signed binary), not the pristine store file;
       #  - the GRUB backup is created only once, so a limine version bump
@@ -108,12 +113,11 @@ in
       #  - /boot/grub/state is removed so flipping the option back forces a
       #    full grub-install, which is what actually restores GRUB at the
       #    cached path (it otherwise skips itself as up-to-date).
-      extraInstallCommands = ''
-        atomic_cp() {
-          ${pkgs.coreutils}/bin/cp "$1" "$2.tmp"
-          ${pkgs.coreutils}/bin/mv "$2.tmp" "$2"
-        }
-        atomic_cp /boot/limine/limine.conf /boot/EFI/limine/limine.conf
+      # The paths are literals, not options: the backup guard keys off
+      # GRUBX64-BACKUP.EFI, and renaming the scheme on a host that already
+      # ran this would let the next limine bump back up limine AS the grub
+      # backup, quietly destroying the recovery binary.
+      + lib.optionalString cfg.bootloaderFirmwareIgnoresNvram ''
         ${pkgs.coreutils}/bin/mkdir -p /boot/EFI/NixOS-boot
         installed=/boot/EFI/limine/BOOTX64.EFI
         target=/boot/EFI/NixOS-boot/GRUBX64.EFI
@@ -125,6 +129,40 @@ in
         fi
         atomic_cp /boot/limine/limine.conf /boot/EFI/NixOS-boot/limine.conf
         ${pkgs.coreutils}/bin/rm -f /boot/grub/state
+      ''
+      +
+        lib.optionalString
+          (!cfg.bootloaderFirmwareIgnoresNvram && config.boot.loader.efi.canTouchEfiVariables)
+          ''
+            listing=$(${pkgs.efibootmgr}/bin/efibootmgr)
+            limine_entry=$(printf '%s\n' "$listing" \
+              | ${pkgs.gnused}/bin/sed -n 's/^Boot\([0-9A-Fa-f]\{4\}\)\*\{0,1\} Limine\([[:space:]].*\)\{0,1\}$/\1/p' \
+              | ${pkgs.coreutils}/bin/head -n1)
+            order=$(printf '%s\n' "$listing" | ${pkgs.gnused}/bin/sed -n 's/^BootOrder: //p')
+            if [ -n "$limine_entry" ]; then
+              case "$order," in
+                "$limine_entry",*) : ;;
+                *)
+                  new_order=$limine_entry
+                  for e in $(printf '%s\n' "$order" | ${pkgs.coreutils}/bin/tr ',' ' '); do
+                    [ "$e" = "$limine_entry" ] && continue
+                    printf '%s\n' "$listing" | ${pkgs.gnugrep}/bin/grep -q "^Boot$e[* ]" \
+                      && new_order="$new_order,$e"
+                  done
+                  echo "limine install: promoting Limine (Boot$limine_entry) in BootOrder: $new_order"
+                  ${pkgs.efibootmgr}/bin/efibootmgr -o "$new_order" > /dev/null
+                  ;;
+              esac
+            fi
+          ''
+      + ''
+        # UEFI default path, used when NVRAM entries are lost; limine needs
+        # its conf beside the binary there too.
+        ${pkgs.coreutils}/bin/mkdir -p /boot/EFI/BOOT
+        if ! ${pkgs.diffutils}/bin/cmp -s /boot/EFI/limine/BOOTX64.EFI /boot/EFI/BOOT/BOOTX64.EFI; then
+          atomic_cp /boot/EFI/limine/BOOTX64.EFI /boot/EFI/BOOT/BOOTX64.EFI
+        fi
+        atomic_cp /boot/limine/limine.conf /boot/EFI/BOOT/limine.conf
         if ! [ -f /boot/EFI/Microsoft/Boot/bootmgfw.efi ]; then
           echo "limine install: WARNING: /boot/EFI/Microsoft/Boot/bootmgfw.efi missing; the /Windows entry is dead" >&2
         fi

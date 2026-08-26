@@ -176,7 +176,13 @@ in
         RestartSec = "1s";
       };
 
-      Install.WantedBy = [ "hyprland-session.target" ];
+      # Pulled in by the daemon, not by the target. Wanting this from
+      # hyprland-session.target makes the target order itself After= it, which
+      # closes a cycle -- target after watch after daemon after target -- and
+      # systemd breaks it by deleting the watch's start job, so it never ran.
+      # A service's Wants= carries no implicit ordering, so the daemon can pull
+      # this in while After= above still sequences it behind the login reveal.
+      Install.WantedBy = [ "awww-daemon.service" ];
     };
   };
 }

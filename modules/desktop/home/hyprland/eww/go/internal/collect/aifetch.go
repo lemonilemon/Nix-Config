@@ -42,10 +42,13 @@ const (
 	statusTokenExpired = "token expired \u2014 open Claude Code"
 	statusUnauthorized = "unauthorized \u2014 open Claude Code"
 
-	// Measured on this host: the probe costs 41.6 s wall and 43.6 CPU-seconds.
-	// The old 45 s ceiling left three seconds of headroom and a timeout here
-	// throws away the entire probe. It is off the five-minute poll now (see
-	// QuotaStates), so a generous ceiling costs nothing.
+	// Measured on this host (2026-08-27, seven runs): the probe costs 5.0 to
+	// 8.4 s wall and 1.0 CPU-second warm, 2.6 on the first run after a boot.
+	// Wall clock here is mostly provider latency, so it moves with the network
+	// and the binary allows itself 120 s per provider before giving up. A
+	// timeout here throws away the entire probe, and the probe is off the
+	// five-minute poll anyway (see QuotaStates), so a generous ceiling costs
+	// nothing.
 	openusageTimeout  = 120 * time.Second
 	ccusageTimeout    = 20 * time.Second
 	claudeHTTPTimeout = 10 * time.Second
@@ -220,10 +223,12 @@ func ResetQuotaCache() {
 // QuotaStates mirrors collectors.quota_states: the per-provider cards the AI
 // popup renders.
 //
-// Cached, and deliberately kept off the background poll. Measured on this host,
-// `openusage-cli probe` costs 43.6 CPU-seconds and 41.6 s of wall clock per
-// call against 0.85 for the ccusage report beside it -- the single largest
-// consumer in the whole backend, by an order of magnitude.
+// Cached, and deliberately kept off the background poll. Measured on this host
+// (2026-08-27, seven runs), `openusage-cli probe` costs 5.0 to 8.4 s of wall
+// clock and 1.0 CPU-second per call, against 0.12 s and 0.29 for the ccusage
+// report beside it -- the single largest consumer in the whole backend. Most
+// of that is provider latency rather than work done here, so the wall figure
+// moves with the network while the CPU figure holds steady.
 //
 // None of what it produces reaches the bar face: eww.yuck renders only
 // ai_usage.text, which comes from ccusage. The quota cards live inside the
@@ -272,9 +277,10 @@ const ccusageSinceDays = 45
 //
 // Two years, well past the 371 days the grid can draw, because the extra rows
 // cost almost nothing and are kept: ccusage walks every transcript whatever the
-// window, so --since only trims the output. Measured, 45 days costs 0.21 s and
-// 365 costs 0.30 s. The wider ask exists so a first run captures everything the
-// logs still hold before whatever prunes them gets there.
+// window, so --since only trims the output. Measured 2026-08-27, 45 days and
+// 730 days both cost 0.12 s wall and 0.29 CPU-seconds. The wider ask exists so
+// a first run captures everything the logs still hold before whatever prunes
+// them gets there.
 const ccusageHistoryDays = 730
 
 // AiHistoryState collects the History tab's grid, folding the fresh report into
@@ -328,8 +334,8 @@ func SeedQuotaCache(quotas []Quota) {
 // CachedQuotas returns the cached cards without ever probing.
 //
 // The distinction from QuotaStates(false) is the whole point: that falls
-// through to a 41.6 s probe on a cold cache, which is exactly what the fast
-// startup path must not do.
+// through to a probe on a cold cache -- 5 to 8 s measured, longer when a
+// provider is slow -- which is exactly what the fast startup path must not do.
 func CachedQuotas() ([]Quota, bool) {
 	quotaCacheLock.Lock()
 	defer quotaCacheLock.Unlock()
@@ -342,11 +348,11 @@ func CachedQuotas() ([]Quota, bool) {
 // AiUsageFast builds the bar's AI state from the ccusage report alone.
 //
 // This exists because AiUsageState computes ApplyQuotas(ccusage, QuotaStates())
-// and publishes once, at the end. The ccusage half costs 0.21 s and drives
+// and publishes once, at the end. The ccusage half costs 0.12 s and drives
 // everything on the bar face; the quota half drives only the popup's cards and
-// costs anywhere from 6 s to the 41.6 s recorded at QuotaStates, depending on
-// how the providers are feeling. So a cold start showed "-- " for all of that
-// while the numbers for it sat finished in a local variable.
+// costs seconds -- 5 to 8 measured, and up to the 120 s ceiling when a provider
+// stalls. So a cold start showed "-- " for all of that while the numbers for it
+// sat finished in a local variable.
 //
 // A new function rather than a change to AiUsageState or RefreshAiUsage: both
 // are pinned by recorded cases, and RefreshAiUsage's record includes the exact
@@ -448,11 +454,15 @@ func RefreshAiUsage(current AiUsage, publish func(AiUsage), refreshQuotas bool) 
 // AiRefreshCycle mirrors collectors.ai_refresh_cycle: the callable the
 // background AI poll runs.
 //
-// Splits the refresh by cost. The ccusage report (0.85 CPU-seconds) drives the
-// bar face and runs every cycle; the openusage probe (43.6) only feeds the
-// popup and runs every quotaEvery-th, starting with the first so startup has
-// quota cards. At the caller's 300 s period that is a probe every 30 minutes
-// instead of every 5, on top of the on-demand refresh the popup already sends.
+// Splits the refresh by cost. The ccusage report (0.12 s wall, 0.29 CPU) drives
+// the bar face and runs every cycle; the openusage probe (5 to 8 s wall, 1.0
+// CPU) only feeds the popup and runs every quotaEvery-th, starting with the
+// first so startup has quota cards. The CPU gap is the smaller half of the
+// argument: what the cadence really buys is not holding the refresh cycle open
+// for seconds, and not spending a provider's rate limit, five minutes apart
+// into an empty room. At the caller's 300 s period that is a probe every 30
+// minutes instead of every 5, on top of the on-demand refresh the popup already
+// sends.
 func AiRefreshCycle(quotaEvery int64) func(AiUsage, func(AiUsage)) AiUsage {
 	// Atomic where the original uses itertools.count. Only one thread drives
 	// this today, but a counter that silently misses a tick would show up as

@@ -34,6 +34,8 @@ general/
     ├── nixld.nix        # nix-ld configuration
     ├── network.nix      # NetworkManager, wireless and firmware
     ├── firewall.nix     # Firewall ports and trusted subnets
+    ├── secrets.nix      # System-level sops-nix key source
+    ├── syncthing.nix    # Obsidian vault sync mesh
     └── power.nix        # Governor, auto-cpufreq, powertop, thermald, UPower
 ```
 
@@ -49,6 +51,8 @@ home.general.pdf.enable         # Enable PDF tools (default: follows general.ena
 home.general.programlangs.enable # Enable programming languages (default: follows general.enable)
 home.general.secrets.enable     # Enable secrets management (default: follows general.enable)
 home.general.utils.enable       # Enable utilities (default: follows general.enable)
+home.general.obsidian.enable    # Enable the Obsidian vault (default: follows general.enable, off on wsl)
+home.general.obsidian.vaultPath # Absolute path of the vault (default: ~/Documents/notes)
 
 # Programming language packages (customizable list)
 home.general.programlangs.packages = [ pkgs.gcc pkgs.python3 ... ];
@@ -82,7 +86,17 @@ nixos.general.firewall.enable           # off on wsl
 nixos.general.firewall.allowedTCPPorts  # [ 22 80 443 ]
 nixos.general.firewall.allowedUDPPorts  # [ ]
 nixos.general.firewall.trustedSubnets   # IPv4 subnets accepted wholesale
+
+nixos.general.syncthing.enable          # follows home.general.obsidian.enable; off on wsl
+nixos.general.syncthing.deviceName      # "laptop" / "desktop"; picks this host's identity
+
+home.general.obsidian.enable            # off on wsl
 ```
+
+`home.general.obsidian.vaultPath` is the single source of truth for where the
+vault is. The Syncthing folder, obsidian.nvim's workspace and the Obsidian
+package all read it, so there is no per-consumer copy to drift. It has no
+form-factor component -- only `enable` does.
 
 `auto-cpufreq` and the static governor are mutually exclusive by construction:
 `power.nix` only sets `powerManagement.cpuFreqGovernor` when
@@ -150,6 +164,69 @@ auto-cpufreq, powertop tunings, thermald and UPower. `power-profiles-daemon` is
 held off here because it conflicts with both auto-cpufreq and a static
 governor.
 
+#### `secrets.nix`
+Points sops-nix at the age key for **system** secrets
+(`~/.config/sops/age/keys.txt`, the same file the Home Manager side uses). It
+has no feature flag of its own on purpose: it is the key source for the whole
+category rather than a feature, and sops-nix's config block is gated on
+`sops.secrets != {}`, so it is free on a host that declares no secrets.
+
+#### `syncthing.nix`
+Syncs the Obsidian vault between hosts, driven by `nixos.general.syncthing.*`.
+The folder it syncs is `home.general.obsidian.vaultPath` -- the same option
+obsidian.nvim reads -- rather than a path of its own, and
+`nixos.general.syncthing.enable` follows `home.general.obsidian.enable`, since
+there is nothing to sync on a host with no vault.
+
+The device mesh — which machines hold the vault — is a literal in the module
+rather than an option, because it is one global fact rather than a per-host
+knob. Each host derives its peer list by removing itself from that mesh, using
+`deviceName`.
+
+The split that makes this fully declarative: **device IDs are public** (each is
+a hash of the public half of a certificate) so they are committed in the
+module, while the **private keys live in `secrets/syncthing.yaml`** and each
+host decrypts only its own. A reinstalled host therefore restores its key from
+sops and is immediately the same device to every peer — no re-pairing.
+
+Two things are deliberate and easy to undo by accident:
+
+- **The vault is also a git working tree** (it has a GitHub remote and
+  auto-commits). Syncthing's ignore list may therefore only name paths the
+  vault's own ignore rules already cover — ignoring a *tracked* file would
+  reach the other machine as a deletion and get committed as one. The current
+  list is per-machine UI state and regenerable caches only.
+- **Version snapshots are stored outside the vault** via `versioning.fsPath`
+  (`~/.local/state/syncthing/versions/`). Syncthing's default location is
+  `<folder>/.stversions`, which would put a copy of every past revision inside
+  an auto-committing repo.
+
+**Sync is LAN-only.** `globalAnnounceEnabled` and `relaysEnabled` are off, so
+the hosts announce their addresses to no external server and Syncthing contacts
+nothing outside the local network (the nixpkgs build is tagged `noupgrade`, and
+`urAccepted = -1` declines usage reporting). Local discovery, a UDP broadcast on
+21027 that never leaves the network segment, is what finds peers.
+
+That is also what makes committing the device IDs safe in a public repo. A
+device ID is only a privacy problem when there is an address record to resolve
+it against: global discovery's lookups are unauthenticated, so with announcing
+on, anyone holding an ID could resolve it to the machine's public IP and online
+status. With announcing off there is nothing to resolve.
+
+The cost is that devices sync when they share a network. For off-LAN sync,
+either turn the two options back on, or give each device a static address
+alongside `"dynamic"` -- Syncthing resolves the address list per entry, so
+local discovery and a fixed address (a VPN name, say) compose rather than
+conflict.
+
+The web UI stays bound to `127.0.0.1:8384`. That matters on the desktop, which
+trusts `192.168.0.0/24` wholesale in its firewall: binding loopback is what
+keeps that LAN bypass from also exposing the admin interface.
+
+Adding a device: put its ID in the `mesh` attribute set. Non-NixOS devices (the
+Android phone) are entered the same way, with `null` as a placeholder until the
+device reports its ID; null rows are dropped rather than emitted.
+
 ### Home Manager Settings (`home/`)
 
 #### Programming Languages (`programlangs/`)
@@ -209,6 +286,22 @@ fonts.packages = with pkgs; [
   noto-fonts-cjk
 ];
 ```
+
+#### Obsidian (`options.nix` only)
+
+`home.general.obsidian` has no module directory of its own: it is a fact about
+the machine that three existing modules consume, rather than configuration in
+its own right.
+
+| Consumer | Reads |
+|----------|-------|
+| `general/nixos/syncthing.nix` | `vaultPath` as the synced folder, `enable` via the syncthing flag |
+| `cli/home/nvim/plugins/code/markdown.nix` | `vaultPath` as obsidian.nvim's workspace, `enable` as the plugin flag |
+| `gui/home/apps/default.nix` | `enable`, to decide whether to install the Obsidian package |
+
+`tests/nix/host-options.nix` asserts that the first two resolve to the same
+path. That is not ceremony: obsidian.nvim previously pointed at
+`~/obsidian/school`, a directory that did not exist, and nothing reported it.
 
 #### PDF Tools (`pdf/`)
 

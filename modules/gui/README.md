@@ -190,7 +190,9 @@ General GUI applications and utilities.
 **Home Manager Apps** (`home/apps/default.nix`):
 - **Communication**: Webcord (Discord client)
 - **Media**: Spotify (Wayland IME), VLC
-- **Productivity**: Obsidian (notes), Trading View
+- **Productivity**: Obsidian (notes; installed only when
+  `home.general.obsidian.enable` is set, which also drives its Syncthing folder
+  and nvim workspace), Trading View
 - **Download**: Gopeed
 - **Containers**: Podman Desktop
 - **Utilities**: Antigravity

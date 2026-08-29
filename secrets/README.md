@@ -10,6 +10,7 @@ recipients live in [`.sops.yaml`](../.sops.yaml); the private key sits at
 | Name (`just secrets <name>`) | File | Format | Contents | Consumed by |
 |------------------------------|------|--------|----------|-------------|
 | `ssh-hosts` | `ssh-hosts.conf` | binary (ssh_config) | SSH host aliases: `Host` blocks with `HostName`/`User`/`Port` for private servers | `modules/gui/home/apps/default.nix`, decrypted to `~/.ssh/config.inventory` |
+| `syncthing` | `syncthing.yaml` | yaml | Per-host Syncthing device identities (`<host>/cert`, `<host>/key`). The matching device IDs are public and live in `modules/general/nixos/syncthing.nix` | `modules/general/nixos/syncthing.nix`, installed into `~/.config/syncthing/{cert,key}.pem` |
 
 Add a row whenever a new secret lands. Descriptions are public metadata: say
 what a file is for, never any value inside it.

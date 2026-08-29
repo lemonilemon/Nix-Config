@@ -35,6 +35,11 @@ let
 
   programsOnPackageNames = map (p: p.pname or p.name or "") desktopHome.home.packages;
 
+  # The two independently-derived views of where the vault is: the editor's and
+  # the sync daemon's.
+  nvimVaultPaths = map (w: w.path) desktopHome.programs.nixvim.plugins.obsidian.settings.workspaces;
+  syncthingVaultPath = hosts.desktop.services.syncthing.settings.folders."obsidian-notes".path;
+
   # Every agent instruction target must resolve to one store object, so the
   # tools cannot drift apart. Paths were confirmed against the installed
   # binaries; the kiro one is inferred and needs rechecking after its first run.
@@ -95,6 +100,46 @@ let
       name = "wsl/networking.firewall.enable (NixOS default, module inert)";
       actual = hosts.wsl.networking.firewall.enable;
       expected = true;
+    }
+
+    # --- syncthing: identity collisions are invisible ---
+    {
+      # Both physical hosts decrypt their identity out of one sops file, keyed
+      # by nixos.general.syncthing.deviceName. If that value ever collided --
+      # a profile setting it by hand, or the formFactor default changing --
+      # both machines would install the same cert, present the same device ID,
+      # and each would see the other as itself. Syncthing reports no error for
+      # that: it just never syncs, forever, with a healthy-looking UI.
+      name = "syncthing/desktop and laptop have distinct identities";
+      actual =
+        hosts.desktop.sops.secrets."syncthing-cert".key != hosts.laptop.sops.secrets."syncthing-cert".key;
+      expected = true;
+    }
+    {
+      # The peer list is the mesh minus self. A filter that stopped removing
+      # self would still evaluate and still build, and the resulting config is
+      # accepted by Syncthing -- it would simply carry a dead peer entry it
+      # can never connect to.
+      name = "syncthing/no host lists itself as a peer";
+      actual =
+        builtins.any (h: h.services.syncthing.settings.devices ? "${h.nixos.general.syncthing.deviceName}")
+          [
+            hosts.desktop
+            hosts.laptop
+          ];
+      expected = false;
+    }
+
+    {
+      # This one has already gone wrong once: obsidian.nvim pointed at
+      # ~/obsidian/school, a directory that did not exist, while the real vault
+      # lived elsewhere. Nothing reported it -- the plugin simply operated on a
+      # path nothing else knew about. Both values now derive from
+      # home.general.obsidian.vaultPath, and this witnesses that they still do,
+      # so a future edit cannot re-separate the editor from the synced folder.
+      name = "obsidian/nvim workspace and syncthing folder are the same path";
+      actual = nvimVaultPaths;
+      expected = [ syncthingVaultPath ];
     }
 
     # --- idle policy ---

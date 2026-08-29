@@ -2,6 +2,7 @@
   lib,
   config,
   pkgs,
+  username,
   ...
 }:
 let
@@ -31,6 +32,30 @@ in
           type = lib.types.bool;
           default = config.home.general.enable;
           description = "Enable Rime IME configuration (臺灣字形 default)";
+        };
+      };
+
+      obsidian = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          # The vault is a real directory in $HOME, so this is off wherever
+          # there is no graphical session to edit it in -- which today means
+          # wsl. Everything that touches the vault hangs off this one flag:
+          # the Obsidian package, nvim's obsidian.nvim workspace, and the
+          # Syncthing folder that keeps the hosts in step.
+          default = config.home.general.enable && isPhysical;
+          description = "Enable the Obsidian vault: the app, nvim's workspace, and its Syncthing folder";
+        };
+
+        vaultPath = lib.mkOption {
+          type = lib.types.str;
+          default = "/home/${username}/Documents/notes";
+          description = ''
+            Absolute path of the Obsidian vault. Single source of truth: the
+            Syncthing folder in general/nixos/syncthing.nix and obsidian.nvim's
+            workspace both read it, so the two cannot drift onto different
+            directories.
+          '';
         };
       };
 
@@ -221,6 +246,28 @@ in
             bypass, not an addition to allowedTCPPorts: every host in a listed
             subnet reaches anything bound to 0.0.0.0, including services added
             later that never opened a port of their own.
+          '';
+        };
+      };
+
+      syncthing = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          # Follows the vault rather than the form factor directly: there is
+          # nothing to sync on a host that has no vault. `home.general.obsidian.enable`
+          # already carries the wsl exclusion.
+          default = config.nixos.general.enable && config.home.general.obsidian.enable;
+          description = "Enable Syncthing for the Obsidian vault (mesh defined in general/nixos/syncthing.nix)";
+        };
+
+        deviceName = lib.mkOption {
+          type = lib.types.str;
+          default = config.formFactor;
+          description = ''
+            Which row of the device mesh in general/nixos/syncthing.nix this
+            host is. It selects both the peer list (everyone but itself) and
+            which identity it decrypts out of secrets/syncthing.yaml, so two
+            hosts sharing a value would share one Syncthing identity.
           '';
         };
       };

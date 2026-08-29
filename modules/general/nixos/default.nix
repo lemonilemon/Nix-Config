@@ -6,5 +6,7 @@
     ./network.nix
     ./power.nix
     ./firewall.nix
+    ./secrets.nix
+    ./syncthing.nix
   ];
 }

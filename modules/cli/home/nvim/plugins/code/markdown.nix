@@ -1,7 +1,10 @@
 {
-  lib,
+  config,
   ...
 }:
+let
+  vault = config.home.general.obsidian;
+in
 {
   programs.nixvim = {
     plugins = {
@@ -28,7 +31,11 @@
 
       };
       obsidian = {
-        enable = lib.mkDefault false;
+        # Follows the vault flag rather than being independently toggled: the
+        # plugin is only useful where the vault actually exists, and the path
+        # below comes from the same option Syncthing uses, so the editor and
+        # the sync folder cannot end up pointed at different directories.
+        enable = vault.enable;
         settings = {
           completion = {
             min_chars = 2;
@@ -36,8 +43,8 @@
           new_notes_location = "current_dir";
           workspaces = [
             {
-              name = "school";
-              path = "~/obsidian/school";
+              name = "notes";
+              path = vault.vaultPath;
             }
           ];
         };

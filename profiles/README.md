@@ -297,13 +297,20 @@ Capabilities derived from `formFactor`, each overridable on its own:
 | `nixos.general.power.upower.enable` | true | false | false |
 | `nixos.general.network.wifi.enable` | true | false | false |
 | `nixos.general.firewall.enable` | true | true | false |
+| `home.general.obsidian.enable` | true | true | false |
+| `nixos.general.syncthing.enable` | true | true | false |
+| `nixos.general.syncthing.deviceName` | `laptop` | `desktop` | (module off) |
 | `home.desktop.hyprland.eww.laptopControls.enable` | true | false | - |
 | `home.desktop.hyprland.eww.battery.enable` | true | false | - |
 | `home.desktop.hyprland.idle.suspend.enable` | true | false | - |
 
-`tests/nix/host-options.nix` asserts this table for all three hosts and runs as
-part of `nix flake check` (`just check`), so a change that breaks it fails at
-eval time rather than after a rebuild.
+This table is documentation, not an enforced contract. `tests/nix/host-options.nix`
+used to restate it and no longer does: an expectation copied out of `nix eval`
+can only fail when you change a default on purpose, so it reported nothing the
+diff had not already shown and cost an edit on every change. That file now
+asserts only the narrower set of failures that would otherwise be **silent** —
+see its header for the rule. `modules/general/options.nix` is the source of
+truth for these defaults.
 
 See `modules/options.nix`, `modules/nixos.nix` and module-specific options files
 for the complete hierarchy.

@@ -7,17 +7,21 @@
 }:
 {
   config = lib.mkIf config.home.gui.apps.enable {
-    home.packages = with pkgs; [
-      webcord
-      spotify
-      vlc
-      tradingview
-      gopeed
-      podman-desktop
-      obsidian
-      # libreoffice
-      # inputs.claude-desktop.packages.${system}.claude-desktop
-    ];
+    home.packages =
+      with pkgs;
+      [
+        webcord
+        spotify
+        vlc
+        tradingview
+        gopeed
+        podman-desktop
+        # libreoffice
+        # inputs.claude-desktop.packages.${system}.claude-desktop
+      ]
+      # Gated on the vault flag rather than listed unconditionally, so one option
+      # governs the app, nvim's workspace and the Syncthing folder together.
+      ++ lib.optional config.home.general.obsidian.enable pkgs.obsidian;
     programs.ssh = {
       enable = true;
       enableDefaultConfig = false;

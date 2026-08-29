@@ -41,6 +41,7 @@ what keeps a wrong-by-default HM copy from being possible.
 
 Capability options across the categories take their **defaults** from it:
 `nixos.general.power.*`, `nixos.general.network.*`, `nixos.general.firewall.*`,
+`nixos.general.syncthing.{enable,deviceName}`, `home.general.obsidian.enable`,
 `home.desktop.hyprland.eww.{laptopControls,battery,wifi}.enable` and
 `home.desktop.hyprland.idle.*`.
 

@@ -34,6 +34,23 @@
         };
       };
 
+      obsidian = {
+        enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.general.obsidian.enable";
+          default = config.home.general.enable;
+          description = "Enable the Obsidian vault: the app, nvim's workspace, and its Syncthing folder";
+        };
+
+        vaultPath = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.general.obsidian.vaultPath";
+          type = lib.types.str;
+          default = "${config.home.homeDirectory}/Documents/notes";
+          description = "Absolute path of the Obsidian vault";
+        };
+      };
+
       pdf = {
         enable = helpers.mkHomeOpt {
           inherit osConfig;

@@ -46,10 +46,16 @@ full-width punctuation, Taiwan terminology, no emoji (either language).
 
 1. Check [references/samples.md](references/samples.md); matching excerpts outrank
    every rule here — match their rhythm.
-2. Draft, then sweep against [references/ai-tells.md](references/ai-tells.md).
+2. Rewriting existing text: list every defect first, against
+   [references/ai-tells.md](references/ai-tells.md), then fix them one by one —
+   paraphrasing without a defect list makes the AI patterns more visible, not less.
+3. Draft, then sweep against [references/ai-tells.md](references/ai-tells.md).
    Rewrite flagged sentences; don't just delete the marker word.
-3. zh-TW drafts: sweep spacing, punctuation width, and mainland-term drift.
-4. Corrections and accepted drafts are signal: propose a new rule or a samples.md
+4. Multi-paragraph pieces: outline test — read the first sentence of every
+   paragraph as a list. If they read as a clean summary, the structure is
+   machine-shaped; restructure before polishing sentences.
+5. zh-TW drafts: sweep spacing, punctuation width, and mainland-term drift.
+6. Corrections and accepted drafts are signal: propose a new rule or a samples.md
    excerpt as an edit in the repo
    (`~/nixos-config/modules/cli/home/programs/ai/skills/my-voice/` — the installed
    copy is read-only; the user rebuilds).

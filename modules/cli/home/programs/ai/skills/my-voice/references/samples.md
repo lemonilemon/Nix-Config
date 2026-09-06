@@ -6,8 +6,7 @@ outrank every rule in SKILL.md.
 
 - Verbatim only; paraphrasing destroys the cadence this file exists to capture.
 - 3-10 sentences per excerpt; representativeness beats volume.
-- Best candidates: drafts the user edited and then accepted. Propose additions as
-  repo edits; the user rebuilds.
+- Best candidates: drafts the user edited and then accepted.
 
 ## Reports (English)
 

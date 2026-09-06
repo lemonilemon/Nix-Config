@@ -56,6 +56,4 @@ full-width punctuation, Taiwan terminology, no emoji (either language).
    machine-shaped; restructure before polishing sentences.
 5. zh-TW drafts: sweep spacing, punctuation width, and mainland-term drift.
 6. Corrections and accepted drafts are signal: propose a new rule or a samples.md
-   excerpt as an edit in the repo
-   (`~/nixos-config/modules/cli/home/programs/ai/skills/my-voice/` — the installed
-   copy is read-only; the user rebuilds).
+   excerpt as an edit to this skill.

@@ -21,11 +21,19 @@
           default = config.home.gui.enable;
           description = "Enable development tools";
         };
+        zed = {
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.gui.development.zed.enable";
+            default = config.home.gui.development.enable;
+            description = "Enable Zed editor";
+          };
+        };
         vscode = {
           enable = helpers.mkHomeOpt {
             inherit osConfig;
             path = "home.gui.development.vscode.enable";
-            default = config.home.gui.development.enable;
+            default = false;
             description = "Enable VS Code editor";
           };
         };

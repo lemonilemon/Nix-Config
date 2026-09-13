@@ -11,7 +11,6 @@ import (
 
 const actionTimeout = 5 * time.Second
 
-// AdjustVolume mirrors control.adjust_volume.
 func AdjustVolume(direction string) (VolumeState, error) {
 	var amount string
 	switch direction {
@@ -23,13 +22,11 @@ func AdjustVolume(direction string) (VolumeState, error) {
 		return VolumeState{}, errValue("volume direction must be up or down")
 	}
 	RunStatus(actionTimeout, "wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", amount)
-	// refreshSinks=false: a level nudge cannot add, remove or re-default a
-	// sink, and this is the :onscroll path where the two extra pactl forks are
-	// the whole cost.
+	// refreshSinks=false: a level nudge cannot add, remove or re-default a sink,
+	// and this is the :onscroll path where the two extra pactl forks are the cost.
 	return CollectVolume(false), nil
 }
 
-// SetVolume mirrors control.set_volume.
 func SetVolume(value any) (VolumeState, error) {
 	number, ok := pyFloatOf(value)
 	if !ok {
@@ -42,9 +39,8 @@ func SetVolume(value any) (VolumeState, error) {
 	return CollectVolume(false), nil
 }
 
-// pyFloatOf is float(value) for the shapes a control payload carries. A None
-// or a non-numeric string raises TypeError/ValueError in the original, both of
-// which its handler turns into the same message.
+// pyFloatOf is float(value) for the shapes a control payload carries. A None or a
+// non-numeric string raises in the original, both turned into the same message.
 func pyFloatOf(value any) (float64, bool) {
 	if text, isText := value.(string); isText {
 		return PyFloat(text)
@@ -52,14 +48,11 @@ func pyFloatOf(value any) (float64, bool) {
 	return pyNumber(value)
 }
 
-// ToggleMute mirrors control.toggle_mute.
 func ToggleMute() VolumeState {
 	RunStatus(actionTimeout, "wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle")
 	return CollectVolume(false)
 }
 
-// SetSink mirrors control.set_sink.
-//
 // This one DOES refresh the sink list, unlike the level actions: changing the
 // default sink is exactly the event that invalidates the cache.
 func SetSink(name string) (VolumeState, error) {
@@ -70,7 +63,6 @@ func SetSink(name string) (VolumeState, error) {
 	return CollectVolume(true), nil
 }
 
-// ControlMedia mirrors control.control_media.
 func ControlMedia(action string) (MediaState, error) {
 	switch action {
 	case "play-pause", "next", "previous":
@@ -81,7 +73,6 @@ func ControlMedia(action string) (MediaState, error) {
 	return CollectMedia(), nil
 }
 
-// ToggleBluetoothPower mirrors control.toggle_bluetooth_power.
 func ToggleBluetoothPower() BluetoothState {
 	target := "on"
 	if CollectBluetooth().Powered == "true" {
@@ -91,7 +82,6 @@ func ToggleBluetoothPower() BluetoothState {
 	return CollectBluetooth()
 }
 
-// DisconnectBluetooth mirrors control.disconnect_bluetooth.
 func DisconnectBluetooth(mac string) (BluetoothState, error) {
 	if mac == "" {
 		return BluetoothState{}, errValue("bluetooth disconnect requires a device address")
@@ -100,7 +90,6 @@ func DisconnectBluetooth(mac string) (BluetoothState, error) {
 	return CollectBluetooth(), nil
 }
 
-// ToggleWifi mirrors control.toggle_wifi.
 func ToggleWifi() NetworkStateFull {
 	target := "on"
 	if NetworkRadioEnabled() == "true" {

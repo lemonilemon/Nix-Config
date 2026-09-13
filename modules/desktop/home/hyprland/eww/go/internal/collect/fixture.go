@@ -8,13 +8,11 @@ import (
 	"time"
 )
 
-// InstallFixture replaces every impure seam in this package with a lookup into
-// a flat string map, and returns a function restoring the originals.
+// InstallFixture replaces every impure seam in this package with a lookup into a
+// flat string map, and returns a function restoring the originals.
 //
-// It lives here rather than in the diffgen command because the seams it
-// overwrites are unexported-by-convention package state, and because the key
-// encoding is a wire contract: the golden replay's recorded cases carry these
-// exact keys, so changing one silently invalidates the recording.
+// The key encoding is a WIRE CONTRACT: the golden replay's recorded cases carry
+// these exact keys, so changing one silently invalidates the recording.
 //
 // Keys, all \x1f-separated so a key can never collide with an argument:
 //
@@ -33,14 +31,6 @@ import (
 //	env.<NAME>                    an environment variable
 //	dial\x1f<address>              "1" if a TCP connect to it should succeed
 //	lookup\x1f<host>               resolved addresses, one per line
-//
-// A command or file with no key reads as absent, which is what a missing
-// binary or unreadable file produces in production.
-//
-// Installing a fixture is NOT concurrency-safe and does not need to be: diffgen
-// answers one call at a time, and nothing in production reassigns these. The
-// JOURNAL below is a separate matter and is locked, because a collector running
-// under a fixture may now fan out across goroutines.
 func InstallFixture(fixture map[string]string) func() {
 	savedRun, savedRead := RunText, ReadTextFile
 	savedStatus, savedWrite, savedRemove := RunStatus, WriteTextFile, RemoveFile

@@ -32,8 +32,7 @@ var awwwTransition = []string{
 
 const awwwTimeout = 5 * time.Second
 
-// magickTimeout is generous because it is per IMAGE and a cold cache pays it
-// once for every wallpaper in the directory.
+// magickTimeout is per IMAGE, and a cold cache pays it once per wallpaper.
 const magickTimeout = 15 * time.Second
 
 func wallpaperDir() string { return expandUser("~/Pictures/wallpapers") }
@@ -48,8 +47,7 @@ type DirEntryInfo struct {
 }
 
 // The remaining filesystem seams. ListDir and ResolvePath are separate from
-// ReadTextFile because the wallpaper picker needs metadata and symlink
-// resolution rather than contents.
+// ReadTextFile because the picker needs metadata and symlink resolution.
 var (
 	ListDir = func(dir string) ([]DirEntryInfo, bool) {
 		entries, err := os.ReadDir(dir)
@@ -59,18 +57,14 @@ var (
 		listing := make([]DirEntryInfo, 0, len(entries))
 		for _, entry := range entries {
 			full := filepath.Join(dir, entry.Name())
-			// os.Stat, NOT entry.Info(): Info is an lstat, so a symlink reports
-			// as not-a-regular-file and drops out of the picker. pathlib's
-			// is_file() and stat() both FOLLOW links, and the seed wallpaper
-			// this repo deploys is a Home Manager store symlink -- the very
-			// thing WallpaperItems resolves. Caught by the shadow-daemon
-			// comparison, which is the only check that exercises the real
-			// filesystem: the fixture stubs ListDir, so no unit test could see
-			// it.
+			// os.Stat, NOT entry.Info(): Info is an lstat, so a symlink reports as
+			// not-a-regular-file and drops out of the picker. pathlib's is_file() and
+			// stat() both FOLLOW links, and the seed wallpaper this repo deploys is a
+			// Home Manager store symlink. No unit test could see this -- the fixture
+			// stubs ListDir.
 			info, err := os.Stat(full)
 			if err != nil {
-				// A broken symlink. is_file() is False for one in Python too,
-				// so it is excluded either way.
+				// A broken symlink, excluded in Python too.
 				continue
 			}
 			listing = append(listing, DirEntryInfo{
@@ -101,11 +95,8 @@ var (
 	}
 )
 
-// ScanWallpaperFiles mirrors wallpaper.scan_wallpaper_files.
-//
-// Sorted, because Path.iterdir is not: the picker grid would otherwise reshuffle
-// on every rescan. The sort is on the full path, matching sorted() over
-// pathlib objects, which compares their string parts.
+// ScanWallpaperFiles sorts, because Path.iterdir does not and the picker grid would
+// otherwise reshuffle on every rescan. The sort is on the full path.
 func ScanWallpaperFiles(dir string) []string {
 	if dir == "" {
 		dir = wallpaperDir()
@@ -128,21 +119,17 @@ func ScanWallpaperFiles(dir string) []string {
 	return files
 }
 
-// ThumbCachePath mirrors wallpaper.thumb_cache_path.
-//
-// The digest input is EXACTLY "<path>:<mtime_ns>:<size>". Getting any part of
-// it wrong -- the separator, the field order, nanoseconds versus seconds --
-// invalidates every cached thumbnail at once, and a cold cache costs one magick
-// invocation per wallpaper at up to 15 s each. Pinned by the equivalence gate
-// against hashlib, not merely eyeballed.
+// ThumbCachePath's digest input is EXACTLY "<path>:<mtime_ns>:<size>". Getting any
+// part wrong -- the separator, the field order, nanoseconds versus seconds --
+// invalidates every cached thumbnail at once, at up to 15 s each to rebuild.
 func ThumbCachePath(path string, mtimeNS, size int64) string {
 	digest := sha1.Sum([]byte(
 		path + ":" + strconv.FormatInt(mtimeNS, 10) + ":" + strconv.FormatInt(size, 10)))
 	return filepath.Join(thumbDir(), hex.EncodeToString(digest[:])+".png")
 }
 
-// EnsureThumbnail mirrors wallpaper.ensure_thumbnail, returning "" on any
-// failure so the picker renders a tile with no image rather than breaking.
+// EnsureThumbnail returns "" on any failure, so the picker renders a tile with no
+// image rather than breaking.
 func EnsureThumbnail(path string) string {
 	info, ok := statFor(path)
 	if !ok {
@@ -177,13 +164,9 @@ func statFor(path string) (DirEntryInfo, bool) {
 	return DirEntryInfo{}, false
 }
 
-// realPath mirrors wallpaper._real_path: the resolved target, or "" for an
-// empty input or an unresolvable path.
-//
-// The empty-string guard is redundant -- resolving "" fails and yields ""
-// anyway -- and mutation testing correctly reports removing it as inert. Kept
-// because it is what the original writes, and because it states the intent
-// ("no current wallpaper" is not a path lookup) at the point it applies.
+// realPath is the resolved target, or "" for an empty input or an unresolvable
+// path. The empty-string guard is redundant and kept: it states that "no current
+// wallpaper" is not a path lookup, at the point it applies.
 func realPath(path string) string {
 	if path == "" {
 		return ""
@@ -195,14 +178,12 @@ func realPath(path string) string {
 	return resolved
 }
 
-// Wallpaper is wallpaper.wallpaper_state's shape.
 type Wallpaper struct {
 	Current string            `json:"current"`
 	Count   int               `json:"count"`
 	Rows    [][]WallpaperItem `json:"rows"`
 }
 
-// CollectWallpaper mirrors wallpaper.wallpaper_state.
 func CollectWallpaper() Wallpaper {
 	current := ParseAwwwQuery(RunText(defaultTimeout, "awww", "query"))
 	items := WallpaperItems(ScanWallpaperFiles(""), current, realPath, EnsureThumbnail)
@@ -213,15 +194,12 @@ func CollectWallpaper() Wallpaper {
 	}
 }
 
-// PersistCurrentWallpaper records the wallpaper now on screen, for awww-init
-// to redraw at the next login: awww-daemon runs with --no-cache (see the
-// wallpaper Home Manager module), so this file -- not the daemon's own cache
-// -- is what carries a pick across logins; awww-init falls back to the seed
-// when it is missing.
+// PersistCurrentWallpaper records the wallpaper now on screen for awww-init to
+// redraw at the next login: awww-daemon runs with --no-cache, so this file, not the
+// daemon's own cache, is what carries a pick across logins.
 //
-// Called from the control serve loop, NOT from SetWallpaper: the golden
-// replay pins SetWallpaper's and ControlHandle's journals byte-for-byte, and
-// the serve loop is the first frame of the call stack it does not record.
+// Called from the control serve loop, NOT from SetWallpaper: the golden replay pins
+// SetWallpaper's and ControlHandle's journals byte-for-byte.
 func PersistCurrentWallpaper(current string) {
 	if current == "" {
 		return
@@ -230,11 +208,8 @@ func PersistCurrentWallpaper(current string) {
 	_ = WriteTextFile(expandUser("~/.local/state/awww/current-wallpaper"), current+"\n")
 }
 
-// SetWallpaper mirrors wallpaper.set_wallpaper.
-//
-// The awww failure is swallowed, as in the original: the picker re-reads the
-// state afterwards either way, so a failed change shows up as the old wallpaper
-// still being active rather than as an error the user cannot act on.
+// SetWallpaper swallows the awww failure: the picker re-reads the state afterwards
+// either way, so a failed change shows as the old wallpaper still being active.
 func SetWallpaper(path string) (Wallpaper, error) {
 	if path == "" {
 		return Wallpaper{}, errValue("wallpaper set requires a path")

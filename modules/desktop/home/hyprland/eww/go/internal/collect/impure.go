@@ -7,12 +7,10 @@ import (
 	"time"
 )
 
-// Naming: pure parsers are XFromText / XFromJSON and their result types are
-// plain nouns (VolumeState, BluetoothState). The impure wrappers that fork a
-// process to feed them are CollectX, so a type and the function producing it
-// never collide.
+// Naming: pure parsers are XFromText / XFromJSON with plain-noun result types
+// (VolumeState, BluetoothState); the impure wrappers that fork a process to feed
+// them are CollectX, so a type and its producer never collide.
 
-// ActiveWindowState is the shape collectors.active_window_state returns.
 type ActiveWindowState struct {
 	Text    string `json:"text"`
 	Tooltip string `json:"tooltip"`
@@ -21,30 +19,19 @@ type ActiveWindowState struct {
 
 // appIcons maps a window class to the glyph the bar prefixes its label with.
 //
-// Escapes, never literals. Every one of these renders as a blank or a box in an
-// editor, a terminal and a diff, so a literal cannot be reviewed and does not
-// survive a copy-paste. The comment beside each is the Nerd Font glyph name, and
-// all of them are Material Design (md-*) on purpose: mixing in fa-*, dev-* or
-// cod-* gives visibly different stroke weights and optical sizes on one line.
+// Escapes, never literals: every one renders as a blank or a box in an editor, a
+// terminal and a diff. The comment beside each is the Nerd Font glyph name, and
+// all are Material Design (md-*) so the stroke weights match on one line.
 //
-// Brand glyph where the font has one, function otherwise. That is why kitty is a
-// cat and zathura is a document.
+// Chosen by rendering at .active-window's real 12px: anything with interior detail
+// finer than about two pixels is out, however apt it reads in a picker.
 //
-// Chosen by rendering at .active-window's real 12px, not by name. Three obvious
-// picks failed there: md-api and md-file_pdf_box draw the letters "API" and
-// "PDF" inside a box, which is a smudge at that size, and md-notebook's spiral
-// binding fills in solid. Anything with interior detail finer than about two
-// pixels is out, however apt it reads in a picker.
-//
-// Keys MUST be lowercase and unwrapped -- lookupAppIcon normalises the class
-// before indexing, and TestAppIconKeysAreNormalised fails the build otherwise.
-//
-// To add one, focus the window and read its class off the daemon:
+// Keys MUST be lowercase and unwrapped -- lookupAppIcon normalises the class before
+// indexing, and TestAppIconKeysAreNormalised fails the build otherwise. To add one:
 //
 //	hyprctl activewindow -j | jq -r .class
 //
-// An unknown class is not an error; it falls back to a bare space, so a wrong
-// guess here costs nothing but a missing icon.
+// An unknown class falls back to a bare space, so a wrong guess costs a missing icon.
 var appIcons = map[string]string{
 	// terminals
 	"kitty": "\U000F011B ", // md-cat
@@ -89,17 +76,11 @@ var appIcons = map[string]string{
 
 const appIconFallback = " "
 
-// normalizeClass folds the spellings of one app's window class together.
-//
-// Two things vary and neither is the app's fault. Case: a Wayland app_id is
-// usually lowercase ("code") while the X11 WM_CLASS the same app sets under
-// XWayland is capitalised ("Code"), and hyprctl reports whichever it got.
-// Wrapping: NixOS builds many GTK binaries behind a wrapper script, and an app
-// that takes its class from argv[0] then announces itself as
-// ".blueman-manager-wrapped".
-//
-// Folding here rather than adding a key per spelling keeps appIcons readable and
-// means a new app needs one entry, not four.
+// normalizeClass folds the spellings of one app's window class together. Case: a
+// Wayland app_id is usually lowercase ("code") where the X11 WM_CLASS the same app
+// sets under XWayland is capitalised ("Code"). Wrapping: NixOS builds many GTK
+// binaries behind a wrapper script, so an app taking its class from argv[0]
+// announces itself as ".blueman-manager-wrapped".
 func normalizeClass(class string) string {
 	folded := strings.ToLower(class)
 	folded = strings.TrimPrefix(folded, ".")
@@ -114,8 +95,7 @@ func lookupAppIcon(class string) string {
 	return appIconFallback
 }
 
-// ActiveWindowStateFrom mirrors collectors.active_window_state's body, taking
-// the hyprctl output rather than fetching it.
+// ActiveWindowStateFrom takes the hyprctl output rather than fetching it.
 func ActiveWindowStateFrom(activeWindowJSON string) ActiveWindowState {
 	var data map[string]any
 	if !ParseJSON(activeWindowJSON, &data) {
@@ -140,45 +120,26 @@ func ActiveWindowStateFrom(activeWindowJSON string) ActiveWindowState {
 	}
 }
 
-// ActiveWindowState mirrors collectors.active_window_state.
 func CollectActiveWindow() ActiveWindowState {
 	return ActiveWindowStateFrom(RunText(defaultTimeout, "hyprctl", "activewindow", "-j"))
 }
 
-// WorkspaceState mirrors collectors.workspace_state.
+// CollectWorkspace passes clientsJSON deliberately empty. It feeds the urgency
+// branch in WorkspaceStateFromJSON, and Hyprland does not supply the input:
+// 0.56.0's `hyprctl clients -j` does not emit `urgent`, so the branch has never
+// fired and .workspace.urgent is unreachable CSS.
 //
-// clientsJSON is deliberately empty. It exists to feed the urgency branch in
-// WorkspaceStateFromJSON, and Hyprland does not supply the input: 0.56.0's
-// `hyprctl clients -j` emits 32 keys per window and `urgent` is not among them,
-// so the branch has never fired on this machine and .workspace.urgent is
-// unreachable CSS.
-//
-// Passing "" rather than deleting the parameter, because WorkspaceStateFromJSON
-// is pinned by 294 recorded cases in the golden replay, which cannot be
-// regenerated. Its signature and body stay exactly as recorded; only what
-// production chooses to hand it changes, and the recorded cases replay with
-// their own arguments so they never see this.
-//
-// The win is a fork. This runs on every workspace event -- every window open,
-// close and move, and every workspace switch -- and `hyprctl clients -j` is the
-// most expensive of the three calls, since it serialises every window on the
-// system. If urgency is ever wanted back, Hyprland 0.56 exposes it through the
-// Lua API as window.urgent rather than through the JSON.
+// Passed as "" rather than removed from the signature, which 294 recorded cases in
+// the golden replay pin. The win is a fork on every window open, close and move.
+// If urgency is wanted back, Hyprland 0.56 exposes it through the Lua API.
 func CollectWorkspace() WorkspaceState {
 	workspace, _ := CollectWorkspaceViews()
 	return workspace
 }
 
-// CollectWorkspaceViews reads hyprctl once and derives both workspace models.
-//
-// One call rather than two collectors because they overlap: both need
-// `hyprctl workspaces -j`, and the bar refreshes them on the same events, so
-// separate collectors would fork it twice on every window move.
-//
-// Three reads, which is what this path cost before the urgency fork was
-// dropped -- but `hyprctl monitors -j` serialises a handful of monitors where
-// `hyprctl clients -j` serialised every window on the system, so the exchange
-// is a good one.
+// CollectWorkspaceViews reads hyprctl once and derives both workspace models: they
+// both need `hyprctl workspaces -j` and refresh on the same events, so separate
+// collectors would fork it twice on every window move.
 func CollectWorkspaceViews() (WorkspaceState, MonitorWorkspaces) {
 	active := RunText(defaultTimeout, "hyprctl", "activeworkspace", "-j")
 	workspaces := RunText(defaultTimeout, "hyprctl", "workspaces", "-j")
@@ -187,7 +148,6 @@ func CollectWorkspaceViews() (WorkspaceState, MonitorWorkspaces) {
 		MonitorWorkspacesFromJSON(monitors, workspaces)
 }
 
-// MediaState mirrors collectors.media_state.
 func CollectMedia() MediaState {
 	return MediaStateFromText(
 		RunText(time.Second, "playerctl", "status"),
@@ -195,7 +155,6 @@ func CollectMedia() MediaState {
 	)
 }
 
-// TrayCount mirrors collectors.tray_count.
 func CollectTrayCount() int {
 	return TrayCountFromText(RunText(defaultTimeout,
 		"busctl", "--user", "get-property",
@@ -204,10 +163,8 @@ func CollectTrayCount() int {
 	))
 }
 
-// BluetoothState mirrors collectors.bluetooth_state.
-//
-// One `bluetoothctl info` per connected device, keyed by address -- so the
-// number of children scales with how many devices are paired and connected.
+// CollectBluetooth runs one `bluetoothctl info` per connected device, so the number
+// of children scales with how many devices are paired and connected.
 func CollectBluetooth() BluetoothState {
 	controller := RunText(defaultTimeout, "bluetoothctl", "show")
 	devices := RunText(defaultTimeout, "bluetoothctl", "devices", "Connected")
@@ -225,17 +182,14 @@ var (
 	cachedSinks []Sink
 )
 
-// ResetVolumeSinksCache mirrors collectors.reset_volume_sinks_cache.
 func ResetVolumeSinksCache() {
 	sinksLock.Lock()
 	defer sinksLock.Unlock()
 	cachedSinks = nil
 }
 
-// VolumeSinks mirrors collectors.volume_sinks. See that docstring: this is
-// cached because volume_state runs on every scroll tick and enumerating sinks
-// costs two more forks, and only a sink appearing or the default changing can
-// alter the list. A cold cache always refreshes.
+// VolumeSinks is cached because volume_state runs on every scroll tick and
+// enumerating sinks costs two more forks. A cold cache always refreshes.
 func VolumeSinks(refresh bool) []Sink {
 	if !refresh {
 		sinksLock.Lock()
@@ -261,7 +215,6 @@ func VolumeSinks(refresh bool) []Sink {
 	return sinks
 }
 
-// VolumeState mirrors collectors.volume_state.
 func CollectVolume(refreshSinks bool) VolumeState {
 	return VolumeStateFromText(
 		RunText(defaultTimeout, "wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"),
@@ -269,7 +222,6 @@ func CollectVolume(refreshSinks bool) VolumeState {
 	)
 }
 
-// NetworkRadioEnabled mirrors collectors.network_radio_enabled.
 func NetworkRadioEnabled() string {
 	if Strip(RunText(defaultTimeout, "nmcli", "radio", "wifi")) == "enabled" {
 		return "true"
@@ -277,7 +229,6 @@ func NetworkRadioEnabled() string {
 	return "false"
 }
 
-// LinkFallbackState mirrors collectors.link_fallback_state.
 func CollectLinkFallback() (NetworkState, bool) {
 	return LinkStateFromText(
 		RunText(defaultTimeout, "ip", "route"),
@@ -285,7 +236,6 @@ func CollectLinkFallback() (NetworkState, bool) {
 	)
 }
 
-// NetworkConnectionState mirrors collectors.network_connection_state.
 func CollectNetworkConnection() NetworkState {
 	status := RunText(defaultTimeout, "nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "dev", "status")
 	wifiDevice := ConnectedDevice(status, "wifi")
@@ -341,8 +291,7 @@ func CollectNetworkConnection() NetworkState {
 	}
 
 	// nmcli claims nothing is connected. Before believing it, check whether the
-	// kernel still has a default route: NetworkManager may be stopped, absent,
-	// or simply not the owner of this machine's networking.
+	// kernel still has a default route: NetworkManager may be stopped or absent.
 	if fallback, ok := CollectLinkFallback(); ok {
 		return fallback
 	}
@@ -354,11 +303,8 @@ func CollectNetworkConnection() NetworkState {
 	}
 }
 
-// CollectNetworkIdentity reads which connection is carrying traffic.
-//
-// Two cheap forks, measured at 29 ms and 2 ms. It runs on the same 60 s timer
-// and the same `nmcli monitor` watcher as the rest of the network state, so
-// nothing new is scheduled for it.
+// CollectNetworkIdentity reads which connection is carrying traffic. Two cheap
+// forks on the timer and watcher the rest of the network state already uses.
 func CollectNetworkIdentity() NetworkIdentity {
 	return ActiveConnectionFromText(
 		RunText(defaultTimeout, "nmcli", "-t", "-f", "UUID,NAME,TYPE,DEVICE",
@@ -367,25 +313,17 @@ func CollectNetworkIdentity() NetworkIdentity {
 	)
 }
 
-// CollectConnectivity reads NetworkManager's own verdict on whether this link
-// reaches the internet.
-//
-// The cached form, not `connectivity check`. NetworkManager re-runs its own
+// CollectConnectivity reads NetworkManager's cached verdict on whether this link
+// reaches the internet, NOT `connectivity check`: NetworkManager re-runs its own
 // probe when a link comes up, so the cached answer converges within a second or
-// two of joining a network and the 60 s tick collects it; forcing a check here
-// would put a network round trip on a path that must never block. Measured at
-// under 40 ms cached, with no measurable traffic.
-//
-// This is the cheap tier the speed test is not: it answers "is there actually
-// internet here, or is there a captive portal I have not signed into" for
-// nothing, which on a hotel or cafe network is the question that comes first.
+// two, where forcing a check would put a network round trip on a path that must
+// never block.
 func CollectConnectivity() string {
 	return ConnectivityFromText(
 		RunText(defaultTimeout, "nmcli", "-t", "networking", "connectivity"))
 }
 
-// NetworkStateFull mirrors collectors.network_state, which is
-// network_connection_state plus the radio flag -- and now the connection
+// NetworkStateFull is the connection state plus the radio flag, the connection
 // identity, NetworkManager's connectivity verdict, and the speed card.
 type NetworkStateFull struct {
 	Text         string    `json:"text"`
@@ -399,12 +337,8 @@ type NetworkStateFull struct {
 	Policy       NetPolicy `json:"policy"`
 }
 
-// NetworkStateFull_ mirrors collectors.network_state.
-//
-// No EWW_BAR_WIFI counterpart to the battery guard on purpose: a wifi-less host
-// hides the toggle in the popup (eww.wifi.enable gates the widget), but the
-// radio query is one cheap nmcli call on a path that has to run anyway for the
-// connection state, so gating it here would buy nothing.
+// CollectNetwork has no EWW_BAR_WIFI counterpart to the battery guard on purpose:
+// the radio query is one cheap nmcli call on a path that runs anyway.
 func CollectNetwork() NetworkStateFull {
 	base := CollectNetworkConnection()
 	identity := CollectNetworkIdentity()
@@ -417,10 +351,9 @@ func CollectNetwork() NetworkStateFull {
 		Connectivity: connectivity,
 		ConnUUID:     identity.UUID,
 		ConnName:     identity.Name,
-		// Assembled from the record cache rather than collected, so every
-		// caller of CollectNetwork -- the 60 s timer, the nmcli watcher, the
-		// Wi-Fi toggle -- lands a card consistent with the identity it just
-		// read, with no extra fork and no second code path.
+		// Assembled from the record cache rather than collected, so every caller
+		// lands a card consistent with the identity it just read, with no extra
+		// fork and no second code path.
 		Speed: SpeedtestCardFor(identity.UUID, base.Class, connectivity, 0),
 		// Assembled from its cache the same way, and for the same reason.
 		Policy: NetPolicyCardFor(identity.UUID, base.Class, 0),

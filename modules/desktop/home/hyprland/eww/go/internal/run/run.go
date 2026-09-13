@@ -8,10 +8,7 @@ import (
 	"time"
 )
 
-// Text mirrors common.run_text: capture stdout, discard stderr, and return
-// the empty string on any failure -- timeout, non-zero exit, or missing binary.
-// Callers parse the result and fall back to a default, so an error string here
-// would only be re-flattened to "".
+// Text captures stdout, discards stderr, and returns "" on any failure.
 func Text(timeout time.Duration, name string, args ...string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -26,9 +23,8 @@ func Text(timeout time.Duration, name string, args ...string) string {
 	return string(out)
 }
 
-// Eww mirrors popups._run_eww: fire-and-forget, all three streams detached,
-// exit status ignored. `eww close` on a window that is not open is a normal,
-// expected non-zero.
+// Eww is fire-and-forget with all three streams detached; `eww close` on a
+// window that is not open is an expected non-zero.
 func Eww(args []string) {
 	cmd := exec.Command("eww", args...)
 	cmd.Stdin = nil
@@ -37,14 +33,8 @@ func Eww(args []string) {
 	_ = cmd.Run()
 }
 
-// Status runs a command for its exit status alone, with all three streams
-// detached. Mirrors the subprocess.run(..., check=False) calls in inhibitors
-// and display, which look only at returncode.
-//
-// A command that cannot be started at all reports -1 where CPython raises
-// FileNotFoundError. Deliberate: the callers read this as "the service is not
-// active" or "the hyprctl failed", and a missing systemctl should degrade the
-// bar rather than kill the daemon thread.
+// Status runs a command for its exit status alone, reporting -1 when the command
+// cannot be started at all.
 func Status(timeout time.Duration, name string, args ...string) int {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()

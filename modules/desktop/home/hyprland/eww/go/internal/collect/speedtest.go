@@ -9,66 +9,49 @@ import (
 
 // The speed test behind the network popup's card.
 //
-// cfspeedtest rather than either speedtest.net client, and the reason is not
-// preference. Both speedtest-cli and speedtest-go fail before transferring a
-// byte: they fetch https://www.speedtest.net/speedtest-config.php, which now
-// answers an unauthenticated GET with a Cloudflare bot challenge -- HTTP 403
-// and a "Just a moment..." page, which surfaces as `HTTP Error 403: Forbidden`
-// and `XML syntax error on line 1` respectively. Ookla's own client works and
-// costs an unfree licence, a GDPR acknowledgement on every run, and a local
-// build with no binary cache. speed.cloudflare.com is a public endpoint with no
-// such fence, so it is the one that will still work in a year.
+// cfspeedtest rather than either speedtest.net client: both speedtest-cli and
+// speedtest-go fail before transferring a byte, because speedtest-config.php now
+// answers an unauthenticated GET with a Cloudflare bot challenge. Ookla's own
+// client costs an unfree licence and a local build with no binary cache.
 //
-// The caveat that the number on screen cannot carry: this measures the path to
-// the nearest Cloudflare edge, which is peered far better than an average
-// route. Optimistic for "is my ISP throttling me", right for "is this hotel
-// Wi-Fi usable" -- which is the question the popup exists to answer.
+// The caveat the number on screen cannot carry: this measures the path to the
+// nearest Cloudflare edge, which is peered far better than an average route.
 //
-// Two invocations rather than one, and the split is what makes the card useful
-// while it runs. The probe pass costs a measured 0.7 s and 0.1 MiB and yields
-// the round-trip figure; the throughput pass costs 8.7 s and 67.8 MiB. A single
-// full run would leave all three fields on placeholders for the whole wait.
+// Two invocations rather than one. The probe pass costs 0.7 s and yields the
+// round-trip figure; the throughput pass costs 8.7 s and 67.8 MiB. A single full
+// run would leave all three fields on placeholders for the whole wait.
 
 const (
-	// The light profile. cfspeedtest's own defaults are -n 10 -m 25m, which
-	// comes to roughly 361 MB per direction by payload arithmetic; these
-	// settle at a measured 33.8 MiB down and 34.0 MiB up in 8.7 s. On a capped
-	// hotel line or a phone hotspot that difference is the whole decision, and
-	// the extra precision buys nothing for the question being asked.
+	// The light profile. cfspeedtest's defaults come to roughly 361 MB per
+	// direction; these settle at 33.8 MiB down and 34.0 MiB up in 8.7 s. On a
+	// capped line that difference is the whole decision.
 	speedtestRuns        = "3"
 	speedtestPayloadCap  = "10m"
 	speedtestLatencyRuns = "10"
 
-	// The probe pass: latency plus the smallest payload cfspeedtest offers.
-	// -n 1 and 100k because the download here is only there to keep the
-	// invocation well-formed -- the latency block is what is wanted.
+	// The probe pass: latency plus the smallest payload cfspeedtest offers. The
+	// download is only there to keep the invocation well-formed.
 	speedtestProbeRuns    = "1"
 	speedtestProbePayload = "100k"
 
-	// Timeouts are generous because the payloads are fixed and the link is
-	// not: the same 33 MB that moves in 4 s here takes minutes on a bad
-	// connection. cfspeedtest skips the larger payload sizes once one exceeds
-	// 5 s, which bounds the real worst case well inside this.
+	// Generous because the payloads are fixed and the link is not. cfspeedtest
+	// skips the larger payload sizes once one exceeds 5 s, which bounds the real
+	// worst case well inside this.
 	speedtestProbeTimeout = 20 * time.Second
 	speedtestTimeout      = 90 * time.Second
 
-	// Rounded up from the measured 67.8 MiB, and stated on the card BEFORE the
-	// run rather than after it.
+	// Rounded up from the measured 67.8 MiB, and stated on the card BEFORE the run.
 	speedtestDataNote = "about 70 MB"
 
-	// U+2014 em dash. Written as an escape for the reason state.Default() gives:
-	// a literal here does not survive review or a copy-paste.
+	// U+2014 em dash, as an escape: a literal does not survive review.
 	speedtestDash = "\u2014"
 
 	speedtestNoRecord = "Not measured on this network"
 )
 
-// Speedtest is the popup card's readout for whatever network is attached now.
-//
-// Every field is a rendered string rather than a number, matching the rest of
-// the bar's state: eww.yuck does presentation with ternaries and has no
-// formatting of its own, so a float reaching it would render as Go's default
-// and could not be made to say "86.0".
+// Speedtest is the popup card's readout. Every field is a rendered string rather
+// than a number: eww.yuck has no formatting of its own, so a float reaching it
+// would render as Go's default and could not be made to say "86.0".
 type Speedtest struct {
 	Status  string `json:"status"`
 	Down    string `json:"down"`
@@ -97,10 +80,8 @@ type SpeedtestResult struct {
 }
 
 // cfSpeedtestReport is the subset of cfspeedtest's `-o json` that is read.
-//
-// Deliberately not the whole document. The report also carries a metadata block
-// holding the machine's public IP address, which has no business in a file this
-// writes to disk or in a state blob it prints to stdout.
+// Deliberately not the whole document: the report also carries the machine's
+// public IP address, which must not reach a file on disk or the state blob.
 type cfSpeedtestReport struct {
 	Latency struct {
 		Avg float64 `json:"avg_latency_ms"`
@@ -112,16 +93,12 @@ type cfSpeedtestReport struct {
 	} `json:"speed_measurements"`
 }
 
-// SpeedtestFromJSON reads a cfspeedtest report.
+// SpeedtestFromJSON reads a cfspeedtest report. The LARGEST payload wins for each
+// direction rather than the mean: small transfers are dominated by connection
+// setup, and averaging measured 14.9 Mb/s against 85.8 Mb/s on one link.
 //
-// The LARGEST payload wins for each direction rather than the mean across all
-// of them, and the difference is not marginal: on one link cfspeedtest measured
-// 14.9 Mb/s for the 100 kB pass against 85.8 Mb/s for the 10 MB pass, because
-// the small transfers are dominated by connection setup. Averaging those
-// together would report about a third of the real throughput.
-//
-// ok=false means the report held nothing worth showing. A report with latency
-// and no speed measurements is the probe pass, and is ok.
+// ok=false means the report held nothing worth showing. Latency with no speed
+// measurements is the probe pass, and is ok.
 func SpeedtestFromJSON(text string) (SpeedtestResult, bool) {
 	var report cfSpeedtestReport
 	if !ParseJSON(text, &report) {
@@ -149,12 +126,8 @@ func SpeedtestFromJSON(text string) (SpeedtestResult, bool) {
 	return result, true
 }
 
-// FormatMbps renders a throughput figure for the card's 15px slot.
-//
-// One decimal below 100 and none above it. The card gives each of its three
-// metrics about 60px at that size, which fits "86.0" and not "1024.3" -- and
-// above 100 Mb/s the tenths are noise anyway, since two runs on the same link
-// disagree by more than that.
+// FormatMbps renders for the card's 15px slot: one decimal below 100 and none
+// above, because the slot fits "86.0" and not "1024.3".
 func FormatMbps(value float64) string {
 	if value <= 0 {
 		return speedtestDash
@@ -175,17 +148,9 @@ func FormatLatency(value float64) string {
 
 // SpeedtestAge is the card's "when" line.
 //
-// Follows restoredClock's rule and extends it. That function had two forms
-// because a quota card's status line is a memory that must not read as a
-// reading; this one has the same job and more room, so it can say "yesterday"
-// and "3 days ago" where the other could only say a date.
-//
-// The boundaries are calendar days, not elapsed hours: a measurement taken at
-// 23:50 is "yesterday" at 00:10, because that is what a person means by it.
-//
-// A record dated in the future -- clock skew, or a restore from a machine with
-// a different idea of the time -- falls through to the bare date rather than
-// rendering "Measured -2 days ago".
+// The boundaries are calendar days, not elapsed hours: a measurement taken at 23:50
+// is "yesterday" at 00:10, because that is what a person means by it. A record
+// dated in the future falls through to the bare date rather than "-2 days ago".
 func SpeedtestAge(measuredEpoch, nowEpoch float64) string {
 	measured := localTime(measuredEpoch)
 	now := localTime(nowOr(nowEpoch))
@@ -207,9 +172,8 @@ func SpeedtestAge(measuredEpoch, nowEpoch float64) string {
 	return "Measured " + measured.Format("Jan 2")
 }
 
-// SpeedtestView is everything the card builder needs about one moment: the
-// stored record for the attached network if there is one, whatever a run in
-// flight has produced so far, and the two state strings that can override both.
+// SpeedtestView is everything the card builder needs about one moment: the stored
+// record, whatever a run in flight has produced, and the two overriding states.
 type SpeedtestView struct {
 	Record       SpeedtestRecord
 	HaveRecord   bool
@@ -221,27 +185,21 @@ type SpeedtestView struct {
 
 // SpeedtestCardFrom renders the card.
 //
-// The rule this function exists to enforce: a figure appears only when it was
-// measured on the connection attached right now. A record filed under another
-// UUID renders as placeholders, NOT as that network's numbers with a caveat
-// beside them -- a caveat is the kind of thing a glance misses, and a glance is
-// all this card gets. There is deliberately no state for "here is another
-// network's speed".
+// The rule it exists to enforce: a figure appears only when it was measured on the
+// connection attached right now. A record filed under another UUID renders as
+// placeholders, NOT as that network's numbers with a caveat beside them.
 //
-// Precedence, in order: a run in flight beats everything, because it is the one
-// state the reader caused; no link beats a stored record, because a number
-// beside "Disconnected" is a contradiction; a stored record beats the portal
-// notice, because having a record proves the portal was signed into before and
-// the header and footer already announce the portal loudly.
+// Precedence: a run in flight beats everything; no link beats a stored record,
+// because a number beside "Disconnected" is a contradiction; a stored record beats
+// the portal notice, which the header and footer already announce.
 func SpeedtestCardFrom(view SpeedtestView, nowEpoch float64) Speedtest {
 	card := SpeedtestDefault()
 
 	if view.Running {
 		card.Status = "running"
 		card.Caption = "Testing\u2026 uses " + speedtestDataNote
-		// The probe pass lands about eight seconds before the throughput pass,
-		// so this field is populated for most of the wait. That is the whole
-		// reason the run is split in two.
+		// The probe pass lands about eight seconds before the throughput pass, so
+		// this field is populated for most of the wait.
 		if view.Partial.Latency > 0 {
 			card.Latency = FormatLatency(view.Partial.Latency)
 		}
@@ -272,11 +230,8 @@ func SpeedtestCardFrom(view SpeedtestView, nowEpoch float64) Speedtest {
 	return card
 }
 
-// The in-memory half of the record store.
-//
-// Records mirrors what is on disk; running and partial exist only for the
-// duration of one run and are never persisted, because "a test was in flight
-// when the daemon died" is not a fact worth restoring.
+// The in-memory half of the record store. Records mirrors what is on disk;
+// running and partial last one run and are never persisted.
 var (
 	speedtestLock    sync.Mutex
 	speedtestRecords = map[string]SpeedtestRecord{}
@@ -284,10 +239,7 @@ var (
 	speedtestPartial SpeedtestResult
 )
 
-// SeedSpeedtestRecords fills the cache from a restored snapshot.
-//
-// Only fills an empty cache, matching SeedQuotaCache: this runs at startup
-// beside collectors that may already have written something better, and a
+// SeedSpeedtestRecords only fills an EMPTY cache, matching SeedQuotaCache: a
 // restore must never overwrite a live reading that won the race.
 func SeedSpeedtestRecords(records map[string]SpeedtestRecord) {
 	speedtestLock.Lock()
@@ -311,17 +263,14 @@ func SpeedtestRecordsSnapshot() map[string]SpeedtestRecord {
 	return out
 }
 
-// SpeedtestCardFor assembles the card for one connection out of the caches.
-//
-// uuid is the identity of the connection carrying traffic right now. An empty
-// uuid can never match a record, which is exactly right: with no identity there
-// is no way to know whose numbers a stored record holds.
+// SpeedtestCardFor assembles the card for one connection. An empty uuid can never
+// match a record, which is right: with no identity there is no way to know whose
+// numbers a stored record holds.
 func SpeedtestCardFor(uuid, class, connectivity string, nowEpoch float64) Speedtest {
 	speedtestLock.Lock()
 	view := SpeedtestView{
-		// Compared against this uuid, not merely non-empty. Otherwise a run
-		// started on one network reports "testing" on whatever you switch to,
-		// and shows that run's latency beside the new network's name.
+		// Compared against this uuid, not merely non-empty. Otherwise a run started
+		// on one network reports "testing" on whatever you switch to.
 		Running:      speedtestRunning != "" && speedtestRunning == uuid,
 		Partial:      speedtestPartial,
 		Class:        class,
@@ -334,24 +283,16 @@ func SpeedtestCardFor(uuid, class, connectivity string, nowEpoch float64) Speedt
 	return SpeedtestCardFrom(view, nowEpoch)
 }
 
-// RunSpeedtest performs one measurement and files it against the network that
-// is attached when it FINISHES.
-//
-// Re-reading the identity at the end rather than trusting the one captured at
-// the start is the whole reason this function is shaped like this. The run
-// takes about nine seconds, which is long enough to walk out of the cafe, drop
-// onto a phone hotspot, or have NetworkManager roam onto a different profile --
+// RunSpeedtest files its measurement against the network attached when it FINISHES.
+// The run takes about nine seconds, long enough to roam onto a different profile,
 // and filing a hotspot's numbers under the cafe's UUID would poison that record
-// permanently, with nothing on screen to suggest it had happened.
+// permanently with nothing on screen to suggest it.
 //
-// publish is called on every state change the card can show: when the run
-// starts, when the probe pass lands its latency figure, and when the run ends
-// either with a record or without one.
+// publish is called on every state change the card can show.
 func RunSpeedtest(publish func()) {
 	start := CollectNetworkIdentity()
-	// Refused rather than attempted. Without an identity the result has nowhere
-	// to be filed, so the run would move about 70 MB, show no progress -- the
-	// card keys "running" off this uuid -- and discard the answer at the end.
+	// Refused rather than attempted: without an identity the result has nowhere
+	// to be filed, so the run would move 70 MB and discard the answer.
 	if start.UUID == "" {
 		return
 	}
@@ -390,19 +331,15 @@ func RunSpeedtest(publish func()) {
 		"-o", "json",
 	))
 	// Both directions required, where SpeedtestFromJSON is satisfied by latency
-	// alone. That leniency exists for the probe pass above and is wrong here: a
-	// full run that returned only a latency block would otherwise replace a good
-	// record with zeroes, and the card would render dashes under a fresh
-	// "Measured just now" -- a worse outcome than keeping the older figures.
+	// alone. A full run returning only a latency block would otherwise replace a
+	// good record with zeroes under a fresh "Measured just now".
 	if !ok || result.Down <= 0 || result.Up <= 0 {
 		return
 	}
 
 	// run_text() flattens a timeout, a non-zero exit and a missing binary into
-	// the same empty string, so this branch is also where "cfspeedtest is not
-	// installed" lands. Dropping the result is the right answer for all of
-	// them: the card returns to whatever it showed before, which is either a
-	// real older record or the placeholder.
+	// the same empty string, so "cfspeedtest is not installed" also lands here.
+	// Dropping the result is right for all of them.
 	end := CollectNetworkIdentity()
 	if end.UUID == "" || end.UUID != start.UUID {
 		return

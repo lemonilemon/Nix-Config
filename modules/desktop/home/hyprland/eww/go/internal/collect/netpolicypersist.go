@@ -1,24 +1,18 @@
 package collect
 
-// The durable half of the connectivity-policy probe, on the same machinery as
-// the speed record (see records.go).
+// The durable half of the connectivity-policy probe, on the same machinery as the
+// speed record (see records.go).
 //
-// A separate file rather than a second field on the speed record, because the
-// two answer different questions and decay at completely different rates: a
-// throughput figure is stale in days, where a firewall policy holds for years.
-// Merging them would tie a long-lived fact's lifetime to a short-lived one, and
-// any future decision to expire speed records would take the policy with it.
+// A separate file rather than a second field on the speed record: a throughput
+// figure is stale in days where a firewall policy holds for years, and merging them
+// would tie a long-lived fact's lifetime to a short-lived one.
 
 // netPolicySnapshotVersion is the on-disk version of the policy record file.
 const netPolicySnapshotVersion = 1
 
-// netPolicyRecordLimit caps how many networks are remembered.
-//
-// The same bound as the speed store, but only because 32 networks is already
-// more than anyone revisits -- NOT because the two stores stay in step. They
-// prune independently and fill at different rates: this one is written
-// automatically on joining, where a speed record only exists if someone pressed
-// the button, so a network can easily have a policy record and no speed record.
+// netPolicyRecordLimit caps how many networks are remembered. The same bound as the
+// speed store, but NOT in step with it: they prune independently and fill at
+// different rates, since this one is written automatically on joining.
 const netPolicyRecordLimit = 32
 
 // PruneNetPolicyRecords keeps the most recently probed entries.

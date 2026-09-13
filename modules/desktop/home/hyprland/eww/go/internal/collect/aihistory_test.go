@@ -2,12 +2,10 @@ package collect
 
 import "testing"
 
-// A trimmed ccusage `daily --json --by-agent` report, keeping only the keys the
-// parser reads. Captured from this host rather than invented, and two details
-// of the real shape are the ones worth having recorded: the row's own "agent"
-// is the string "all" while the real breakdown sits in a sibling "agents"
-// ARRAY of objects, and each of those objects repeats the same totalTokens /
-// totalCost field names the parent row uses.
+// A trimmed ccusage `daily --json --by-agent` report captured from this host. Two
+// details of the real shape matter: the row's own "agent" is the string "all" while
+// the breakdown sits in a sibling "agents" ARRAY, whose objects repeat the parent's
+// totalTokens / totalCost field names.
 const dailyReportJSON = `{
   "daily": [
     {"period":"2026-08-13","agent":"all","totalTokens":54149914,"totalCost":0,
@@ -30,9 +28,8 @@ const dailyReportJSON = `{
   ]
 }`
 
-// The whole day's total used to be credited to every agent that appeared in it,
-// which made the popup's five agent rows sum to 4517M beneath a stated total of
-// 2943M. Nothing errored; the numbers just did not add up on screen.
+// The whole day's total used to be credited to every agent in it, which made the
+// popup's five agent rows sum to 4517M beneath a stated total of 2943M.
 func TestHistoryDaysReadsThePerAgentBreakdown(t *testing.T) {
 	days := HistoryDaysFromJSON(dailyReportJSON)
 
@@ -59,9 +56,9 @@ func TestHistoryDaysReadsThePerAgentBreakdown(t *testing.T) {
 	}
 }
 
-// The whole point of the detector: a model ccusage cannot price costs exactly
-// zero while still burning tokens, and --json mode says nothing about it. This
-// is the shape that let claude-opus-5 report $616 of spend as free.
+// A model ccusage cannot price costs exactly zero while still burning tokens, and
+// --json mode says nothing about it. This is the shape that let claude-opus-5
+// report $616 of spend as free.
 func TestUnpricedModelsNamesModelsThatSpentTokensForFree(t *testing.T) {
 	report := `{"daily":[
 	  {"period":"2026-08-13","modelBreakdowns":[
@@ -81,8 +78,6 @@ func TestUnpricedModelsNamesModelsThatSpentTokensForFree(t *testing.T) {
 	}
 }
 
-// A model that ran no tokens costing nothing is arithmetic, not a missing
-// price. Flagging it would make the warning permanent and therefore ignored.
 func TestUnpricedModelsIgnoresModelsThatSpentNothing(t *testing.T) {
 	report := `{"daily":[{"period":"2026-08-13","modelBreakdowns":[
 	  {"modelName":"claude-haiku-4-5","cost":0,"inputTokens":0,"outputTokens":0}
@@ -93,7 +88,6 @@ func TestUnpricedModelsIgnoresModelsThatSpentNothing(t *testing.T) {
 	}
 }
 
-// The healthy case has to be silent, or the notice becomes furniture.
 func TestUnpricedModelsIsSilentWhenEverythingIsPriced(t *testing.T) {
 	report := `{"daily":[{"period":"2026-08-13","modelBreakdowns":[
 	  {"modelName":"claude-opus-5","cost":43.32,"inputTokens":1644,"outputTokens":11628}
@@ -107,8 +101,6 @@ func TestUnpricedModelsIsSilentWhenEverythingIsPriced(t *testing.T) {
 	}
 }
 
-// "all" is the row's own total wearing an agent label. Counting it beside the
-// real agents would double every figure in the summary.
 func TestHistoryDaysSkipsTheAllPseudoAgent(t *testing.T) {
 	report := `{"daily":[{"period":"2026-08-13","totalTokens":100,
 	  "agents":[{"agent":"all","totalTokens":100},{"agent":"claude","totalTokens":100}]}]}`
@@ -134,10 +126,8 @@ func dayByDate(t *testing.T, days []HistoryDay, date string) HistoryDay {
 	return HistoryDay{}
 }
 
-// The weekly section's period is a bare date too -- "2026-08-10" is a real
-// calendar day, not a distinguishable rollup key -- so nothing about the string
-// separates a week row from a day row. Only reading the daily section keeps
-// them apart, and mixing them would double-count a week into one column.
+// The weekly section's period is a bare date too -- "2026-08-10" is a real calendar
+// day -- so nothing about the string separates a week row from a day row.
 func TestHistoryDaysReadsOnlyTheDailySection(t *testing.T) {
 	days := HistoryDaysFromJSON(dailyReportJSON)
 
@@ -154,8 +144,8 @@ func TestHistoryDaysReadsOnlyTheDailySection(t *testing.T) {
 	}
 }
 
-// "2026-08" parses under several layouts and would sort between "2026-08-01"
-// and "2026-08-02" as a string, landing a whole month in one cell.
+// "2026-08" parses under several layouts and would sort between "2026-08-01" and
+// "2026-08-02" as a string, landing a whole month in one cell.
 func TestHistoryDaysRejectsNonCalendarPeriods(t *testing.T) {
 	for _, period := range []string{"2026-08", "2026-8-3", "2026", "", "today"} {
 		report := `{"daily":[{"period":"` + period + `","totalTokens":1}]}`
@@ -165,10 +155,9 @@ func TestHistoryDaysRejectsNonCalendarPeriods(t *testing.T) {
 	}
 }
 
-// The entire reason the file exists. ccusage reports what the transcripts still
-// hold; once an agent prunes them the day vanishes from every future report,
-// and if a merge let that removal through the store would decay to exactly the
-// window it was built to outlive.
+// The entire reason the file exists: once an agent prunes its transcripts the day
+// vanishes from every future report, and a merge that let that through would decay
+// the store to exactly the window it was built to outlive.
 func TestMergeKeepsDaysFreshNoLongerReports(t *testing.T) {
 	stored := []HistoryDay{
 		{Date: "2025-11-21", Tokens: 1_000_000, Cost: 1.50, Agents: []HistoryAgentDay{{Agent: "gemini", Tokens: 1_000_000, Cost: 1.50}}},
@@ -186,7 +175,6 @@ func TestMergeKeepsDaysFreshNoLongerReports(t *testing.T) {
 	}
 }
 
-// Today's row grows all day, so the newer read has to win.
 func TestMergePrefersFreshForADayInBoth(t *testing.T) {
 	stored := []HistoryDay{{Date: "2026-08-15", Tokens: 1_000, Cost: 1.00}}
 	fresh := []HistoryDay{{Date: "2026-08-15", Tokens: 17_735_931, Cost: 22.56}}
@@ -201,10 +189,8 @@ func TestMergePrefersFreshForADayInBoth(t *testing.T) {
 	}
 }
 
-// A day can keep its tokens and lose its price: ccusage prices an unknown model
-// at zero, which is how claude-opus-5 days read $0.00 under --offline while the
-// online table says $43.32. Without this guard one offline refresh would
-// overwrite the real figure permanently, and nothing would report it.
+// A day can keep its tokens and lose its price: ccusage prices an unknown model at
+// zero, so one offline refresh would otherwise overwrite the real figure permanently.
 func TestMergeKeepsStoredCostWhenFreshPricingCollapses(t *testing.T) {
 	stored := []HistoryDay{{Date: "2026-08-13", Tokens: 54_149_914, Cost: 43.32}}
 	fresh := []HistoryDay{{Date: "2026-08-13", Tokens: 54_149_914, Cost: 0}}

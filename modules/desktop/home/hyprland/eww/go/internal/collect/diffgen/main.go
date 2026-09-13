@@ -1,18 +1,12 @@
 // Command diffgen answers one JSON-encoded call per input line.
 //
-// It was built for the differential gate: the Python suite fed both
-// implementations the same cases and diffed the answers, which pinned the cases
-// nobody thought to write a table test for. That gate went away with the Python,
-// and what it produced is now testdata/golden.jsonl.gz.
-//
-// It still ships because the eww-backend flake check drives it for
-// DefaultSnapshot, comparing the daemon's starting state against eww.yuck's
-// :initial literal, and because it is the cheapest way to ask the collectors a
-// one-off question by hand:
+// The eww-backend flake check drives it for DefaultSnapshot, comparing the daemon's
+// starting state against eww.yuck's :initial literal. It is also the cheapest way to
+// ask the collectors a one-off question by hand:
 //
 //	echo '{"fn":"AgentDisplayName","args":["claude"]}' | go run ./internal/collect/diffgen
 //
-// The dispatch itself lives in internal/replay, shared with the golden test.
+// The dispatch lives in internal/replay, shared with the golden test.
 //
 // Protocol, one JSON object per line in, one per line out:
 //

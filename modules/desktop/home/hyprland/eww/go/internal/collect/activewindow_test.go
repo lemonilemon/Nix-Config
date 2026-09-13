@@ -6,16 +6,11 @@ import (
 	"unicode/utf8"
 )
 
-// TestAppIconsHoldRealGlyphs is the regression guard for the bug that motivated
-// this table's rewrite.
-//
 // Four entries -- kitty, firefox, spotify, thunar -- shipped for years as a bare
-// space, byte-identical to the fallback for an unknown app. Nothing caught it
-// because a missing Nerd Font glyph and a space look the same everywhere a human
-// would look: an editor, a terminal, a diff, and the bar itself.
-//
-// So this asserts on the bytes. Every value must carry a code point outside
-// ASCII, which a mangled or dropped glyph cannot satisfy.
+// space, byte-identical to the fallback for an unknown app. Nothing caught it because
+// a missing Nerd Font glyph and a space look the same in an editor, a terminal, a
+// diff and the bar itself. So this asserts on the bytes: every value must carry a
+// code point outside ASCII.
 func TestAppIconsHoldRealGlyphs(t *testing.T) {
 	for class, icon := range appIcons {
 		if icon == appIconFallback {
@@ -41,11 +36,9 @@ func TestAppIconsHoldRealGlyphs(t *testing.T) {
 	}
 }
 
-// TestAppIconKeysAreNormalised keeps the table indexable.
-//
-// lookupAppIcon folds the class before indexing, so a key that is not already
-// folded is unreachable -- and unreachable in the quiet way, where the app just
-// never gets its icon and nobody knows why.
+// lookupAppIcon folds the class before indexing, so a key that is not already folded
+// is unreachable -- and unreachable in the quiet way, where the app just never gets
+// its icon.
 func TestAppIconKeysAreNormalised(t *testing.T) {
 	for class := range appIcons {
 		if folded := normalizeClass(class); folded != class {

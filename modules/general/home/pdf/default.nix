@@ -7,9 +7,7 @@
 {
   config = lib.mkIf config.home.general.pdf.enable {
     home.packages = with pkgs; [
-      # typst
       typst
-      # tex & markdown
       texliveSmall # tex
       multimarkdown # markdown
       # file conversion

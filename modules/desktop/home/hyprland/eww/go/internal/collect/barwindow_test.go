@@ -5,21 +5,17 @@ import (
 	"testing"
 )
 
-// The command that opens a bar must be incapable of forking a second eww
-// daemon, and that is what --no-daemonize buys.
+// The command that opens a bar must be incapable of forking a second eww daemon,
+// which is what --no-daemonize buys.
 //
-// eww's client answers a failed server action by starting a daemon of its own,
-// gated on `action.can_start_daemon() && !opts.no_daemonize`. The failure that
-// fires it is not "no daemon is running": the client gives the daemon ~100 ms
-// to reply, and building this bar's widget tree can take longer on a loaded
-// machine -- while the daemon goes on to open the window anyway. So a monitor
-// hotplugged at a busy moment could leave two eww daemons sharing one IPC
-// socket, each with its own bar and its own eww-bar-backend, one of them
-// invisible to systemd. The flag is load-bearing.
+// eww's client answers a failed server action by starting a daemon of its own, gated
+// on `action.can_start_daemon() && !opts.no_daemonize`. The failure that fires it is
+// not "no daemon is running": the client gives the daemon ~100 ms to reply, and
+// building this bar's widget tree can take longer on a loaded machine while the
+// daemon goes on to open the window anyway.
 //
-// This is the coverage the golden replay's three `BarWindowCommand("added",
-// ...)` cases used to carry; they record the argv from before the flag and are
-// skipped there now.
+// This is the coverage the golden replay's three `BarWindowCommand("added", ...)`
+// cases used to carry; they record the argv from before the flag and are skipped.
 func TestBarWindowCommandCannotForkADaemon(t *testing.T) {
 	argv := BarWindowCommand("added", "eDP-1")
 

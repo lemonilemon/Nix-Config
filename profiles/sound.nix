@@ -28,7 +28,6 @@
       };
     };
   };
-  # Clean environment
   environment.sessionVariables = {
     "PIPEWIRE_LATENCY" = "1024/48000";
   };

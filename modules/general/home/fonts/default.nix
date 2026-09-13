@@ -8,25 +8,6 @@
   config = lib.mkIf config.home.general.fonts.enable {
     fonts.fontconfig = {
       enable = true;
-      # defaultFonts = {
-      #   sansSerif = [
-      #     "Noto Sans CJK TC"
-      #     "Noto Sans CJK SC"
-      #     "Noto Sans"
-      #     "DejaVu Sans"
-      #   ];
-      #   serif = [
-      #     "Noto Serif CJK TC"
-      #     "Noto Serif CJK SC"
-      #     "Noto Serif"
-      #     "DejaVu Sans"
-      #   ];
-      #   emoji = [
-      #     "Noto Color Emoji"
-      #     "Noto Emoji"
-      #     "Awesome Font"
-      #   ];
-      # };
     };
     home.packages = with pkgs; [
       corefonts # Arial, Times New Roman, Courier New, etc.

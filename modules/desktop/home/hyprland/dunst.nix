@@ -31,7 +31,6 @@ in
           separator_height = 1;
           separator_color = "frame";
 
-          # Font
           font = "JetBrainsMono Nerd Font Propo 11";
 
           # Text
@@ -53,14 +52,12 @@ in
           history_length = 50;
           always_run_script = true;
 
-          # Icons
           icon_theme = "rose-pine";
           enable_recursive_icon_lookup = true;
           icon_position = "left";
           min_icon_size = 24;
           max_icon_size = 48;
 
-          # Progress bar
           progress_bar = true;
           progress_bar_height = 6;
           progress_bar_frame_width = 0;

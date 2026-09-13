@@ -61,12 +61,6 @@
           ];
           lua = [ "stylua" ];
           nix = [ "nixfmt" ];
-          # markdown = [
-          #   [
-          #     "prettierd"
-          #     "prettier"
-          #   ]
-          # ];
           yaml = [
             "yamllint"
             "yamlfmt"

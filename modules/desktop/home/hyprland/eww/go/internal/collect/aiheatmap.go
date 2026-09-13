@@ -9,34 +9,21 @@ import (
 
 // The contribution-graph grid behind the popup's History tab.
 //
-// Shape note, and it is load-bearing rather than stylistic: Columns is a plain
-// [][]HeatCell rather than a slice of structs with a Cells field. eww's `for`
-// body must be exactly one widget and a `for` may not be the direct body of
-// another `for` (build_widget.rs rejects WidgetUse::Loop there), so the nesting
-// has to be for -> box -> for, and the inner loop iterates the outer binding
-// DIRECTLY. That is precisely how the wallpaper grid is built (eww.yuck:509-512
-// over RowsFromItems), and matching it means the inner loop reads
-// `(for cell in {column})` instead of `{column.cells}`.
+// Columns is a plain [][]HeatCell rather than a slice of structs with a Cells
+// field, and that is load-bearing: eww's `for` body must be exactly one widget and
+// a `for` may not be the direct body of another `for`, so the nesting has to be
+// for -> box -> for with the inner loop iterating the outer binding DIRECTLY.
 //
-// This whole structure reaches eww as its own variable via `eww update`, never
-// through state.Bar. Two independent reasons, either sufficient: adding a field
-// to AiUsage breaks 112 recorded golden cases across 7 entry points and one to
-// state.Bar breaks 46, none of which can be regenerated; and eww rebuilds every
-// child of a `for` whenever any variable the loop expression mentions changes,
-// so a grid fed from bar_state would destroy and rebuild 424 widgets every time
-// the CPU collector ticks, which is every 7 seconds.
+// The structure reaches eww as its own variable via `eww update`, never through
+// state.Bar. Two sufficient reasons: adding a field to AiUsage breaks 112 recorded
+// golden cases and one to state.Bar breaks 46, none regenerable; and eww rebuilds
+// every child of a `for` when any variable it mentions changes, so a grid fed from
+// bar_state would rebuild 424 widgets every 7 seconds.
 
-// heatmapWeeks is how many week-columns the grid renders, and historyDays is
-// how far back the Year period's NUMBERS reach. They are deliberately different.
-//
-// The grid is bounded by the window: every other popup in this bar is 280-340px
-// wide, and a 53-week grid at a legible cell size forces ~540, which makes this
-// popup read as a different kind of object from its siblings. 26 columns at a
-// 10px cell -- GitHub's own cell size -- fits 380px, which is close enough to
-// the family to belong.
-//
-// The totals are bounded by nothing, so they stay a full year. Shrinking them to
-// match the graph would quietly redefine "Year" as six months.
+// heatmapWeeks is how many week-columns the grid renders; historyDays is how far
+// back the Year period's NUMBERS reach. Deliberately different: the grid is bounded
+// by the window (53 weeks forces ~540px against this bar's 280-340px popups), while
+// the totals stay a full year, because shrinking them would redefine "Year".
 const (
 	heatmapWeeks = 26
 	historyDays  = 365
@@ -47,23 +34,17 @@ const (
 // modifier class at all.
 const heatLevels = 4
 
-// HeatCell is one day.
-//
-// Class carries the whole visual state and Tooltip the whole hover text, so the
-// yuck template stays a single interpolation of each with no logic. Anything
-// conditional here would have to be a simplexpr ternary re-evaluated per cell
-// per rebuild, 371 times.
+// HeatCell is one day. Class carries the whole visual state and Tooltip the whole
+// hover text, so the yuck template stays a single interpolation of each: anything
+// conditional would be a simplexpr ternary re-evaluated 371 times per rebuild.
 type HeatCell struct {
 	Class   string `json:"class"`
 	Tooltip string `json:"tooltip"`
 }
 
-// HeatMonth is one month label above the grid.
-//
-// Width is a pixel count rather than a column span because the label row cannot
-// use the grid's own layout: labels are variable-width text and the columns are
-// fixed 5 px squares. Pinning each label to `span * pitch - gap` keeps the two
-// rows aligned without a per-column label widget.
+// HeatMonth is one month label above the grid. Width is a pixel count rather than
+// a column span because labels are variable-width text where the columns are fixed
+// 5px squares.
 type HeatMonth struct {
 	Label string `json:"label"`
 	Width int    `json:"width"`
@@ -72,14 +53,8 @@ type HeatMonth struct {
 // AiHistory is the ai_history eww variable.
 //
 // Period is an AiPeriod, the same shape bar_state.ai_usage.periods uses, so the
-// year renders through eww.yuck's existing period_panel widget beside Today,
-// Week and Month rather than through a summary of its own. Reusing the type is
-// free: the golden cases pin how AiUsage serialises, not where AiPeriod may be
-// used, and nothing here is reachable from AiUsage.
-//
-// Warning is the only place the popup can admit its cost figures are
-// incomplete. It lives here rather than on AiUsage because that struct is
-// pinned by 112 recorded cases.
+// year renders through eww.yuck's existing period_panel widget. Warning lives here
+// rather than on AiUsage because that struct is pinned by 112 recorded cases.
 type AiHistory struct {
 	Columns [][]HeatCell `json:"columns"`
 	Months  []HeatMonth  `json:"months"`
@@ -97,19 +72,13 @@ const (
 	heatCellGap            = 2
 	heatMonthLabelMinWidth = 24
 
-	// How many agent rows the summary shows before folding the tail into a
-	// single "+N more". Five is what fits above the footer at the window's
-	// 420px; the scroll around the summary is the safety net for the warning
-	// line, not a place to hide agents.
+	// How many agent rows the summary shows before folding the tail into a single
+	// "+N more". Five is what fits above the footer at the window's 420px.
 	maxHistoryAgentRows = 5
 )
 
-// AiHistoryDefault is the value the ai_history defvar carries before the first
-// collection, and what a failed one falls back to.
-//
-// An empty grid rather than a placeholder-filled one: the yuck renders whatever
-// columns exist, so zero columns is an empty card and needs no "no data" branch
-// in the template.
+// AiHistoryDefault is an empty grid rather than a placeholder-filled one: the yuck
+// renders whatever columns exist, so zero columns needs no "no data" branch.
 func AiHistoryDefault() AiHistory {
 	return AiHistory{
 		Columns: [][]HeatCell{},
@@ -124,12 +93,9 @@ func AiHistoryDefault() AiHistory {
 	}
 }
 
-// WarnUnpriced renders the unpriced-model notice, empty when every model that
-// spent tokens also has a price.
-//
-// Names the models rather than saying "some costs are missing", because the
-// name is the key to add to the pricingOverrides table in overlays/default.nix
-// and a warning that does not say what to do gets ignored.
+// WarnUnpriced renders the unpriced-model notice, empty when every model that spent
+// tokens also has a price. It names the models because the name is the key to add
+// to the pricingOverrides table in overlays/default.nix.
 func WarnUnpriced(models []string) string {
 	switch len(models) {
 	case 0:
@@ -142,19 +108,12 @@ func WarnUnpriced(models []string) string {
 	return fmt.Sprintf("No price for %s and %d more", models[0], len(models)-1)
 }
 
-// heatThresholds returns the upper bound of each of the first heatLevels-1
-// bands, computed as quantiles over the days that had any usage.
+// heatThresholds returns the upper bound of each of the first heatLevels-1 bands,
+// as quantiles over the days that had any usage.
 //
-// Quantiles of non-zero days, not a fixed token scale, because the grid has to
-// stay legible across wildly different usage. Measured on this host a heavy day
-// is 300M tokens and a light one is 200K -- three orders of magnitude -- so any
-// absolute ramp would either saturate every working day at level 4 or leave the
-// light ones indistinguishable from empty. This is what GitHub does with commit
-// counts and for the same reason.
-//
-// Zero days are excluded from the quantile: including them on a machine used
-// twice a week would put the median at zero and push every active day to the
-// top band.
+// Quantiles rather than a fixed token scale because usage spans three orders of
+// magnitude here. Zero days are excluded: including them on a machine used twice a
+// week would put the median at zero and push every active day to the top band.
 func heatThresholds(days []HistoryDay) []float64 {
 	active := make([]float64, 0, len(days))
 	for _, day := range days {
@@ -170,8 +129,7 @@ func heatThresholds(days []HistoryDay) []float64 {
 	thresholds := make([]float64, 0, heatLevels-1)
 	for band := 1; band < heatLevels; band++ {
 		// Nearest-rank on a 0-indexed slice. len-1 keeps the top band non-empty:
-		// with index len the highest quantile would sit above every value and
-		// level 4 could never be reached.
+		// with index len, level 4 could never be reached.
 		index := band * (len(active) - 1) / heatLevels
 		thresholds = append(thresholds, active[index])
 	}
@@ -196,9 +154,7 @@ func heatLevel(tokens float64, thresholds []float64) int {
 }
 
 // HeatmapFromDays builds the grid for the year ending on the day containing now.
-//
-// Columns run oldest to newest and each holds seven cells, Sunday first, which
-// is the orientation GitHub uses and the one the month labels assume.
+// Columns run oldest to newest, seven cells each, Sunday first.
 func HeatmapFromDays(days []HistoryDay, nowEpoch float64) AiHistory {
 	history := AiHistoryDefault()
 	if len(days) == 0 {
@@ -214,16 +170,14 @@ func HeatmapFromDays(days []HistoryDay, nowEpoch float64) AiHistory {
 	today := localTime(nowOr(nowEpoch))
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 
-	// The grid ends on the Saturday of the current week, so today's column is
-	// the last one and partially filled -- the same as GitHub's trailing edge.
+	// The grid ends on the Saturday of the current week, so today's column is last.
 	start := today.AddDate(0, 0, -int(today.Weekday())-(heatmapWeeks-1)*7)
 
 	// The numbers reach back further than the graph draws; see historyDays.
 	totalsFrom := today.AddDate(0, 0, -historyDays)
 
-	// Days before the first record are not "no usage", they are "not recorded",
-	// and rendering them as an empty well would claim the machine sat idle
-	// through months it was not being watched.
+	// Days before the first record are not "no usage" but "not recorded", and an
+	// empty well would claim the machine sat idle through months it was not watched.
 	sortHistory(days)
 	firstRecorded := days[0].Date
 
@@ -239,9 +193,8 @@ func HeatmapFromDays(days []HistoryDay, nowEpoch float64) AiHistory {
 		}
 		columns = append(columns, column)
 
-		// A month owns the columns whose Sunday falls inside it, which is the
-		// convention that keeps each label at or before its month's first full
-		// week rather than drifting a column late.
+		// A month owns the columns whose Sunday falls inside it, which keeps each
+		// label at or before its month's first full week rather than a column late.
 		label := start.AddDate(0, 0, week*7).Format("Jan")
 		if len(monthLabels) == 0 || monthLabels[len(monthLabels)-1] != label {
 			monthLabels = append(monthLabels, label)
@@ -296,16 +249,12 @@ func heatCell(date, today time.Time, firstRecorded string,
 
 // monthRow turns column spans into pixel widths.
 //
-// A month is span*pitch wide, and only the LAST one loses a gap. The gap lives
-// between columns, so a 53-column grid has 52 of them, not one per month --
-// subtracting a gap from every month made the label row 12 px narrower than the
-// grid, and since both are centred the difference split in half and offset
-// every label by 6 px against the days it names.
+// A month is span*pitch wide and only the LAST one loses a gap: the gap lives
+// between columns, so subtracting one from every month made the label row 12px
+// narrower than the grid and offset every label by 6px.
 //
-// A one-column leading label and a trailing label with less than 24 px are
-// dropped: edge labels otherwise overflow their allocation and collide with the
-// adjacent month or card edge. Their width is retained so the row stays pinned
-// to the grid exactly.
+// A one-column leading label and a trailing label under 24px are dropped, because
+// edge labels otherwise collide with the card edge. Their width is retained.
 func monthRow(labels []string, spans []int) []HeatMonth {
 	months := make([]HeatMonth, 0, len(labels))
 	for i, label := range labels {
@@ -321,12 +270,8 @@ func monthRow(labels []string, spans []int) []HeatMonth {
 	return months
 }
 
-// historyAgents totals the window per agent, busiest first.
-//
-// Scoped to the same window as historyTotals, so the rows add up to the figure
-// printed beside them. An earlier version summed the whole store here while the
-// total covered one year, which made the two disagree on any machine with more
-// than a year of history.
+// historyAgents totals the window per agent, busiest first. Scoped to the same
+// window as historyTotals, so the rows add up to the figure printed beside them.
 func historyAgents(days []HistoryDay, start, today time.Time, total float64) []PeriodAgent {
 	from, to := start.Format("2006-01-02"), today.Format("2006-01-02")
 
@@ -365,10 +310,8 @@ func historyAgents(days []HistoryDay, start, today time.Time, total float64) []P
 	})
 
 	// Fold the tail into one row once there are more agents than the panel can
-	// show. The summary sits in a scroll, so without this the extra rows are
-	// simply not on screen and nothing says they exist -- which is the failure
-	// this list is supposed to prevent, since the rows are what explain the
-	// total above them. Aggregating keeps them adding up.
+	// show. The summary sits in a scroll, so without this the extra rows are simply
+	// not on screen and nothing says they exist. Aggregating keeps them adding up.
 	if len(rows) > maxHistoryAgentRows {
 		var rest row
 		for _, r := range rows[maxHistoryAgentRows-1:] {
@@ -403,11 +346,8 @@ func historyAgents(days []HistoryDay, start, today time.Time, total float64) []P
 	return agents
 }
 
-// historyTotals sums the days the grid actually shows.
-//
-// Scoped to the rendered window rather than the whole store on purpose: the
-// footer sits directly under the grid, and a total covering days the grid does
-// not draw would not add up to what is on screen.
+// historyTotals sums the days the grid actually shows: the footer sits directly
+// under the grid, and a total covering days it does not draw would not add up.
 func historyTotals(days []HistoryDay, start, today time.Time) (tokens, cost string, count int, label string, rawTokens float64) {
 	from := start.Format("2006-01-02")
 	to := today.Format("2006-01-02")

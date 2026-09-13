@@ -24,7 +24,6 @@ type Module struct {
 	Class   string `json:"class"`
 }
 
-// MediaState is the shape collectors.media_state_from_text returns.
 type MediaState struct {
 	Text    string `json:"text"`
 	Status  string `json:"status"`
@@ -33,11 +32,9 @@ type MediaState struct {
 	Tooltip string `json:"tooltip"`
 }
 
-// SubmapFromEvent mirrors collectors.submap_from_event.
-//
-// Returns ok=false for the Python None, which the caller distinguishes from the
-// empty string: None means "not a submap event, change nothing", "" means "back
-// to the default submap, clear the indicator".
+// SubmapFromEvent returns ok=false for the Python None, which the caller
+// distinguishes from the empty string: None means "not a submap event, change
+// nothing", "" means "back to the default submap, clear the indicator".
 func SubmapFromEvent(line string) (string, bool) {
 	if !strings.HasPrefix(line, "submap>>") {
 		return "", false
@@ -49,10 +46,9 @@ func SubmapFromEvent(line string) (string, bool) {
 	return value, true
 }
 
-// TrayCountFromText mirrors collectors.tray_count_from_text.
-//
-// `busctl get-property ... RegisteredStatusNotifierItems` prints the value as
-// `as N "item1" "item2" ...` -- the token after the `as` type tag is the count.
+// TrayCountFromText reads `busctl get-property ... RegisteredStatusNotifierItems`,
+// which prints `as N "item1" "item2" ...` -- the token after the `as` tag is the
+// count.
 func TrayCountFromText(text string) int {
 	parts := SplitWhitespaceN(text, -1)
 	if len(parts) >= 2 && parts[0] == "as" {
@@ -65,13 +61,9 @@ func TrayCountFromText(text string) int {
 	return 0
 }
 
-// MemoryStateFromText mirrors collectors.memory_state_from_text.
-//
-// One documented divergence: the original does int(parts[1]) unguarded, so a
-// /proc/meminfo line whose second field is not a number raises. This skips it
-// instead. /proc/meminfo cannot produce that, and the alternative is a panic in
-// a daemon, so the difference is only reachable through a kernel that does not
-// exist.
+// MemoryStateFromText carries one documented divergence: the original does
+// int(parts[1]) unguarded and raises on a /proc/meminfo line whose second field is
+// not a number. This skips it instead, since the alternative is a panic in a daemon.
 func MemoryStateFromText(text string) Module {
 	values := map[string]int64{}
 	for _, line := range SplitLines(text) {
@@ -112,7 +104,6 @@ func MemoryStateFromText(text string) Module {
 	}
 }
 
-// MediaStateFromText mirrors collectors.media_state_from_text.
 func MediaStateFromText(statusText, metadataText string) MediaState {
 	metadata := SplitLines(metadataText)
 	if len(metadata) == 0 || Strip(metadata[0]) == "" {
@@ -151,10 +142,8 @@ func MediaStateFromText(statusText, metadataText string) MediaState {
 	}
 }
 
-// MonitorEvent mirrors watchers.monitor_event.
-//
-// Hyprland emits both v1 and v2 monitor events; matching only the v1 prefixes
-// (v2 lines start "monitoraddedv2>>") keeps this single-fire.
+// MonitorEvent matches only the v1 prefixes; Hyprland emits both v1 and v2 monitor
+// events (v2 lines start "monitoraddedv2>>"), and matching one keeps this single-fire.
 func MonitorEvent(line string) (action, name string, ok bool) {
 	for _, pair := range [][2]string{
 		{"monitoradded>>", "added"},
@@ -170,16 +159,12 @@ func MonitorEvent(line string) (action, name string, ok bool) {
 	return "", "", false
 }
 
-// BarWindowCommand mirrors watchers.bar_window_command.
+// BarWindowCommand must mirror the open-bars script in eww/default.nix so hotplugged
+// monitors get the same bar-<name> windows as service startup.
 //
-// Must mirror the open-bars script in eww/default.nix so hotplugged monitors
-// get the same bar-<name> windows as service startup.
-//
-// --no-daemonize is the one place this deliberately diverges from the Python it
-// mirrors, and the open-bars script carries the full reason: without it, an
-// `eww open` that the daemon answers too slowly makes the CLIENT fork a second
-// daemon, which brings up a second bar and a second backend. `close` does not
-// need it -- eww's can_start_daemon() is true for `open` and `open-many` alone.
+// --no-daemonize is the one deliberate divergence from the Python: without it, an
+// `eww open` the daemon answers too slowly makes the CLIENT fork a second daemon,
+// which brings up a second bar and a second backend. `close` does not need it.
 func BarWindowCommand(action, name string) []string {
 	if action == "added" {
 		return []string{
@@ -190,7 +175,6 @@ func BarWindowCommand(action, name string) []string {
 	return []string{"eww", "close", "bar-" + name}
 }
 
-// OpenBarNames mirrors watchers.open_bar_names.
 func OpenBarNames(activeWindowsText string) map[string]bool {
 	names := map[string]bool{}
 	for _, line := range SplitLines(activeWindowsText) {

@@ -11,12 +11,9 @@ import (
 
 // RunText and ReadTextFile are the seams every impure collector goes through.
 //
-// Package-level vars rather than parameters or an interface, deliberately: it
-// lets a test swap one seam and restore it on defer, instead of threading a
-// runner through forty call sites. InstallFixture drives all of them at once.
-//
-// Nothing in production reassigns these. If something ever needs to, it wants a
-// parameter instead.
+// Package-level vars rather than parameters: a test swaps one and restores it on
+// defer instead of threading a runner through forty call sites, and InstallFixture
+// drives all of them at once. Nothing in production reassigns these.
 var (
 	RunText = func(timeout time.Duration, name string, args ...string) string {
 		return run.Text(timeout, name, args...)
@@ -31,17 +28,14 @@ var (
 	}
 )
 
-// Python's run_text default. Spelled out because several call sites override it
-// and the differences are load-bearing: playerctl status gets 1 s so a wedged
-// player cannot stall the media module, and the startup reconcile gets 5 s
-// because hyprctl and eww are both slow right after a config reload.
+// defaultTimeout is Python's run_text default. Several call sites override it and
+// the differences are load-bearing: playerctl status gets 1 s so a wedged player
+// cannot stall the media module, and the startup reconcile gets 5 s.
 const defaultTimeout = 2 * time.Second
 
-// The write side of the seams. display.write_display_mode is the only thing in
-// the backend that creates or removes a file, and it does so on a path the
-// control socket can be told to change -- so it goes through a seam like
-// everything else, and the equivalence gate can assert what it wrote without
-// touching the real runtime directory.
+// The write side of the seams. write_display_mode is the only thing in the backend
+// that creates or removes a file, on a path the control socket can be told to
+// change, so it goes through a seam like everything else.
 var (
 	RunStatus = func(timeout time.Duration, name string, args ...string) int {
 		return run.Status(timeout, name, args...)

@@ -1,9 +1,8 @@
-// Package control is the daemon side of the control socket: the command
-// dispatch behind eww-barctl, and the server that carries it.
+// Package control is the daemon side of the control socket: the command dispatch
+// behind eww-barctl, and the server that carries it.
 //
-// Its own package rather than part of collect, because the handler writes into
-// BarState and package state already imports collect -- the dependency cannot
-// run both ways.
+// Its own package because the handler writes into BarState and package state
+// already imports collect; the dependency cannot run both ways.
 package control
 
 import (
@@ -16,9 +15,8 @@ import (
 	"ewwbar/internal/state"
 )
 
-// Reply is one control response, in key order. Ordered rather than a map
-// because the client echoes these bytes verbatim and eww.yuck reads them; a Go
-// map would sort the keys and change the wire format.
+// Reply is one control response, in key order. Ordered rather than a map because
+// the client echoes these bytes verbatim and a Go map would sort the keys.
 type Reply = pyjson.Ordered
 
 func ok(command string, rest ...pyjson.Pair) Reply {
@@ -35,12 +33,9 @@ func pair(key string, value any) pyjson.Pair { return pyjson.Pair{Key: key, Valu
 var aiRefreshLock sync.Mutex
 var aiRefreshBusy bool
 
-// QueueAiRefresh mirrors control.queue_ai_refresh.
-//
-// Non-blocking: a second refresh while one is running is DROPPED rather than
-// queued, and reported as "already-refreshing". The popup sends one of these
-// every time it opens, and the underlying probe can take 40 s, so queueing
-// would let a few opens pile up into minutes of redundant work.
+// QueueAiRefresh drops a second refresh while one is running rather than queueing
+// it, reporting "already-refreshing": the popup sends one every time it opens and
+// the probe can take 40 s.
 func QueueAiRefresh(store *state.Store) bool {
 	aiRefreshLock.Lock()
 	if aiRefreshBusy {
@@ -67,17 +62,11 @@ var speedtestLock sync.Mutex
 var speedtestBusy bool
 
 // QueueSpeedtest starts one measurement, or reports that one is already going.
+// Drops rather than queues, like QueueAiRefresh: a run moves about 70 MB and
+// saturates the link for nine seconds.
 //
-// Same drop-don't-queue shape as QueueAiRefresh, for a sharper reason: this
-// moves about 70 MB and saturates the link for nine seconds, so a double-click
-// that queued a second run would spend the data twice and report the first
-// run's numbers measured against the second run's congestion.
-//
-// The publish closure updates only bar.Network.Speed rather than re-running
-// CollectNetwork. That keeps the four state changes of a single run down to no
-// forks at all: the identity and connectivity already in the state are what the
-// card needs, and re-collecting them would fork nmcli four more times to learn
-// what has not changed.
+// The publish closure updates only bar.Network.Speed; re-running CollectNetwork
+// would fork nmcli four more times to learn what has not changed.
 func QueueSpeedtest(store *state.Store) bool {
 	speedtestLock.Lock()
 	if speedtestBusy {
@@ -102,17 +91,13 @@ func QueueSpeedtest(store *state.Store) bool {
 			})
 		})
 
-		// Persisted here rather than inside RunSpeedtest for the reason
-		// SaveQuotaSnapshot is called from app.go: the collector has no
-		// business knowing a path.
 		_ = collect.SaveSpeedtestRecords(paths.Speedtest())
 	}()
 	return true
 }
 
-// payloadString reads a payload field as Python's payload.get(key, fallback)
-// does: a missing key or a non-string both take the fallback, because the
-// original indexes straight into the reply with it.
+// payloadString reads a payload field as payload.get(key, fallback): a missing
+// key and a non-string both take the fallback.
 func payloadString(payload map[string]any, key, fallback string) string {
 	if value, isText := payload[key].(string); isText {
 		return value
@@ -123,10 +108,8 @@ func payloadString(payload map[string]any, key, fallback string) string {
 	return fallback
 }
 
-// Handle mirrors control.handle_control_command.
-//
-// Returns the reply and an error; the caller turns a non-nil error into
-// ErrorReply, matching serve_control_connection's except branch.
+// Handle returns the reply and an error; the caller turns a non-nil error into
+// ErrorReply.
 func Handle(store *state.Store, payload map[string]any) (Reply, error) {
 	command := payloadString(payload, "command", "")
 
@@ -218,33 +201,25 @@ func Handle(store *state.Store, payload map[string]any) (Reply, error) {
 		if err != nil {
 			return nil, err
 		}
-		// The display card shows the lid inhibitor, which the idle actions do
-		// not touch -- but display_state is the only thing that reads it, so it
-		// is refreshed here to keep the popup consistent.
+		// display_state is the only thing that reads the lid inhibitor, so it is
+		// refreshed here to keep the popup consistent.
 		displayValue := collect.DisplayState("")
 		store.Update(func(bar *state.Bar) {
 			bar.IdleInhibited = value
 			bar.Display = displayValue
 		})
-		// No "action" key, unlike every other command. Preserved because the
-		// reply shape is what eww.yuck parses.
+		// No "action" key, unlike every other command: the reply shape is what
+		// eww.yuck parses.
 		return ok("idle", pair("idle_inhibited", value)), nil
 
 	case "display":
 		action := payloadString(payload, "action", "status")
 		value, err := collect.SetDisplayMode(action)
 		if err != nil {
-			// Put the failure somewhere a human will see it. Every one of
-			// eww.yuck's 24 eww-barctl call sites passes --quiet, which
-			// suppresses the reply, and an :onclick handler discards the exit
-			// code -- so before this, an operational failure here was invisible
-			// from the desk. That is how a broken `hyprctl dispatch dpms off`
-			// went unnoticed for weeks: the panel simply kept reporting the mode
-			// it was already in.
-			//
-			// Usage errors are deliberately excluded. A bad action name is the
-			// caller's mistake, not a condition of the machine, and rewriting
-			// the panel to describe it would be noise.
+			// Log it: every one of eww.yuck's 24 eww-barctl call sites passes
+			// --quiet and an :onclick handler discards the exit code, so an
+			// operational failure here is otherwise invisible. Usage errors are
+			// excluded as the caller's mistake, not a condition of the machine.
 			if !errors.Is(err, collect.ErrDisplayAction) &&
 				!errors.Is(err, collect.ErrNoExternalMonitor) {
 				failed := collect.DisplayState(err.Error())
@@ -320,8 +295,8 @@ func Handle(store *state.Store, payload map[string]any) (Reply, error) {
 	return nil, errValue("unknown control command")
 }
 
-// payloadOr is payload.get(key, fallback) without the string coercion
-// payloadString applies: `notif dismiss` accepts anything int() would.
+// payloadOr is payload.get(key, fallback) without payloadString's string
+// coercion: `notif dismiss` accepts anything int() would.
 func payloadOr(payload map[string]any, key string, fallback any) any {
 	if value, present := payload[key]; present {
 		return value

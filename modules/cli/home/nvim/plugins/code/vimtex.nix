@@ -8,7 +8,6 @@
   };
   programs.nixvim = {
     globals = {
-      # tex flavor
       tex_flavor = "latex";
     };
     # https://nix-community.github.io/nixvim/plugins/vimtex/index.html

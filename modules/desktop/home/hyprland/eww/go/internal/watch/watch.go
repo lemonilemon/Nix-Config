@@ -23,28 +23,17 @@ import (
 	"ewwbar/internal/state"
 )
 
-// The per-monitor workspace mapping goes to eww as a plain variable, NOT
-// through state.Bar.
-//
-// That is forced rather than chosen. The golden replay pins 46 ControlHandle
-// cases and each holds the whole bar state as a byte-exact JSON string, so any
-// new top-level key would break all 46 permanently, and the recording cannot be
-// regenerated. `eww update` sidesteps the emit path entirely.
-//
-// Pushed only on change, for the same reason EmitLoop compares encoded bytes
-// before writing: a window move fires several events in a burst, and each push
-// is a process spawn.
+// The per-monitor workspace mapping goes to eww as a plain variable, NOT through
+// state.Bar, and is pushed only on change: a window move fires several events in
+// a burst and each push is a process spawn.
 var (
 	monitorViewLock sync.Mutex
 	monitorViewLast string
 )
 
 // PublishMonitorWorkspaces sends the mapping to eww if it differs from the last
-// one sent.
-//
-// Failures are silent, matching run.Eww: eww may not be listening yet during
-// startup, and the bar renders correctly without this variable anyway -- the
-// yuck falls back to bar_state.workspace_state whenever monitors is below two.
+// one sent. Failures are silent: eww may not be listening yet, and the yuck falls
+// back to bar_state.workspace_state whenever monitors is below two.
 func PublishMonitorWorkspaces(view collect.MonitorWorkspaces) {
 	encoded, err := pyjson.Encode(view, false)
 	if err != nil {
@@ -64,28 +53,17 @@ func PublishMonitorWorkspaces(view collect.MonitorWorkspaces) {
 	run.Eww([]string{"update", "ws_monitors=" + encoded})
 }
 
-// The AI usage history grid goes to eww the same way, and for the same reason
-// plus one that is specific to it.
-//
-// Shared: a new key on bar_state.ai_usage breaks 112 recorded cases across 7
-// entry points, ApplyQuotas alone accounting for 39.
-//
-// Specific: eww destroys and rebuilds every child of a `for` whenever any
-// variable the loop expression mentions changes -- it watches the variable, not
-// the field path. The grid is 53 columns of 7 cells, so reading it from
-// bar_state would tear down and recreate 424 widgets and their scopes every
-// time the 7-second CPU collector ticked. From its own variable it rebuilds
-// only when the history actually changes, which is once per refresh.
+// The AI usage history grid goes to eww the same way, for a reason specific to
+// it: eww destroys and rebuilds every child of a `for` whenever any variable the
+// loop expression mentions changes -- it watches the variable, not the field
+// path. The grid is 53 columns of 7 cells, so reading it from bar_state would
+// rebuild 424 widgets every time the 7-second CPU collector ticked.
 var (
 	aiHistoryLock sync.Mutex
 	aiHistoryLast string
 )
 
 // PublishAiHistory sends the grid to eww if it differs from the last one sent.
-//
-// Deduplicated for the same reason as the monitor mapping: each push is a
-// process spawn, and the history moves once every few minutes at most while the
-// refresh that produces it runs far more often than that.
 func PublishAiHistory(history collect.AiHistory) {
 	encoded, err := pyjson.Encode(history, false)
 	if err != nil {
@@ -105,27 +83,17 @@ func PublishAiHistory(history collect.AiHistory) {
 	run.Eww([]string{"update", "ai_history=" + encoded})
 }
 
-// Live throughput takes its own variable too, and only the `for` half of the
-// reasoning above applies -- the golden replay no longer blocks new bar_state
-// keys (see narrowSnapshot in internal/replay). That half is enough on its own.
-//
-// This ticks every 2 s, where the fastest thing on bar_state today is the CPU
-// collector at 7. Putting a 2 s value there would tear down and rebuild every
-// `for` reading bar_state at that rate -- the notification list and the
-// wallpaper grid among them -- which is a visible problem while one of those
-// popups is open and being scrolled, not merely a wasteful one.
+// Live throughput takes its own variable for the same `for` reason: it ticks every
+// 2 s, and putting that on bar_state would rebuild every `for` reading bar_state
+// at that rate, including the notification list and the wallpaper grid.
 var (
 	netRateLock sync.Mutex
 	netRateLast string
 )
 
-// PublishNetRate sends the throughput readout to eww if it changed.
-//
-// The deduplication matters more here than anywhere else it is used, because it
-// is what makes a 2 s ticker affordable. An idle connection reports "0.0" every
-// tick forever, and every one of those is identical -- so the common case
-// spawns no process at all, and pushes happen only while traffic is actually
-// moving.
+// PublishNetRate sends the throughput readout to eww if it changed. The
+// deduplication is what makes a 2 s ticker affordable: an idle connection reports
+// "0.0" every tick forever, so the common case spawns no process at all.
 func PublishNetRate(rate collect.NetRate) {
 	encoded, err := pyjson.Encode(rate, false)
 	if err != nil {
@@ -147,35 +115,29 @@ func PublishNetRate(rate collect.NetRate) {
 
 // Update is one batch of assignments into BarState.
 //
-// Collectors run OUTSIDE the store lock and hand back a closure that applies
-// what they found. That split is the point: every collector here shells out,
-// and holding the lock across a subprocess would stall the emit loop and every
-// control-socket worker behind it.
+// Collectors run OUTSIDE the store lock and hand back a closure that applies what
+// they found: every collector shells out, and holding the lock across a subprocess
+// would stall the emit loop and every control-socket worker behind it.
 type Update func(*state.Bar)
 
 // retryDelay is the pause before restarting a watcher whose command died. Long
 // enough that a binary missing from PATH cannot become a spin loop.
 const retryDelay = 2 * time.Second
 
-// debounceWindow is how long a watcher waits after an event before collecting,
-// and how long it then keeps draining. Subsystems emit bursts -- a single
-// volume change produces several pactl events -- and collecting per event would
-// fork per event.
+// debounceWindow is how long a watcher waits after an event before collecting, and
+// how long it then keeps draining. Subsystems emit bursts, and collecting per
+// event would fork per event.
 const debounceWindow = 200 * time.Millisecond
 
-// startCommand is the seam for long-lived streaming children.
-//
-// Separate from collect.RunText because these are not run-and-capture: the
-// watcher reads lines for the life of the daemon. Tests replace it; nothing in
-// production does.
+// startCommand is the seam for long-lived streaming children: the watcher reads
+// lines for the life of the daemon rather than run-and-capture. Tests replace it.
 var startCommand = func(name string, args ...string) (io.ReadCloser, func(), error) {
 	cmd := exec.Command(name, args...)
 	cmd.Stderr = nil
 
 	// An OPEN stdin, deliberately, and never written to. `bluetoothctl
 	// --monitor` exits the moment stdin closes, which turns its watcher into a
-	// two-second restart loop; the original passes subprocess.PIPE there for
-	// exactly this reason. Harmless for the others, which ignore stdin.
+	// two-second restart loop. Harmless for the others, which ignore stdin.
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, nil, err
@@ -199,7 +161,7 @@ var startCommand = func(name string, args ...string) (io.ReadCloser, func(), err
 	return stdout, stop, nil
 }
 
-// Periodic mirrors watchers.periodic: collect every interval, forever.
+// Periodic collects every interval, forever.
 func Periodic(ctx context.Context, store *state.Store, interval time.Duration, gather func() Update) {
 	for {
 		if apply := gather(); apply != nil {
@@ -211,15 +173,13 @@ func Periodic(ctx context.Context, store *state.Store, interval time.Duration, g
 	}
 }
 
-// PeriodicRefresh mirrors watchers.periodic_refresh: like Periodic, but the
-// collector owns writing to the store so it can flag progress and update
-// incrementally. Runs once immediately, then every interval.
+// PeriodicRefresh is Periodic except that the collector owns writing to the store,
+// so it can flag progress and update incrementally. Runs once immediately.
 func PeriodicRefresh(ctx context.Context, store *state.Store, interval time.Duration, refresh func(*state.Store)) {
 	for {
 		func() {
-			// The original wraps this in try/except for a reason: a raise here
-			// kills the thread and the AI module never updates again for the
-			// rest of the session.
+			// A panic here would kill the goroutine and the AI module would never
+			// update again for the rest of the session.
 			defer func() { _ = recover() }()
 			refresh(store)
 		}()
@@ -229,9 +189,8 @@ func PeriodicRefresh(ctx context.Context, store *state.Store, interval time.Dura
 	}
 }
 
-// WatchIdleInhibitor mirrors watchers.watch_idle_inhibitor: re-read the
-// inhibitor state on a signal, and at least every 30 seconds so an inhibitor
-// toggled outside the bar is picked up.
+// WatchIdleInhibitor re-reads the inhibitor state on a signal, and at least every
+// 30 seconds so an inhibitor toggled outside the bar is picked up.
 func WatchIdleInhibitor(ctx context.Context, store *state.Store, refresh <-chan struct{}) {
 	apply := func() {
 		idle := collect.IdleInhibitedState()
@@ -253,12 +212,9 @@ func WatchIdleInhibitor(ctx context.Context, store *state.Store, refresh <-chan 
 	}
 }
 
-// HyprlandSocketPath mirrors watchers.hyprland_socket_path, reporting ok=false
-// where the original returns None.
-//
-// The XDG_RUNTIME_DIR fallback differs from every other path in this codebase:
-// it is /run/user/<uid> rather than /tmp, because that is where Hyprland puts
-// its socket regardless of what the environment says.
+// HyprlandSocketPath reports ok=false where there is no socket. Its
+// XDG_RUNTIME_DIR fallback is /run/user/<uid> rather than the /tmp every other
+// path here uses, because that is where Hyprland puts its socket regardless.
 func HyprlandSocketPath() (string, bool) {
 	signature := os.Getenv("HYPRLAND_INSTANCE_SIGNATURE")
 	if signature == "" {
@@ -271,29 +227,18 @@ func HyprlandSocketPath() (string, bool) {
 	return filepath.Join(runtimeDir, "hypr", signature, ".socket2.sock"), true
 }
 
-// ApplyMonitorEvent mirrors watchers.apply_monitor_event.
+// ApplyMonitorEvent retries the open rather than trusting it first time: GDK
+// learns about a hotplugged output a beat after Hyprland announces it. Each
+// attempt re-checks whether someone else has already opened the window, because
+// re-opening an open id makes the bar flicker.
 //
-// GDK learns about a hotplugged output a beat after Hyprland announces it, so
-// the open is retried rather than trusted first time. Each attempt re-checks
-// whether someone else has already opened the window -- the startup script, or
-// eww's own config reload -- because re-opening an open id makes the bar
-// flicker.
-//
-// This is the only place the backend opens or closes a bar window, which is why
-// the ownership guard lives here rather than in ReconcileBarWindows: it covers
-// the reconcile at startup and the live monitoradded/monitorremoved events with
-// one check.
+// The only place the backend opens or closes a bar window, which is why the
+// ownership guard below lives here.
 func ApplyMonitorEvent(ctx context.Context, action, name string) {
 	// A backend whose parent eww is a client rather than a daemon is a rogue
-	// daemon's backend, and the bar windows on this socket are not its to
-	// manage. Opening one is what turns a stray second daemon into a stray
-	// second BAR; closing one would take down a bar belonging to the daemon
-	// that does own the socket. See collect.ParentIsEwwDaemon.
-	//
-	// Logged rather than silent: a bar that never appears after a hotplug is
-	// hard enough to diagnose without the reason being invisible, and this line
-	// lands in the same journal that made the duplicate legible in the first
-	// place.
+	// daemon's backend, and these windows are not its to manage. Opening one
+	// turns a stray second daemon into a stray second BAR; closing one would
+	// take down a bar belonging to the daemon that does own the socket.
 	if !collect.ParentIsEwwDaemon() {
 		fmt.Fprintf(os.Stderr, "eww-bar: ignoring monitor %s %s -- this "+
 			"backend's eww parent is a client, not the daemon\n", action, name)
@@ -320,12 +265,9 @@ func ApplyMonitorEvent(ctx context.Context, action, name string) {
 	}
 }
 
-// ReconcileBarWindows mirrors watchers.reconcile_bar_windows.
-//
-// When a monitor connects, eww reloads its whole configuration, which kills and
-// respawns this backend -- so the monitoradded event fires while no listener is
-// alive and can never be caught. Instead, every start compares live monitors
-// against open bar windows and opens whatever is missing.
+// ReconcileBarWindows compares live monitors against open bar windows at every
+// start. When a monitor connects, eww reloads its configuration and respawns this
+// backend, so the monitoradded event fires while no listener is alive.
 func ReconcileBarWindows(ctx context.Context) {
 	missing := collect.MissingBarMonitors(
 		collect.RunText(5*time.Second, "hyprctl", "monitors", "-j"),
@@ -341,13 +283,9 @@ var (
 	workspacePrefixes = []string{
 		"workspace>>", "focusedmon>>", "openwindow>>", "closewindow>>",
 		"movewindow>>", "createworkspace>>", "destroyworkspace>>", "urgent>>",
-		// Added with the per-monitor mapping. Without these, moving a workspace
-		// between screens -- by the bar's own right-click, or by
-		// moveworkspacetomonitor from anywhere -- leaves the bars showing the
-		// old owner until some unrelated event happens to refresh them.
-		// monitoradded/removed matter for the same reason: attaching a screen
-		// redistributes workspaces, and the mapping's monitor count is what
-		// switches the island between its one-screen and two-screen rendering.
+		// Moving a workspace between screens, and attaching one, both redistribute
+		// workspaces; the mapping's monitor count is what switches the island
+		// between its one-screen and two-screen rendering.
 		"moveworkspace>>", "moveworkspacev2>>",
 		"monitoradded>>", "monitorremoved>>",
 	}
@@ -363,7 +301,6 @@ func hasAnyPrefix(line string, prefixes []string) bool {
 	return false
 }
 
-// WatchHyprland mirrors watchers.watch_hyprland.
 func WatchHyprland(ctx context.Context, store *state.Store) {
 	go ReconcileBarWindows(ctx)
 
@@ -421,13 +358,9 @@ func readHyprlandEvents(ctx context.Context, store *state.Store, socketPath stri
 	return scanner.Err()
 }
 
-// CollectOnce mirrors watchers.collect_once: the seed reading, before any event
-// arrives.
-//
-// Guarded because a panic here runs on the watcher's own goroutine with nothing
-// above it -- the goroutine dies and that bar module is frozen for the rest of
-// the session, where the identical call inside the loop is retried. The module
-// keeps its default until the first event instead.
+// CollectOnce is the seed reading, before any event arrives. Guarded because a
+// panic here runs on the watcher's own goroutine with nothing above it, and would
+// freeze that bar module for the rest of the session.
 func CollectOnce(store *state.Store, gather func() Update) {
 	defer func() { _ = recover() }()
 	if apply := gather(); apply != nil {
@@ -435,14 +368,11 @@ func CollectOnce(store *state.Store, gather func() Update) {
 	}
 }
 
-// WatchCommand mirrors watchers.watch_command: re-collect whenever a command
-// prints a line.
+// WatchCommand re-collects whenever a command prints a line.
 //
 // lineFilter drops lines that cannot have changed anything the bar renders.
 // Without one, a watcher whose collector shells out to the same subsystem it is
-// watching becomes its own event source -- see collect.VolumeEventIsRelevant,
-// which was added after `pactl subscribe` was measured driving itself at 1248
-// events a minute.
+// watching becomes its own event source.
 func WatchCommand(
 	ctx context.Context,
 	store *state.Store,
@@ -508,11 +438,6 @@ func streamCommand(
 
 // drain waits out a burst: pause, then keep consuming until the source has been
 // quiet for one window.
-//
-// The original does this with select() on the child's stdout, which is a latent
-// bug -- Python's `for line in stdout` reads through a buffer, so select can
-// report the fd unreadable while whole lines sit in userspace, and the drain
-// exits early. Reading from a channel fed by the scanner has no such split.
 func drain(ctx context.Context, lines <-chan string) {
 	timer := time.NewTimer(debounceWindow)
 	defer timer.Stop()
@@ -536,11 +461,9 @@ func drain(ctx context.Context, lines <-chan string) {
 	}
 }
 
-// EmitLoop mirrors watchers.emit_loop: write the snapshot, then rewrite it
-// every time the state changes.
-//
-// A closed pipe is a normal end, not an error: eww closes stdout when it stops
-// listening, and the daemon should exit quietly rather than log.
+// EmitLoop writes the snapshot, then rewrites it every time the state changes. A
+// closed pipe is a normal end, not an error: eww closes stdout when it stops
+// listening.
 func EmitLoop(ctx context.Context, store *state.Store, out io.Writer) {
 	emit := func() bool {
 		snapshot, err := store.Snapshot()
@@ -581,8 +504,7 @@ func sleep(ctx context.Context, d time.Duration) bool {
 }
 
 // dialUnix is a seam alongside startCommand: the Hyprland event socket is a
-// long-lived connection, not a request, so it does not go through any of
-// package collect's runners.
+// long-lived connection, not a request.
 var dialUnix = func(path string) (io.ReadCloser, error) {
 	conn, err := net.Dial("unix", path)
 	if err != nil {
@@ -595,11 +517,8 @@ var dialUnix = func(path string) (io.ReadCloser, error) {
 // error rather than io.ErrClosedPipe when the far end is a process.
 func isEPIPE(err error) bool { return errors.Is(err, syscall.EPIPE) }
 
-// WatchBluetooth mirrors watchers.watch_bluetooth.
-//
-// Its own function rather than a WatchCommand call only because it takes no
-// line filter and its own seed; the open-stdin requirement `bluetoothctl
-// --monitor` has is handled in startCommand, for every watcher.
+// WatchBluetooth is its own function rather than a WatchCommand call because it
+// takes no line filter and its own seed.
 func WatchBluetooth(ctx context.Context, store *state.Store) {
 	gather := func() Update {
 		bluetooth := collect.CollectBluetooth()

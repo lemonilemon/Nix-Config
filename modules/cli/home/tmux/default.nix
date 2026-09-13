@@ -50,18 +50,9 @@
         # Keep new windows in the current path
         bind c new-window -c "#{pane_current_path}"
 
-        # Vim like pane navigation with Alt + h/j/k/l
-        # bind -n M-h select-pane -L
-        # bind -n M-j select-pane -D
-        # bind -n M-k select-pane -U
-        # bind -n M-l select-pane -R
-
-        # Reload config file
         bind r source-file ~/.config/tmux/tmux.conf \; display-message "Config reloaded!"
 
-        # ==============================================
         # Nested Tmux / Passthrough Toggle (F12)
-        # ==============================================
         bind -T root F12  \
           set prefix None \;\
           set key-table off \;\

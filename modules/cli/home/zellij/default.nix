@@ -10,7 +10,6 @@
       # Switch to custom setup in my zshrc
       enableZshIntegration = false;
       exitShellOnExit = false;
-      # attachExistingSession = true;
       # For KDL settings in Nix, see: https://github.com/nix-community/home-manager/blob/master/modules/lib/generators.nix
       settings = {
         show_startup_tips = false;
@@ -55,7 +54,6 @@
             _props = {
               location = "file:~/.config/zellij/plugins/zellij-autolock.wasm";
             };
-            # Enabled at start?
             is_enabled = true;
             # Lock when any open these programs open.
             triggers = "nvim|vim";

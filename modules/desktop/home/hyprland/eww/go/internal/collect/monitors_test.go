@@ -2,10 +2,9 @@ package collect
 
 import "testing"
 
-// The exact shapes hyprctl emitted on this machine with both monitors attached,
-// trimmed to the keys the collector reads. Captured rather than invented: the
-// nesting of activeWorkspace and the fact that an unfocused monitor still
-// reports one are the two things this function exists to get right.
+// The exact shapes hyprctl emitted with both monitors attached, trimmed to the keys
+// the collector reads. The nesting of activeWorkspace, and the fact that an
+// unfocused monitor still reports one, are what this function exists to get right.
 const (
 	twoMonitorsJSON = `[
       {"name":"eDP-1","focused":false,
@@ -24,12 +23,9 @@ const (
       {"id":5,"name":"5","monitor":"HDMI-A-1","windows":1}]`
 )
 
-// TestMonitorWorkspacesSplitsAcrossScreens is the case the bar gets wrong today.
-//
-// Two monitors, focus on HDMI-A-1. eDP-1 is unfocused but still displaying ws1,
-// and the shared workspace_state has no way to say so -- it reports ws1 as the
-// one active workspace, which the eDP-1 bar renders correctly by luck and the
-// HDMI-A-1 bar renders as a lie.
+// Two monitors, focus on HDMI-A-1. eDP-1 is unfocused but still displaying ws1, and
+// the shared workspace_state has no way to say so -- it reports ws1 as the one
+// active workspace, which the HDMI-A-1 bar then renders as a lie.
 func TestMonitorWorkspacesSplitsAcrossScreens(t *testing.T) {
 	got := MonitorWorkspacesFromJSON(twoMonitorsJSON, twoMonitorWorkspacesJSON)
 
@@ -49,11 +45,9 @@ func TestMonitorWorkspacesSplitsAcrossScreens(t *testing.T) {
 	}
 }
 
-// TestMonitorWorkspacesUndocked pins the property that keeps the workspace
-// island from changing shape when the external screen is unplugged.
-//
-// One monitor owns everything, so Monitors == 1 and the yuck can take the
-// today-path with no per-monitor treatment at all.
+// Pins the property that keeps the workspace island from changing shape when the
+// external screen is unplugged: one monitor owns everything, so Monitors == 1 and
+// the yuck takes the today-path.
 func TestMonitorWorkspacesUndocked(t *testing.T) {
 	monitors := `[{"name":"eDP-1","focused":true,
 	  "activeWorkspace":{"id":3,"name":"3"},
@@ -88,9 +82,8 @@ func TestMonitorWorkspacesUndocked(t *testing.T) {
 	}
 }
 
-// TestMonitorWorkspacesIgnoresSpecials keeps special:mainterm out of the 1..5
-// slots. Its id is negative, so it can never match, but the workspaces list does
-// carry it and a change to the matching loop could let it through.
+// Keeps special:mainterm out of the 1..5 slots. Its id is negative so it can never
+// match, but the workspaces list does carry it.
 func TestMonitorWorkspacesIgnoresSpecials(t *testing.T) {
 	got := MonitorWorkspacesFromJSON(twoMonitorsJSON, twoMonitorWorkspacesJSON)
 	for i, owner := range []string{
@@ -100,17 +93,15 @@ func TestMonitorWorkspacesIgnoresSpecials(t *testing.T) {
 			t.Errorf("ws%d owner = %q, which is not a monitor name", i+1, owner)
 		}
 	}
-	// special:mainterm lives on eDP-1 with one window; if the id match were
-	// loosened it would land in a numbered slot.
+	// special:mainterm lives on eDP-1; a loosened id match would land it in a slot.
 	if got.Ws1Owner != "eDP-1" || got.Ws1ActiveOn != "eDP-1" {
 		t.Errorf("ws1 disturbed by the special workspace: %+v", got)
 	}
 }
 
-// TestMonitorWorkspacesDegradesToZero covers every way the read can fail. The
-// zero value is load-bearing: the yuck treats an empty Focused as "fall back to
-// bar_state.workspace_state", so a failed read renders exactly as the bar does
-// today rather than blanking the island.
+// Every way the read can fail. The zero value is load-bearing: the yuck treats an
+// empty Focused as "fall back to bar_state.workspace_state", so a failed read
+// renders as the bar does today rather than blanking the island.
 func TestMonitorWorkspacesDegradesToZero(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -141,9 +132,8 @@ func TestMonitorWorkspacesDegradesToZero(t *testing.T) {
 	}
 }
 
-// TestMonitorWorkspacesSurvivesAPartialMonitor pins the hardening: one
-// unusable entry must not cost the others. A monitor object missing
-// activeWorkspace still contributes its name and its focus.
+// Pins the hardening: one unusable entry must not cost the others. A monitor object
+// missing activeWorkspace still contributes its name and its focus.
 func TestMonitorWorkspacesSurvivesAPartialMonitor(t *testing.T) {
 	monitors := `[
 	  {"name":"eDP-1","focused":false},

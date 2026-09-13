@@ -6,11 +6,9 @@ import (
 	"strings"
 )
 
-// The Nerd Font glyphs the volume label carries. Written as escapes, not
-// literals: they are Private Use Area code points that render as blanks or
-// boxes in most editors and diffs, so a literal here is one careless
-// copy-paste away from silently becoming a different glyph. Lifted from
-// collectors.volume_label_from_text by code point, not by eye.
+// The Nerd Font glyphs the volume label carries, written as escapes: they are
+// Private Use Area code points that render as blanks or boxes in most editors and
+// diffs. Lifted by code point, not by eye.
 const (
 	glyphVolumeMuted = "\U000F075F" // U+F075F mute
 	glyphVolumeLow   = "\uF026"     // U+F026 speaker, low
@@ -20,11 +18,8 @@ const (
 
 var volumeRe = regexp.MustCompile(`Volume:\s+([0-9.]+)`)
 
-// VolumeState is the shape collectors.volume_state_from_text returns.
-//
-// A struct rather than a map: encoding/json sorts map keys but emits struct
-// fields in declaration order, and the order below is the order the Python dict
-// is built in, which is the order that reaches eww.
+// VolumeState is a struct rather than a map: encoding/json sorts map keys but emits
+// struct fields in declaration order, and this order is the one that reaches eww.
 type VolumeState struct {
 	Text    string `json:"text"`
 	Percent int    `json:"percent"`
@@ -40,7 +35,6 @@ type Sink struct {
 	Active      string `json:"active"`
 }
 
-// VolumeLabelFromText mirrors collectors.volume_label_from_text.
 func VolumeLabelFromText(text string) string {
 	match := volumeRe.FindStringSubmatch(text)
 	if match == nil {
@@ -50,8 +44,6 @@ func VolumeLabelFromText(text string) string {
 	if !ok {
 		// Unreachable from wpctl, and the original does not handle it: Decimal()
 		// raises on something like "1.2.3", which the [0-9.]+ class does admit.
-		// Degrade to the no-reading answer rather than propagating, which is
-		// where the exception would have landed anyway.
 		return ""
 	}
 	if strings.Contains(text, "[MUTED]") {
@@ -67,12 +59,10 @@ func VolumeLabelFromText(text string) string {
 	}
 }
 
-// VolumeStateFromText mirrors collectors.volume_state_from_text.
 func VolumeStateFromText(text string, sinks []Sink) VolumeState {
 	if sinks == nil {
-		// Not cosmetic: the original's `sinks or []` means this field is never
-		// null, and eww.yuck runs (for sink in ...) over it. A nil slice
-		// marshals to null, which eww cannot index.
+		// Not cosmetic: this field is never null, and eww.yuck runs (for sink in
+		// ...) over it. A nil slice marshals to null, which eww cannot index.
 		sinks = []Sink{}
 	}
 	label := VolumeLabelFromText(text)
@@ -95,12 +85,10 @@ func VolumeStateFromText(text string, sinks []Sink) VolumeState {
 	return state
 }
 
-// VolumeEventIsRelevant mirrors collectors.volume_event_is_relevant.
 func VolumeEventIsRelevant(line string) bool {
 	return !strings.Contains(line, " on client #")
 }
 
-// SinksFromPactlJSON mirrors collectors.sinks_from_pactl_json.
 func SinksFromPactlJSON(jsonText, defaultName string) []Sink {
 	var data []any
 	sinks := []Sink{}
@@ -129,10 +117,8 @@ func SinksFromPactlJSON(jsonText, defaultName string) []Sink {
 	return sinks
 }
 
-// SinksFromPactlShort mirrors collectors.sinks_from_pactl_short.
-//
-// Splits on tab, not whitespace: pactl's short format is tab-separated and a
-// sink description can contain spaces.
+// SinksFromPactlShort splits on tab, not whitespace: pactl's short format is
+// tab-separated and a sink description can contain spaces.
 func SinksFromPactlShort(shortText, defaultName string) []Sink {
 	sinks := []Sink{}
 	for _, line := range SplitLines(shortText) {

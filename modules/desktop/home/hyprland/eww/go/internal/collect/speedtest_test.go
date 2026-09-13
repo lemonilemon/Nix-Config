@@ -5,11 +5,9 @@ import (
 	"testing"
 )
 
-// A cfspeedtest report shaped like a real one, trimmed to the fields read.
-//
-// The three payload sizes and their spread are the point rather than filler:
-// these are the shape of an actual run, where the 100 kB pass measured 14.9
-// Mb/s and the 10 MB pass measured 85.8 Mb/s on the same link.
+// A cfspeedtest report shaped like a real one, trimmed to the fields read. The
+// three payload sizes and their spread are the point: the 100 kB pass measured
+// 14.9 Mb/s and the 10 MB pass 85.8 Mb/s on the same link.
 const cfReport = `{
   "metadata": {"country": "TW", "ip": "203.0.113.7", "colo": "TPE"},
   "latency_measurement": {"avg_latency_ms": 42.059, "min_latency_ms": 32.48},
@@ -33,8 +31,7 @@ const cfProbeReport = `{
 }`
 
 // Averaging the payload sizes together would report about a third of the real
-// throughput, because the small transfers are mostly connection setup. The
-// largest payload is the only one measuring the link rather than the handshake.
+// throughput, because the small transfers are mostly connection setup.
 func TestSpeedtestReadsTheLargestPayload(t *testing.T) {
 	result, ok := SpeedtestFromJSON(cfReport)
 	if !ok {

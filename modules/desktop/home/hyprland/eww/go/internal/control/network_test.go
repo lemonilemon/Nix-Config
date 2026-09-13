@@ -10,27 +10,18 @@ import (
 
 // isolateState points paths.StateFile at a temp dir for the duration of a test.
 //
-// The empty fixture in TestMain replaces every impure seam in package collect,
-// but it does NOT stub the environment -- InstallFixture only touches the env
-// keys a fixture names, and an empty one names none. So paths.Speedtest()
-// resolves against the developer's real HOME, and QueueSpeedtest persists when
-// it finishes. Today the run returns early and writes nothing; that is an
-// accident of the fixture, not a guarantee, and the accident would end the
-// first time a test populates the record cache.
-//
-// Same reasoning as isolate() above, which exists because this suite once
-// deleted a running daemon's socket.
+// The empty fixture in TestMain replaces every impure seam in package collect but
+// does NOT stub the environment, so paths.Speedtest() resolves against the
+// developer's real HOME. Today the run returns early and writes nothing, which is an
+// accident of the fixture rather than a guarantee.
 func isolateState(t *testing.T) {
 	t.Helper()
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 }
 
-// waitIdle blocks until no speed test is in flight.
-//
-// QueueSpeedtest is deliberately fire-and-forget, so without this a test would
-// return while its goroutine was still running -- and t.Setenv would restore
-// XDG_STATE_HOME out from under the save that goroutine is about to do, putting
-// the write back on the real path this file just moved it off.
+// waitIdle blocks until no speed test is in flight. QueueSpeedtest is fire-and-
+// forget, so without this t.Setenv would restore XDG_STATE_HOME out from under the
+// save that goroutine is about to do, putting the write back on the real path.
 func waitIdle(t *testing.T) {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
@@ -47,13 +38,11 @@ func waitIdle(t *testing.T) {
 }
 
 // These replace the two recorded ControlHandle cases that recordsSupersededNetwork
-// skips. The recording pinned the `network` command when wifi-toggle was its
-// only action; both of the things it asserted have legitimately changed, and
-// both are still worth asserting.
+// skips: the recording pinned the `network` command when wifi-toggle was its only
+// action, and both things it asserted have legitimately changed.
 
 // The recorded usage error said "network action must be wifi-toggle". It cannot
-// keep saying that while speedtest is also valid -- a usage message that names
-// half the actions sends the reader looking for a bug that is not there.
+// keep saying that while speedtest is also valid.
 func TestNetworkUsageErrorNamesEveryAction(t *testing.T) {
 	store := state.New()
 
@@ -68,17 +57,14 @@ func TestNetworkUsageErrorNamesEveryAction(t *testing.T) {
 	}
 }
 
-// A second click while a run is going must be dropped, not queued. The run
-// moves about 70 MB and saturates the link for nine seconds, so queueing would
-// spend the data twice and measure the second run against the first one's
-// congestion.
+// A second click while a run is going must be dropped, not queued: the run moves
+// about 70 MB and would measure the second run against the first one's congestion.
 func TestNetworkSpeedtestDropsAConcurrentRequest(t *testing.T) {
 	store := state.New()
 
-	// Hold the busy flag as a run in flight would, rather than starting a real
-	// one: the fixture rail makes cfspeedtest return nothing, so a real run
-	// would finish before the second request arrived and the race would not be
-	// the one under test.
+	// Hold the busy flag as a run in flight would, rather than starting a real one:
+	// under the fixture cfspeedtest returns nothing, so a real run would finish
+	// before the second request arrived and the race would not be the one under test.
 	speedtestLock.Lock()
 	speedtestBusy = true
 	speedtestLock.Unlock()
@@ -101,9 +87,6 @@ func TestNetworkSpeedtestDropsAConcurrentRequest(t *testing.T) {
 	}
 }
 
-// The command has to be reachable at all, and has to answer distinguishably
-// from the drop above -- the popup shows nothing else about whether the click
-// landed.
 func TestNetworkSpeedtestStarts(t *testing.T) {
 	isolateState(t)
 	store := state.New()
@@ -121,10 +104,9 @@ func TestNetworkSpeedtestStarts(t *testing.T) {
 	}
 }
 
-// The speed card is rebuilt from the connection the state already knows about,
-// with no fresh nmcli calls. A card assembled against a different identity than
-// the one on screen is the failure this guards: it would show one network's
-// numbers under another's name.
+// The speed card is rebuilt from the connection the state already knows about. A
+// card assembled against a different identity would show one network's numbers
+// under another's name.
 func TestSpeedtestPublishUsesTheStoredIdentity(t *testing.T) {
 	isolateState(t)
 	store := state.New()
@@ -138,13 +120,11 @@ func TestSpeedtestPublishUsesTheStoredIdentity(t *testing.T) {
 		"command": "network", "action": "speedtest"}); err != nil {
 		t.Fatalf("speedtest command errored: %v", err)
 	}
-	// Assert after the run settles, not during: the publish callback fires from
-	// the goroutine, so reading mid-flight would test whichever of four state
-	// changes happened to land first.
+	// Assert after the run settles, not during: the publish callback fires from the
+	// goroutine, so reading mid-flight would test whichever change landed first.
 	waitIdle(t)
 
-	// cfspeedtest returns nothing under the fixture, so the run files no record
-	// -- and the card must say so rather than borrow another network's figures.
+	// cfspeedtest returns nothing under the fixture, so the run files no record.
 	speed := store.Get().Network.Speed
 	if speed.Down != "—" || speed.Up != "—" {
 		t.Errorf("card shows %q/%q for a network with no record: %+v",

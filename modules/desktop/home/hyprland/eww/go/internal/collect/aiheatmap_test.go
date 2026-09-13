@@ -6,15 +6,12 @@ import (
 	"time"
 )
 
-// 2026-08-15 is a Saturday, so the grid's last column is complete and today is
-// its bottom cell. Chosen deliberately: a mid-week "today" leaves trailing blank
-// cells that would make the counts below ambiguous.
+// 2026-08-15 is a Saturday, so the grid's last column is complete and today is its
+// bottom cell. A mid-week "today" would leave trailing blanks and make counts ambiguous.
 const heatNow = 1786795200 // 2026-08-15 12:00:00 UTC
 
-// heatDays is a run of usage with a known first record and a known shape.
-//
-// It starts 2026-03-01, a fortnight after the 26-week grid's left edge of
-// 2026-02-15, so the first column is still entirely before any record and the
+// heatDays starts 2026-03-01, a fortnight after the 26-week grid's left edge of
+// 2026-02-15, so the first column is entirely before any record and the
 // blank-versus-idle distinction stays testable.
 func heatDays() []HistoryDay {
 	days := []HistoryDay{}
@@ -36,10 +33,8 @@ func heatDays() []HistoryDay {
 }
 
 // The month labels are a separate widget row from the grid, pinned to it only by
-// pixel width. If the two disagree the labels slide against the days they name
-// and every date on screen is quietly wrong by a column -- which no assertion
-// about the grid itself would catch, and which is invisible until someone hovers
-// a cell and reads a date from the wrong month.
+// pixel width. If the two disagree every date on screen is quietly wrong by a
+// column, which no assertion about the grid itself would catch.
 func TestMonthLabelsSpanExactlyTheGridWidth(t *testing.T) {
 	pinClock(t, heatNow)
 
@@ -91,16 +86,14 @@ func TestGridIsAlwaysFullyRectangular(t *testing.T) {
 	}
 }
 
-// "Nothing recorded" and "recorded nothing" are different claims. Rendering the
-// months before the first entry as empty wells would assert the machine sat idle
-// through a period nobody was watching.
+// "Nothing recorded" and "recorded nothing" are different claims: empty wells
+// before the first entry would assert the machine sat idle.
 func TestDaysOutsideTheRecordedRangeAreBlank(t *testing.T) {
 	pinClock(t, heatNow)
 
 	history := HeatmapFromDays(heatDays(), heatNow)
 
-	// The grid starts 2026-02-15; the first record is 2026-03-01. Column 0 is
-	// therefore entirely before any data.
+	// The grid starts 2026-02-15 and the first record is 2026-03-01.
 	for i, cell := range history.Columns[0] {
 		if cell.Class != "blank" {
 			t.Errorf("cell %d of the first column is %q, want blank", i, cell.Class)
@@ -124,7 +117,6 @@ func TestDaysOutsideTheRecordedRangeAreBlank(t *testing.T) {
 	}
 }
 
-// Today is the last cell with data; everything after it is the future.
 func TestFutureDaysAreBlank(t *testing.T) {
 	pinClock(t, heatNow)
 
@@ -137,9 +129,8 @@ func TestFutureDaysAreBlank(t *testing.T) {
 	}
 }
 
-// Usage on this host spans three orders of magnitude between a light day and a
-// heavy one. A fixed token scale would put nearly every working day in one band;
-// quantiles are what keep the grid readable.
+// Usage here spans three orders of magnitude, so a fixed token scale would put
+// nearly every working day in one band.
 func TestLevelsSpreadAcrossTheRampRatherThanSaturating(t *testing.T) {
 	pinClock(t, heatNow)
 
@@ -159,8 +150,8 @@ func TestLevelsSpreadAcrossTheRampRatherThanSaturating(t *testing.T) {
 	}
 }
 
-// The agent rows sit directly under the total. If they are scoped differently
-// they will not add up to it, and the panel contradicts itself on screen.
+// The agent rows sit directly under the total, so a different scope makes the
+// panel contradict itself on screen.
 func TestAgentRowsReconcileWithTheStatedTotal(t *testing.T) {
 	pinClock(t, heatNow)
 

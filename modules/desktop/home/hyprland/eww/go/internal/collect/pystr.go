@@ -5,21 +5,14 @@ import (
 	"unicode"
 )
 
-// PyLower is Python's str.lower().
-//
-// strings.ToLower agrees on every code point in Unicode but one: U+0130, the
-// capital I with dot above, lowercases to TWO characters in Python -- "i"
-// followed by U+0307 combining dot above -- where Go yields a bare "i".
-// Established by comparing both over the entire code point range rather than by
-// sampling. That sweep is gone with CPython; what survives it is the golden
-// replay, which pins 1,463 PyLower cases including four that carry U+0130.
-//
-// It matters because the AI collectors lowercase agent keys that are then
-// rendered, so a dropped combining mark would reach the popup.
+// PyLower is Python's str.lower(). strings.ToLower agrees on every code point but
+// U+0130, the capital I with dot above, which lowercases to TWO characters in
+// Python -- "i" followed by U+0307 -- where Go yields a bare "i". The AI
+// collectors lowercase agent keys that are then rendered, so a dropped combining
+// mark would reach the popup.
 
-// Escapes rather than literals: dottedLowerI is "i" plus a COMBINING DOT
-// ABOVE, which renders as one glyph and would not survive an editor that
-// normalises, or a reviewer who cannot see it.
+// Escapes, not literals: dottedLowerI is "i" plus a COMBINING DOT ABOVE, which
+// renders as one glyph.
 const (
 	capitalIWithDot     = "\u0130"
 	capitalIWithDotRune = '\u0130'
@@ -33,18 +26,13 @@ func PyLower(s string) string {
 	return strings.ToLower(s)
 }
 
-// PyTitle is Python's str.title(), used to render the Claude plan name.
+// PyTitle is Python's str.title(). The rule is a running flag: each character is
+// titlecased if the PREVIOUS character was not cased, and lowercased otherwise, so
+// any digit or punctuation restarts a word -- "max_5x" becomes "Max 5X" and
+// "don't" becomes "Don'T". Both are real outputs of the plan formatter.
 //
-// strings.Title is deprecated and was never this anyway. The rule is a running
-// flag: each character is titlecased if the PREVIOUS character was not cased,
-// and lowercased otherwise. "Word" therefore means a run of cased characters,
-// so any digit or punctuation restarts one -- "max_5x" becomes "Max 5X", not
-// "Max 5x", and "don't" becomes "Don'T". Both are real outputs of the plan
-// formatter, and both look like bugs until you know the rule.
 // Both branches use Unicode's FULL case mappings, which are one-to-many and so
-// cannot come from unicode.ToTitle/ToLower alone: 48 code points titlecase to
-// more than one character (fullTitleCase), and one lowercases to more than one
-// (U+0130, the same rune PyLower exists for).
+// cannot come from unicode.ToTitle/ToLower alone.
 func PyTitle(s string) string {
 	var out strings.Builder
 	out.Grow(len(s))
@@ -72,15 +60,9 @@ func isCased(r rune) bool {
 	return unicode.IsUpper(r) || unicode.IsLower(r) || unicode.IsTitle(r)
 }
 
-// SplitLines is Python's str.splitlines().
-//
-// strings.Split(s, "\n") is not it, and the difference is not academic: Python
-// also breaks on \r, \r\n, \v, \f, \x1c, \x1d, \x1e, \x85, U+2028 and U+2029,
-// and it does not emit a trailing empty element for a string that ends in a
-// terminator. Twenty-one call sites in the original parse subprocess output
-// this way. `\r\n` alone would leave a stray \r on the end of every field --
-// and the parsers that go on to .strip() would hide it, while the ones that
-// index or compare would not.
+// SplitLines is Python's str.splitlines(). strings.Split(s, "\n") is not it:
+// Python also breaks on \r, \r\n, \v, \f, \x1c, \x1d, \x1e, \x85, U+2028 and
+// U+2029, and emits no trailing empty element for a string ending in a terminator.
 func SplitLines(s string) []string {
 	if s == "" {
 		return nil
@@ -117,15 +99,10 @@ func lineBreakWidth(runes []rune, i int) int {
 	return 0
 }
 
-// SplitWhitespaceN is Python's str.split(maxsplit=n) with no separator.
-//
-// It splits on runs of whitespace, ignores leading and trailing whitespace, and
-// -- the part strings.Fields cannot express -- stops after n splits and hands
-// back the rest of the string as the final element, internal spacing intact.
-// bluetooth_state_from_text depends on that last part: `Device AA:BB My
-// Speaker` must yield the name as one field, spaces and all.
-//
-// n < 0 means unlimited, matching Python's default.
+// SplitWhitespaceN is Python's str.split(maxsplit=n) with no separator: splits on
+// runs of whitespace, ignores leading and trailing, and -- the part strings.Fields
+// cannot express -- stops after n splits and hands back the rest of the string as
+// the final element, internal spacing intact. n < 0 means unlimited.
 func SplitWhitespaceN(s string, n int) []string {
 	var fields []string
 	i := 0
@@ -138,12 +115,9 @@ func SplitWhitespaceN(s string, n int) []string {
 			break
 		}
 		if n >= 0 && len(fields) == n {
-			// The remainder is one field, taken verbatim to the end. Its
-			// leading whitespace was consumed above, but its trailing
-			// whitespace is KEPT: '  one  '.split(maxsplit=0) is ['one  '],
-			// not ['one']. Trimming it here looked obviously right and was
-			// wrong -- the equivalence gate caught it on a bluetooth device
-			// name with a trailing space.
+			// The remainder is one field, taken verbatim. Its leading whitespace was
+			// consumed above, but its trailing whitespace is KEPT:
+			// '  one  '.split(maxsplit=0) is ['one  '], not ['one'].
 			fields = append(fields, string(runes[i:]))
 			break
 		}
@@ -156,11 +130,8 @@ func SplitWhitespaceN(s string, n int) []string {
 	return fields
 }
 
-// Strip is Python's str.strip() with no argument.
-//
-// strings.TrimSpace is close but not equal: Go's unicode.IsSpace excludes
-// U+001C-U+001F, which Python's str.isspace() includes. Spelled out here so the
-// two definitions of "whitespace" in this package cannot drift apart.
+// Strip is Python's str.strip(). strings.TrimSpace is close but not equal: Go's
+// unicode.IsSpace excludes U+001C-U+001F, which Python's str.isspace() includes.
 func Strip(s string) string {
 	runes := []rune(s)
 	start, end := 0, len(runes)
@@ -173,9 +144,8 @@ func Strip(s string) string {
 	return string(runes[start:end])
 }
 
-// isPySpace matches Python's str.isspace(), which is what both str.split() and
-// str.strip() use. Written as code points because several of these are
-// invisible and a literal would be unreviewable.
+// isPySpace matches Python's str.isspace(), which both str.split() and str.strip()
+// use. Code points rather than literals because several are invisible.
 func isPySpace(r rune) bool {
 	switch {
 	case r >= 0x09 && r <= 0x0d: // tab, LF, VT, FF, CR

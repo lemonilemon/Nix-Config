@@ -11,7 +11,6 @@ import (
 // shapes: openusage-cli emits a generic "lines" report, and the Claude usage
 // endpoint emits named window objects. Both land in the same Quota.
 
-// QuotaWindow is one usage window on a provider card, in emit order.
 type QuotaWindow struct {
 	Label     string `json:"label"`
 	Percent   int    `json:"percent"`
@@ -29,13 +28,9 @@ type QuotaMeta struct {
 	Class   string `json:"class"`
 }
 
-// Quota is one provider card.
-//
-// Windows and Meta carry concrete types. An earlier draft of this port used
-// []any on the theory that typing them meant re-deriving six third-party
-// schemas in Go -- which was wrong. The Python derives no schemas; it probes
-// alternative key names on untyped dicts and normalises into exactly these two
-// fixed shapes, which is all that ever reaches eww.
+// Quota is one provider card. Windows and Meta carry concrete types: the original
+// probes alternative key names on untyped dicts and normalises into exactly these
+// two fixed shapes, which is all that ever reaches eww.
 type Quota struct {
 	Key     string        `json:"key"`
 	Name    string        `json:"name"`
@@ -47,12 +42,9 @@ type Quota struct {
 	Meta    []QuotaMeta   `json:"meta"`
 }
 
-// QuotaDefaults is AI_USAGE_DEFAULT["quotas"]: the three cards the popup shows
-// before any probe has run.
-//
-// A function rather than a var because the Python deep-copies the template at
-// every use, and a shared Go value a caller mutated would corrupt every later
-// reader.
+// QuotaDefaults is the three cards the popup shows before any probe has run. A
+// function rather than a var: a shared Go value a caller mutated would corrupt
+// every later reader.
 func QuotaDefaults() []Quota {
 	blank := func(key, name string) Quota {
 		return Quota{
@@ -68,12 +60,9 @@ func QuotaDefaults() []Quota {
 	}
 }
 
-// QuotaDefault mirrors collectors.quota_default: a blank card for one provider,
-// carrying a status.
-//
-// The name argument is only a fallback. For a key that has a default card, the
-// NAME COMES FROM THE TEMPLATE -- quota_default("claude", "whatever") is still
-// "Claude" -- and only an unrecognised key uses what the caller passed.
+// QuotaDefault is a blank card for one provider, carrying a status. The name
+// argument is only a fallback: for a key that has a default card the NAME COMES
+// FROM THE TEMPLATE, and only an unrecognised key uses what the caller passed.
 func QuotaDefault(key, name, status string) Quota {
 	for _, card := range QuotaDefaults() {
 		if card.Key == key {
@@ -88,14 +77,11 @@ func QuotaDefault(key, name, status string) Quota {
 	}
 }
 
-// ClaudeQuotaDefault mirrors collectors.claude_quota_default.
 func ClaudeQuotaDefault(status string) Quota { return QuotaDefault("claude", "Claude", status) }
 
-// QuotaWindowClass mirrors collectors.quota_window_class.
-//
-// "empty" and "missing" both mean zero usage; they differ in whether a reset
-// time was known, which is how the popup tells "nothing used yet this window"
-// from "no data at all".
+// QuotaWindowClass: "empty" and "missing" both mean zero usage and differ in
+// whether a reset time was known, which is how the popup tells "nothing used yet
+// this window" from "no data at all".
 func QuotaWindowClass(percent int, hasReset bool) string {
 	switch {
 	case percent >= 90:
@@ -110,8 +96,7 @@ func QuotaWindowClass(percent int, hasReset bool) string {
 	return "missing"
 }
 
-// QuotaCardClass mirrors collectors.quota_card_class: the card takes the most
-// severe class any of its rows carries.
+// QuotaCardClass: the card takes the most severe class any of its rows carries.
 func QuotaCardClass(quota Quota) string {
 	present := map[string]bool{}
 	for _, window := range quota.Windows {
@@ -133,9 +118,8 @@ func QuotaCardClass(quota Quota) string {
 // the "now" key so a recorded case resolves the same wall clock every time.
 var timeNow = time.Now
 
-// nowOr mirrors the `now_epoch or time.time()` idiom these collectors all open
-// with. It is `or`, not a None check, so a caller passing 0 gets the wall clock
-// rather than the epoch -- reproduced rather than corrected.
+// nowOr is the `now_epoch or time.time()` idiom, not a None check, so a caller
+// passing 0 gets the wall clock rather than the epoch. Reproduced, not corrected.
 func nowOr(nowEpoch float64) float64 {
 	if nowEpoch != 0 {
 		return nowEpoch
@@ -148,7 +132,6 @@ func clockHHMM(now float64) string {
 	return time.Unix(int64(now), 0).Local().Format("15:04")
 }
 
-// OpenusageWindow mirrors collectors.openusage_window.
 func OpenusageWindow(line map[string]any, nowEpoch float64) QuotaWindow {
 	now := nowOr(nowEpoch)
 	percent := PercentPart(NumberValue(line, "used"), NumberValue(line, "limit"))
@@ -185,11 +168,9 @@ func pyOr(value, fallback any) any {
 	return fallback
 }
 
-// OpenusageMeta mirrors collectors.openusage_meta, reporting ok=false where the
-// original returns None.
-//
-// Count lines are used/limit pairs; what is worth glancing at is what remains,
-// so an exhausted balance is hidden rather than shown as "0 credits".
+// OpenusageMeta reports ok=false where the original returns None. Count lines are
+// used/limit pairs and what is worth glancing at is what remains, so an exhausted
+// balance is hidden rather than shown as "0 credits".
 func OpenusageMeta(line map[string]any) (QuotaMeta, bool) {
 	format, _ := line["format"].(map[string]any)
 
@@ -245,10 +226,8 @@ func OpenusageTextMeta(line map[string]any) (QuotaMeta, bool) {
 // widget, so the ones nearest their limit are kept and the card stays short.
 const maxQuotaWindows = 4
 
-// QuotaFromOpenusage mirrors collectors.quota_from_openusage.
-//
-// snapshot is `any` because the caller looks it up by provider id in a map
-// built from a report that may not contain it; a non-map value, including nil,
+// QuotaFromOpenusage takes snapshot as `any` because the caller looks it up by
+// provider id in a report that may not contain it; a non-map value, including nil,
 // is the "unavailable" path.
 func QuotaFromOpenusage(snapshot any, key, name string, nowEpoch float64) Quota {
 	now := nowOr(nowEpoch)
@@ -319,7 +298,6 @@ func QuotaFromOpenusage(snapshot any, key, name string, nowEpoch float64) Quota 
 	return quota
 }
 
-// FormatClaudePlan mirrors collectors.format_claude_plan.
 func FormatClaudePlan(value any) string {
 	text, isText := value.(string)
 	if !isText || Strip(text) == "" {
@@ -340,7 +318,6 @@ var claudeWindowKeys = []struct {
 	{"Sonnet weekly", []string{"seven_day_sonnet", "sevenDaySonnet"}},
 }
 
-// ClaudeWindowState mirrors collectors.claude_window_state.
 func ClaudeWindowState(label string, window any, nowEpoch float64) QuotaWindow {
 	now := nowOr(nowEpoch)
 
@@ -377,7 +354,6 @@ func ClaudeWindowState(label string, window any, nowEpoch float64) QuotaWindow {
 	}
 }
 
-// ClaudeQuotaStateFromJSON mirrors collectors.claude_quota_state_from_json.
 func ClaudeQuotaStateFromJSON(usageJSON string, plan any, nowEpoch float64) Quota {
 	var body map[string]any
 	if !ParseJSON(usageJSON, &body) || len(body) == 0 {

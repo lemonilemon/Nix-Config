@@ -24,7 +24,6 @@
       # pdf reader
       zathura
 
-      # 1password cli-client
       _1password-cli
 
       # secrets editing (secrets/ in the config repo)
@@ -61,7 +60,6 @@
           scroll-full-overlap = 1;
           scroll-step = 100;
 
-          #zoom settings
           zoom-min = 10;
           guioptions = "";
 

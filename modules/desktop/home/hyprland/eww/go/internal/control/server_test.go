@@ -15,14 +15,10 @@ import (
 	"ewwbar/internal/state"
 )
 
-// TestMain installs the suite's safety rails.
-//
-// These tests drive real control handlers, and a handler shells out --
-// collect.RunText and RunStatus execute by default. Installing an empty
-// fixture replaces every impure seam in package collect before any test runs,
-// so nothing here can reach the developer's session. Without it, a `volume
-// mute` in a test is a `wpctl set-mute` on the desktop, which is precisely how
-// this port muted someone's audio once already.
+// TestMain installs the suite's safety rails: these tests drive real control
+// handlers, and a handler shells out. An empty fixture replaces every impure seam in
+// package collect, so a `volume mute` in a test is not a `wpctl set-mute` on the
+// desktop -- which is how this port muted someone's audio once already.
 func TestMain(m *testing.M) {
 	restore := collect.InstallFixture(map[string]string{})
 	code := m.Run()
@@ -30,20 +26,17 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// isolate points the runtime directory at a per-test temp dir.
-//
-// EVERY test in this file must call it before anything binds. Listen() removes
-// whatever sits at the socket path before binding, so a test that reached the
-// real path would delete a running daemon's socket and take over the bar's
-// control channel. t.Setenv also fails the build if the test is parallel, which
-// is the behaviour we want here rather than a silent race on a shared env var.
+// isolate points the runtime directory at a per-test temp dir. EVERY test in this
+// file must call it before anything binds: Listen() removes whatever sits at the
+// socket path, so a test reaching the real path would delete a running daemon's
+// socket and take over the bar's control channel.
 func isolate(t *testing.T) string {
 	t.Helper()
 	runtimeDir := t.TempDir()
 	t.Setenv("XDG_RUNTIME_DIR", runtimeDir)
 	// Assert it took. TempDir is called ONCE and reused: each call returns a
-	// fresh directory, so comparing against a second call would compare two
-	// different paths and pass for the wrong reason.
+	// fresh directory, so comparing against a second call would pass for the
+	// wrong reason.
 	if !strings.HasPrefix(paths.ControlSocket(), runtimeDir) {
 		t.Fatalf("socket path %q escaped the temp runtime dir %q",
 			paths.ControlSocket(), runtimeDir)
@@ -119,8 +112,6 @@ func TestServerReportsBadPayloads(t *testing.T) {
 }
 
 func TestServerTreatsAnEmptyRequestAsAnEmptyPayload(t *testing.T) {
-	// A bare connect-and-close must not be logged as a failure: it is what a
-	// probe or a half-open client looks like.
 	socketPath, _ := startServer(t)
 	got := request(t, socketPath, "")
 	if !strings.Contains(got, `"ok":false`) {
@@ -128,15 +119,9 @@ func TestServerTreatsAnEmptyRequestAsAnEmptyPayload(t *testing.T) {
 	}
 }
 
-// TestServerServesABurstWithoutDropping checks that 40 concurrent clients all
-// get a correct reply.
-//
-// Deliberately NOT claimed as the regression test for the dropped-scroll bug.
-// It passes with a serialised accept loop too -- verified by mutation -- because
-// Go's listen backlog comes from somaxconn (4096 here) rather than the
-// Python's default, so 40 queued connections are never refused, and a ping is
-// answered too fast for serialisation to cost anything. The property that
-// actually matters is tested below.
+// Deliberately NOT the regression test for the dropped-scroll bug: it passes with a
+// serialised accept loop too, because Go's listen backlog comes from somaxconn and
+// a ping is answered too fast for serialisation to cost anything.
 func TestServerServesABurstWithoutDropping(t *testing.T) {
 	socketPath, _ := startServer(t)
 
@@ -184,16 +169,9 @@ func TestServerServesABurstWithoutDropping(t *testing.T) {
 	}
 }
 
-// TestAcceptDoesNotWaitOnASlowHandler is the real regression test.
-//
-// eww.yuck binds eww-barctl to :onscroll, and a scroll wheel delivers ticks far
-// faster than a handler that shells out can be served. If accept() waits on the
-// handler, the ticks queue behind it; the Python's serve-then-accept loop let
-// the backlog fill and the kernel then refused the rest, which --quiet swallows
-// silently. Measured there against 40 clients: 30 dropped.
-//
-// A burst of instant pings cannot see that. This holds one handler open and
-// asserts a second request is still answered promptly.
+// The real regression test. If accept() waits on the handler, :onscroll ticks queue
+// behind it until the kernel refuses the rest, which --quiet swallows silently. A
+// burst of instant pings cannot see that; this holds one handler open.
 func TestAcceptDoesNotWaitOnASlowHandler(t *testing.T) {
 	socketPath, _ := startServer(t)
 
@@ -259,8 +237,8 @@ func TestWriteBackendPidfileOnlyRemovesItsOwn(t *testing.T) {
 		t.Fatalf("pidfile not written: %v", err)
 	}
 
-	// A newer daemon has taken over the pidfile; this one's cleanup must leave
-	// it alone rather than deleting the live daemon's.
+	// A newer daemon has taken over the pidfile; this one's cleanup must leave it
+	// alone rather than deleting the live daemon's.
 	if err := os.WriteFile(pidfile, []byte("999999"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -270,12 +248,9 @@ func TestWriteBackendPidfileOnlyRemovesItsOwn(t *testing.T) {
 	}
 }
 
-// TestPersistWallpaperPick pins the serve-loop half of the login-reveal
-// contract. The persist hangs off ServeConnection because the golden replay
-// pins Handle and SetWallpaper byte-for-byte; this test is the ordinary-Go
-// coverage that replaces what the gate cannot record. Only a "wallpaper set"
-// persists, and what it persists is the reply's current -- the wallpaper awww
-// actually reports -- not the requested path.
+// Pins the serve-loop half of the login-reveal contract, which the golden replay
+// cannot record. Only a "wallpaper set" persists, and what it persists is the
+// reply's current -- what awww actually reports -- not the requested path.
 func TestPersistWallpaperPick(t *testing.T) {
 	prevWrite := collect.WriteTextFile
 	t.Cleanup(func() { collect.WriteTextFile = prevWrite })

@@ -34,8 +34,8 @@ func BatteryDefault() Battery {
 	}
 }
 
-// Battery is collectors.battery_state's shape. Declared here rather than in
-// package state so the collector and its default sit together.
+// Battery is the battery module's shape, declared here so the collector and its
+// default sit together.
 type Battery struct {
 	Text     string `json:"text"`
 	Alt      string `json:"alt"`
@@ -47,11 +47,8 @@ type Battery struct {
 	Power    string `json:"power"`
 }
 
-// CPUStateFromSamples mirrors collectors.cpu_state's arithmetic.
-//
-// The original reads /proc/stat, sleeps 200 ms, reads again. Taking the two
-// samples as arguments keeps the maths testable without a sleep in the test;
-// CollectCPU does the reading.
+// CPUStateFromSamples takes the two /proc/stat samples as arguments so the maths is
+// testable without a sleep; CollectCPU does the reading.
 func CPUStateFromSamples(first, second string) string {
 	total1, idle1, ok1 := parseProcStat(first)
 	total2, idle2, ok2 := parseProcStat(second)
@@ -67,8 +64,8 @@ func CPUStateFromSamples(first, second string) string {
 	return fmt.Sprintf("%s %.0f%%", glyphCPU, usage)
 }
 
-// parseProcStat reads the aggregate cpu line: the first seven fields, with
-// idle being fields 4 and 5 (idle + iowait) as the original has it.
+// parseProcStat reads the aggregate cpu line: the first seven fields, with idle
+// being fields 4 and 5 (idle + iowait).
 func parseProcStat(text string) (total, idle int64, ok bool) {
 	lines := SplitLines(text)
 	if len(lines) == 0 {
@@ -93,7 +90,6 @@ func parseProcStat(text string) (total, idle int64, ok bool) {
 	return total, idle, true
 }
 
-// CollectCPU mirrors collectors.cpu_state.
 func CollectCPU(sleep func()) string {
 	first, ok := ReadTextFile("/proc/stat")
 	if !ok {
@@ -107,7 +103,6 @@ func CollectCPU(sleep func()) string {
 	return CPUStateFromSamples(first, second)
 }
 
-// CollectMemory mirrors collectors.memory_state.
 func CollectMemory() Module {
 	text, ok := ReadTextFile("/proc/meminfo")
 	if !ok {
@@ -116,8 +111,8 @@ func CollectMemory() Module {
 	return MemoryStateFromText(text)
 }
 
-// TemperatureStateFromReadings mirrors collectors.temperature_state's tail: it
-// takes every hwmon reading in millidegrees and renders the hottest.
+// TemperatureStateFromReadings takes every hwmon reading in millidegrees and
+// renders the hottest.
 func TemperatureStateFromReadings(millidegrees []int64) Temperature {
 	if len(millidegrees) == 0 {
 		return Temperature{Text: glyphTemperature + " --" + degreeSign + "C", Class: ""}
@@ -146,8 +141,8 @@ type Temperature struct {
 	Class string `json:"class"`
 }
 
-// BatteryStateFromFiles mirrors collectors.battery_state's body for one battery
-// directory, taking the file contents rather than reading them.
+// BatteryStateFromFiles takes the file contents for one battery directory rather
+// than reading them.
 //
 // files is keyed by the file name under /sys/class/power_supply/BAT*, e.g.
 // "capacity", "status", "energy_now". A missing key is a missing file.

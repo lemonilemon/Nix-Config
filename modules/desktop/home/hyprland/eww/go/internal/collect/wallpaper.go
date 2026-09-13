@@ -19,12 +19,9 @@ type WallpaperItem struct {
 	Active   string `json:"active"`
 }
 
-// WallpaperItems mirrors wallpaper.wallpaper_items.
-//
-// realPath and thumb are injected because both touch the filesystem; the
-// original takes thumb_fn for the same reason. resolve() is what makes the
-// active highlight work at all: awww query reports the resolved target, and
-// Home Manager deploys the seed as a store symlink, so comparing the literal
+// WallpaperItems injects realPath and thumb because both touch the filesystem.
+// resolve() is what makes the active highlight work: awww query reports the resolved
+// target, and Home Manager deploys the seed as a store symlink, so comparing literal
 // strings never matches for the seeded wallpaper.
 func WallpaperItems(
 	files []string,
@@ -54,12 +51,9 @@ func WallpaperItems(
 	return items
 }
 
-// PathName is pathlib.PurePath.name.
-//
-// Not filepath.Base, which disagrees on four shapes: Base("") and Base(".") are
-// ".", Base("/") is "/", and Base("/w/.") is "." -- where pathlib gives "", "",
-// "" and "w", because it drops "." components during normalisation and has no
-// name for a bare root.
+// PathName is pathlib.PurePath.name, not filepath.Base, which disagrees on four
+// shapes: Base(""), Base("."), Base("/") and Base("/w/.") give ".", ".", "/" and
+// "." where pathlib gives "", "", "" and "w".
 func PathName(path string) string {
 	name := ""
 	for _, part := range strings.Split(path, "/") {
@@ -71,18 +65,13 @@ func PathName(path string) string {
 	return name
 }
 
-// PathStem is pathlib.PurePath.stem.
+// PathStem is pathlib.PurePath.stem. filepath.Ext is not the suffix rule --
+// Ext(".bashrc") is ".bashrc" -- while pathlib ignores LEADING dots entirely and
+// then splits at the last remaining one, so ".bashrc" and "..a" have no suffix
+// while ".a.b" has ".b".
 //
-// filepath.Ext is not the suffix rule -- Ext(".bashrc") is ".bashrc", so
-// trimming it would leave "". pathlib ignores LEADING dots entirely and then
-// splits at the last remaining one, which is why ".bashrc" and "..a" have no
-// suffix while ".a.b" has ".b".
-//
-// Derived by probing CPython rather than read off the source, because the rule
-// changed: on 3.14 Path("a.").suffix is "." and the stem is "a", where earlier
-// versions treated a trailing dot as no suffix at all and gave "a.". This
-// targets the 3.14 the daemon runs on. If the interpreter is ever upgraded, the
-// equivalence gate is what will notice.
+// Targets CPython 3.14, where Path("a.").suffix is "." and the stem is "a"; earlier
+// versions gave "a.".
 func PathStem(path string) string {
 	name := PathName(path)
 	stripped := strings.TrimLeft(name, ".")
@@ -94,10 +83,9 @@ func PathStem(path string) string {
 	return name[:len(name)-suffixLen]
 }
 
-// RowsFromItems mirrors wallpaper.rows_from_items.
-//
-// Returns [] rather than nil for an empty input: eww.yuck iterates rows with
-// (for row in ...), and a nil slice marshals to null, which eww cannot index.
+// RowsFromItems returns [] rather than nil for an empty input: eww.yuck iterates
+// rows with (for row in ...), and a nil slice marshals to null, which eww cannot
+// index.
 func RowsFromItems(items []WallpaperItem, columns int) [][]WallpaperItem {
 	rows := [][]WallpaperItem{}
 	if columns <= 0 {

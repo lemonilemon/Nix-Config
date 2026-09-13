@@ -6,27 +6,23 @@ import (
 	"strings"
 )
 
-// The AI usage subsystem reads three third-party reports -- ccusage,
-// openusage-cli and the Claude usage endpoint -- none of which this repo
-// controls. The Python never derives a schema for them; it probes a handful of
-// alternative key names on an untyped dict and falls back to zero. These
-// helpers are that probing, kept untyped for the same reason.
+// The AI usage subsystem reads three third-party reports -- ccusage, openusage-cli
+// and the Claude usage endpoint -- none of which this repo controls. These helpers
+// probe alternative key names on untyped dicts and fall back to zero.
 
 // pyNumber reports the numeric value of a decoded JSON scalar, matching
 // Python's isinstance(value, (int, float)) test.
 func pyNumber(value any) (float64, bool) {
 	switch v := value.(type) {
 	case bool:
-		// NOT numeric, though Python's bool subclasses int and would satisfy
-		// that isinstance check -- which is exactly why number_value opens with
-		// an explicit bool guard. Owning the rule here rather than repeating
-		// the guard at each call site keeps it in one place and testable;
-		// mutation testing showed the duplicated version was unreachable.
+		// NOT numeric, though Python's bool subclasses int and would satisfy that
+		// isinstance check, which is why number_value opens with an explicit bool
+		// guard. Owning the rule here keeps it in one place and testable.
 		return 0, false
 	case json.Number:
 		// Every JSON number arrives as json.Number, because the daemon decodes
-		// reports with UseNumber. ErrRange is not a rejection: CPython's json
-		// parses 1e999 to inf, and ParseFloat returns ±Inf beside that error.
+		// reports with UseNumber. ErrRange is not a rejection: CPython parses 1e999
+		// to inf, and ParseFloat returns ±Inf beside that error.
 		number, err := strconv.ParseFloat(v.String(), 64)
 		if err == nil {
 			return number, true
@@ -45,8 +41,8 @@ func pyNumber(value any) (float64, bool) {
 	return 0, false
 }
 
-// NumberValue mirrors collectors.number_value: the value of the first key
-// holding a number, or a string float() accepts, else 0.
+// NumberValue is the value of the first key holding a number, or a string float()
+// accepts, else 0.
 func NumberValue(data map[string]any, keys ...string) float64 {
 	for _, key := range keys {
 		value := data[key]
@@ -62,7 +58,6 @@ func NumberValue(data map[string]any, keys ...string) float64 {
 	return 0
 }
 
-// ListValue mirrors collectors.list_value.
 func ListValue(data map[string]any, keys ...string) []any {
 	for _, key := range keys {
 		if list, isList := data[key].([]any); isList {
@@ -72,9 +67,8 @@ func ListValue(data map[string]any, keys ...string) []any {
 	return []any{}
 }
 
-// TokenValues is collectors.daily_token_values' dict. Never serialised -- it
-// exists only to carry five numbers into period_state -- but the json tags
-// match the Python keys so the differential gate can compare them directly.
+// TokenValues is never serialised -- it carries five numbers into period_state --
+// but the json tags match the Python keys so the gate can compare them directly.
 type TokenValues struct {
 	Input  float64 `json:"input"`
 	Output float64 `json:"output"`
@@ -83,12 +77,10 @@ type TokenValues struct {
 	Cost   float64 `json:"cost"`
 }
 
-// DailyTokenValues mirrors collectors.daily_token_values.
-//
-// The key alternatives are not interchangeable spellings of one field: ccusage
+// DailyTokenValues: the key alternatives are not interchangeable spellings. ccusage
 // has renamed these across versions and reports both camelCase and snake_case
-// depending on the subcommand, so the order here is the precedence the original
-// chose and changing it would change which number wins.
+// depending on the subcommand, so this order is the precedence that decides which
+// number wins.
 func DailyTokenValues(row map[string]any) TokenValues {
 	input := NumberValue(row, "inputTokens", "input_tokens", "input")
 	output := NumberValue(row, "outputTokens", "output_tokens", "output")
@@ -113,11 +105,9 @@ func DailyTokenValues(row map[string]any) TokenValues {
 	}
 }
 
-// AgentsText mirrors collectors.agents_text: which of the three known agents
-// appear anywhere in the key list, in a fixed order, joined for the popup.
-//
-// The match is substring, not equality, because ccusage reports agent keys with
-// vendor prefixes ("anthropic.claude") in some versions.
+// AgentsText names which of the three known agents appear in the key list, in a
+// fixed order. The match is substring, not equality, because ccusage reports agent
+// keys with vendor prefixes ("anthropic.claude") in some versions.
 func AgentsText(agents []string) string {
 	var seen []string
 	for _, name := range [...]string{"claude", "codex", "gemini"} {
@@ -134,13 +124,10 @@ func AgentsText(agents []string) string {
 	return strings.Join(seen, " "+middleDot+" ")
 }
 
-// PeriodAgentKeys mirrors collectors.period_agent_keys.
-//
-// row["metadata"]["agents"] is iterated with Python's protocol, so a string
-// there yields its characters rather than raising, and this reproduces that.
-// A dict would yield its keys in CPython and yields nothing here; the sole
-// consumer is AgentsText, which is order-insensitive and substring-matched, so
-// the difference is not observable in any output the bar renders.
+// PeriodAgentKeys: row["metadata"]["agents"] is iterated with Python's protocol, so
+// a string there yields its characters rather than raising. A dict would yield its
+// keys in CPython and yields nothing here; the sole consumer is AgentsText, which
+// is order-insensitive and substring-matched.
 func PeriodAgentKeys(row map[string]any) []string {
 	keys := []string{} // Python returns [], and nil would encode as null
 	if metadata, isMap := row["metadata"].(map[string]any); isMap {

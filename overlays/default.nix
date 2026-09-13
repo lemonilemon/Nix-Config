@@ -214,7 +214,6 @@
     })
 
     (final: prev: {
-      # --- Spotify Override ---
       # Add flags to the .desktop file for Wayland IME support
       spotify = prev.spotify.overrideAttrs (oldAttrs: {
         nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ final.patchutils ];
@@ -235,9 +234,8 @@
             echo "Warning: Spotify executable not found at $spotify_executable, skipping wrap." >&2
           fi
         '';
-      }); # End spotify override
+      });
 
-      # --- 1Password Override ---
       _1password-gui-beta = prev._1password-gui-beta.overrideAttrs (oldAttrs: {
         nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ final.patchutils ];
         postFixup = (oldAttrs.postFixup or "") + ''
@@ -256,7 +254,7 @@
             echo "Warning: 1Password executable not found at $op_executable, skipping wrap." >&2
           fi
         '';
-      }); # End onepassword-desktop override
+      });
     })
   ];
 }

@@ -102,7 +102,6 @@
             (bindWith "${MOD2} + space" (exec "pkill rofi || ${DRUN}") { release = true; })
             (bindWith "${MOD2} + E" (exec FILE) { release = true; }) # File manager
 
-            # Mouse binds
             (bindWith "${MOD1} + mouse:272" (dsp "window.drag()") { mouse = true; })
             (bindWith "${MOD1} + mouse:273" (dsp "window.resize()") { mouse = true; })
 
@@ -126,7 +125,6 @@
             (bindWith "XF86AudioMute" (exec "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle") {
               locked = true;
             })
-            # Requires playerctl
             (bindWith "XF86AudioPlay" (exec "playerctl play-pause") { locked = true; })
             (bindWith "XF86AudioPrev" (exec "playerctl previous") { locked = true; })
             (bindWith "XF86AudioNext" (exec "playerctl next") { locked = true; })
@@ -167,7 +165,6 @@
             )
           );
 
-          # rule
           window_rule = [
             {
               match.class = BROWSER;
@@ -299,7 +296,6 @@
             };
           };
           device = {
-            # Logitech G Pro Wireless
             name = "logitech-g-pro--1";
             sensitivity = -0.2;
           };

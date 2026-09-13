@@ -13,12 +13,9 @@ const (
 	glyphWsEmpty    = "\uF10C" // U+F10C hollow circle
 )
 
-// WorkspaceState is the flat ws1..ws5 class/text map the bar renders.
-//
-// A struct with explicit fields rather than a map, because encoding/json sorts
-// map keys and the original builds these in numeric order. eww.yuck reads each
-// by name, so order only matters for byte-compatibility with the Python emit --
-// but that is the gate the state emitter has to pass.
+// WorkspaceState is the flat ws1..ws5 class/text map the bar renders. A struct
+// rather than a map, because encoding/json sorts map keys where the original builds
+// these in numeric order, and the state emitter has to stay byte-compatible.
 type WorkspaceState struct {
 	Ws1Class string `json:"ws1_class"`
 	Ws1Text  string `json:"ws1_text"`
@@ -32,15 +29,14 @@ type WorkspaceState struct {
 	Ws5Text  string `json:"ws5_text"`
 }
 
-// ParseJSON mirrors common.parse_json: decode, or hand back the default on any
-// failure. UseNumber throughout so downstream str() stays faithful.
+// ParseJSON decodes, or hands back the default on any failure. UseNumber throughout
+// so downstream str() stays faithful.
 func ParseJSON(text string, into any) bool {
 	decoder := json.NewDecoder(bytes.NewReader([]byte(text)))
 	decoder.UseNumber()
 	return decoder.Decode(into) == nil
 }
 
-// WorkspaceStateFromJSON mirrors collectors.workspace_state_from_json.
 func WorkspaceStateFromJSON(activeJSON, workspacesJSON, clientsJSON string) WorkspaceState {
 	var active map[string]any
 	if !ParseJSON(activeJSON, &active) {
@@ -56,9 +52,8 @@ func WorkspaceStateFromJSON(activeJSON, workspacesJSON, clientsJSON string) Work
 	}
 
 	// The raw value, not a coerced int: the original compares
-	// `active.get("id", 0) == workspace_id` directly, so the string "2" does
-	// NOT match workspace 2 -- but the float 2.0 and the bool True do, because
-	// Python numeric equality spans int, float and bool.
+	// `active.get("id", 0) == workspace_id` directly, so the string "2" does NOT
+	// match workspace 2, while the float 2.0 and the bool True do.
 	activeID := active["id"]
 	if activeID == nil {
 		activeID = json.Number("0")
@@ -75,11 +70,9 @@ func WorkspaceStateFromJSON(activeJSON, workspacesJSON, clientsJSON string) Work
 			if !pyEqualsInt(item["id"], id) {
 				continue
 			}
-			// Only reached once the id matched, mirroring Python's `and`
-			// short-circuit. A non-numeric `windows` raises TypeError there;
-			// here it reads as not-occupied. Reachable only from a monitor
-			// object with an integer id and a string window count, which
-			// hyprctl does not emit.
+			// Only reached once the id matched, mirroring Python's `and` short-circuit.
+			// A non-numeric `windows` raises TypeError there and reads as not-occupied
+			// here, which hyprctl cannot produce.
 			if windows, ok := toInt(item["windows"]); ok && windows > 0 {
 				occupied = true
 				break
@@ -132,12 +125,10 @@ func WorkspaceStateFromJSON(activeJSON, workspacesJSON, clientsJSON string) Work
 	}
 }
 
-// pyEqualsInt is Python's `value == want` for an int want.
-//
-// Numbers compare by value across int, float and bool -- 3.0 == 3 and True == 1
-// are both True -- while strings, None and containers are never equal to an
-// int. toInt must NOT be used here: it parses "3" into 3, which would make a
-// string id match a workspace the original leaves empty.
+// pyEqualsInt is Python's `value == want` for an int want: numbers compare by value
+// across int, float and bool, while strings, None and containers never match. toInt
+// must NOT be used here -- it parses "3" into 3, which would make a string id match
+// a workspace the original leaves empty.
 func pyEqualsInt(value any, want int64) bool {
 	switch typed := value.(type) {
 	case json.Number:
@@ -152,7 +143,6 @@ func pyEqualsInt(value any, want int64) bool {
 	return false
 }
 
-// MissingBarMonitors mirrors watchers.missing_bar_monitors.
 func MissingBarMonitors(monitorsJSONText, activeWindowsText string) []string {
 	var monitors []any
 	if !ParseJSON(monitorsJSONText, &monitors) {
@@ -176,9 +166,7 @@ func MissingBarMonitors(monitorsJSONText, activeWindowsText string) []string {
 	return missing
 }
 
-// ParseAwwwQuery mirrors wallpaper.parse_awww_query.
-//
-// `awww query` prints one line per output, e.g.
+// ParseAwwwQuery reads `awww query`, which prints one line per output, e.g.
 // `eDP-1: 1920x1200, scale: 2, currently displaying: image: /path/img.png`.
 // Both monitors mirror, so the first image path wins.
 func ParseAwwwQuery(text string) string {
@@ -191,10 +179,8 @@ func ParseAwwwQuery(text string) string {
 	return ""
 }
 
-// InternalMonitorPrefixes mirrors display.INTERNAL_MONITOR_PREFIXES.
 var InternalMonitorPrefixes = []string{"eDP-", "LVDS-"}
 
-// IsInternalMonitor mirrors display.is_internal_monitor.
 func IsInternalMonitor(name string) bool {
 	for _, prefix := range InternalMonitorPrefixes {
 		if strings.HasPrefix(name, prefix) {
@@ -204,10 +190,8 @@ func IsInternalMonitor(name string) bool {
 	return false
 }
 
-// SplitMonitors mirrors display.split_monitors.
-//
-// The `disabled` test is `not monitor.get("disabled", False)`, so a monitor
-// with no such key counts as enabled and any truthy value disables it.
+// SplitMonitors tests `not monitor.get("disabled", False)`, so a monitor with no
+// such key counts as enabled and any truthy value disables it.
 func SplitMonitors(monitors []map[string]any) (internal, external []map[string]any) {
 	internal, external = []map[string]any{}, []map[string]any{}
 	for _, monitor := range monitors {

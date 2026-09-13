@@ -21,7 +21,6 @@ type NetworkState struct {
 	Class   string `json:"class"`
 }
 
-// ConnectedDevice mirrors collectors.connected_device.
 func ConnectedDevice(statusText, deviceType string) string {
 	for _, line := range SplitLines(statusText) {
 		fields := strings.Split(line, ":")
@@ -32,7 +31,6 @@ func ConnectedDevice(statusText, deviceType string) string {
 	return ""
 }
 
-// NmcliValue mirrors collectors.nmcli_value.
 func NmcliValue(text, key string) string {
 	for _, line := range SplitLines(text) {
 		if strings.HasPrefix(line, key+":") {
@@ -43,7 +41,6 @@ func NmcliValue(text, key string) string {
 	return ""
 }
 
-// FirstIP mirrors collectors.first_ip.
 func FirstIP(ipText string) string {
 	for _, line := range SplitLines(ipText) {
 		if strings.Contains(line, ":") {
@@ -54,11 +51,8 @@ func FirstIP(ipText string) string {
 	return ""
 }
 
-// WirelessSignalPercent mirrors collectors.wireless_signal_percent.
-//
-// ok=false is Python's None, and the caller treats it as "fall back to asking
-// nmcli", not as "signal is zero". /proc/net/wireless reports link quality out
-// of 70, not a percentage.
+// WirelessSignalPercent reports ok=false as "fall back to asking nmcli", not as
+// "signal is zero". /proc/net/wireless reports link quality out of 70.
 func WirelessSignalPercent(wirelessText, iface string) (int, bool) {
 	for _, line := range SplitLines(wirelessText) {
 		stripped := Strip(line)
@@ -78,13 +72,9 @@ func WirelessSignalPercent(wirelessText, iface string) (int, bool) {
 	return 0, false
 }
 
-// DefaultRouteDevice mirrors collectors.default_route_device.
-//
-// Interface owning the default route, lowest metric winning. A docked laptop
-// carries one default route per link, and the kernel prefers the lowest metric;
-// an absent metric means 0. ECMP routes (a bare `default` line followed by
-// `nexthop` lines) are deliberately not handled - they have no single owning
-// interface to name.
+// DefaultRouteDevice names the interface owning the default route, lowest metric
+// winning; an absent metric means 0. ECMP routes (a bare `default` followed by
+// `nexthop` lines) are deliberately not handled: no single owning interface.
 func DefaultRouteDevice(routeText string) string {
 	bestDevice := ""
 	bestMetric := 0
@@ -113,40 +103,27 @@ func DefaultRouteDevice(routeText string) string {
 	return bestDevice
 }
 
-// NetworkIdentity names the connection carrying traffic, as NetworkManager
-// knows it.
+// NetworkIdentity names the connection carrying traffic, as NetworkManager knows it.
 //
-// UUID is the key every speed test record is filed under, and it is the right
-// one for the job where the obvious alternatives are not. An SSID is not
-// unique -- every branch of a chain is "Starbucks", and keying on it would show
-// one cafe's numbers in another. A BSSID is too granular: a hotel with twenty
-// access points would accumulate twenty records and roaming would invalidate
-// them constantly. A gateway MAC works but is a heuristic to maintain, and
-// NetworkManager already computes a stable per-profile identity.
+// UUID is the key every speed test record is filed under. An SSID is not unique --
+// every branch of a chain is "Starbucks" -- and a BSSID is too granular, since a
+// hotel with twenty access points would accumulate twenty records.
 //
-// The one case UUID does not separate: two genuinely different networks that
-// share an SSID also share one NetworkManager profile, so they share one
-// record. Accepted -- splitting them needs a gateway-MAC sub-key and buys
-// almost nothing.
+// The one case UUID does not separate: two different networks sharing an SSID also
+// share one NetworkManager profile, so they share one record. Accepted.
 type NetworkIdentity struct {
 	UUID string
 	Name string
 }
 
-// splitNmcliTerse splits one `nmcli -t` line into its fields.
+// splitNmcliTerse splits one `nmcli -t` line into its fields. Not
+// strings.Split(line, ":"): terse mode escapes a colon inside a VALUE as `\:`, and
+// an SSID of "Guest: Lobby" would otherwise shift every column after it.
 //
-// Not strings.Split(line, ":"), which is what the older collectors above use.
-// Terse mode escapes a colon inside a VALUE as `\:` and a backslash as `\\`,
-// and a connection name is free text -- an SSID of "Guest: Lobby" would
-// otherwise split into two fields and shift every column after it, so the UUID
-// would be read out of the wrong position.
-//
-// NetworkStateFromText above has the same exposure and does NOT use this: it
-// splits an ACTIVE:SSID:SIGNAL line on bare colons, so an SSID containing one
-// reads as a truncated name and a signal of nonsense. That is a live bug, left
-// alone deliberately -- that function is pinned byte-for-byte by recorded cases
-// in the golden replay, which cannot be regenerated, so correcting it needs the
-// supersession treatment rather than an edit in passing.
+// NetworkStateFromText has the same exposure and does NOT use this, so an SSID
+// containing a colon reads as a truncated name. A live bug, left alone: that
+// function is pinned byte-for-byte by recorded cases that cannot be regenerated, so
+// correcting it needs the supersession treatment rather than an edit in passing.
 func splitNmcliTerse(line string) []string {
 	fields := []string{}
 	current := strings.Builder{}
@@ -168,18 +145,12 @@ func splitNmcliTerse(line string) []string {
 	return append(fields, current.String())
 }
 
-// ActiveConnectionFromText picks the identity out of
-// `nmcli -t -f UUID,NAME,TYPE,DEVICE connection show --active`.
+// ActiveConnectionFromText picks the identity out of `nmcli -t -f UUID,NAME,TYPE,
+// DEVICE connection show --active`. The connection owning the default route wins,
+// because a docked laptop or a machine with a VPN up has several active at once.
 //
-// The connection owning the default route wins, because that is the one
-// actually carrying traffic -- a docked laptop, or a machine with a VPN up,
-// has several active at once. Falling back to the first non-loopback line
-// rather than to nothing keeps the card working when the route text is
-// unavailable, which is the same trade DefaultRouteDevice's callers make.
-//
-// Loopback is always skipped: it is active on every machine and would otherwise
-// win the fallback on a disconnected one, filing records under an identity that
-// says nothing about the network.
+// Loopback is always skipped: it is active on every machine and would otherwise win
+// the fallback on a disconnected one.
 func ActiveConnectionFromText(activeText, routeText string) NetworkIdentity {
 	preferred := DefaultRouteDevice(routeText)
 	fallback := NetworkIdentity{}
@@ -203,15 +174,10 @@ func ActiveConnectionFromText(activeText, routeText string) NetworkIdentity {
 	return fallback
 }
 
-// ConnectivityFromText maps `nmcli networking connectivity` onto the popup's
-// vocabulary.
-//
-// The four words are NetworkManager's own and are passed through unchanged;
+// ConnectivityFromText passes NetworkManager's own four words through unchanged;
 // anything else, including the empty string run_text() produces when nmcli is
-// missing or times out, becomes "unknown". That distinction matters at the
-// widget: "none" is a claim that there is no internet, "unknown" is an
-// admission that nothing was asked, and the popup must not render the second
-// as the first.
+// missing, becomes "unknown". The distinction matters at the widget: "none" claims
+// there is no internet, "unknown" admits nothing was asked.
 func ConnectivityFromText(text string) string {
 	switch state := Strip(text); state {
 	case "full", "portal", "limited", "none":
@@ -229,9 +195,7 @@ func indexOf(fields []string, want string) int {
 	return -1
 }
 
-// DeviceIPv4 mirrors collectors.device_ipv4.
-//
-// `ip -o -4 addr show` lines look like:
+// DeviceIPv4 reads `ip -o -4 addr show` lines, which look like:
 //
 //	2: eno1    inet 192.168.0.88/24 brd ... scope global dynamic eno1
 func DeviceIPv4(addrText, device string) string {
@@ -245,21 +209,15 @@ func DeviceIPv4(addrText, device string) string {
 	return ""
 }
 
-// LinkStateFromText mirrors collectors.link_state_from_text.
+// LinkStateFromText is the readout for when nmcli reports nothing usable. ok=false
+// means "nmcli is right, we really are disconnected"; a value means "nmcli is not
+// reporting but the kernel still has a route, so we are online".
 //
-// Readout for when nmcli reports nothing usable. ok=false is Python's None, and
-// the distinction carries the whole workaround: None means "nmcli is right,
-// we really are disconnected", a value means "nmcli is not reporting but the
-// kernel still has a route, so we are online".
+// The kernel keeps the lease and the default route after NetworkManager stops, and
+// the same holds for unmanaged devices or a route owned by systemd-networkd.
 //
-// The kernel keeps the lease and the default route after NetworkManager stops,
-// so the machine is still online; only the usual source of truth is gone. The
-// same holds when NetworkManager is up but owns nothing, e.g. unmanaged devices
-// or a route belonging to systemd-networkd or a tunnel. Report the interface
-// that owns the route rather than claiming to be disconnected.
-//
-// run_text() flattens "not running", "not on PATH" and "timed out" into the
-// same empty string, so the tooltip names where the answer came from instead of
+// run_text() flattens "not running", "not on PATH" and "timed out" into the same
+// empty string, so the tooltip names where the answer came from rather than
 // asserting a cause it cannot know.
 func LinkStateFromText(routeText, addrText string) (NetworkState, bool) {
 	device := DefaultRouteDevice(routeText)
@@ -279,7 +237,6 @@ func LinkStateFromText(routeText, addrText string) (NetworkState, bool) {
 	}, true
 }
 
-// NetworkStateFromText mirrors collectors.network_state_from_text.
 func NetworkStateFromText(statusText, wifiText string, ipByDevice map[string]string) NetworkState {
 	wifiDevice := ""
 	for _, line := range SplitLines(statusText) {

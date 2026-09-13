@@ -11,9 +11,8 @@ import (
 
 const dunstctlTimeout = 5 * time.Second
 
-// Ephemeral UI state, process lifetime only. Same idea as the display-mode
-// file, except collapse and badge state is fine to lose on a daemon restart,
-// which is why it is memory rather than a runtime file.
+// Ephemeral UI state, process lifetime only: collapse and badge state is fine to
+// lose on a daemon restart, which is why it is memory rather than a runtime file.
 var (
 	notifyUILock  sync.Mutex
 	collapsedApps = map[string]bool{}
@@ -28,17 +27,12 @@ func ResetNotifyUIState() {
 	lastSeenUS = 0
 }
 
-// BoottimeSeconds mirrors notifications.boottime_seconds.
+// BoottimeSeconds: dunst stamps history with CLOCK_BOOTTIME, which INCLUDES
+// suspend; CLOCK_MONOTONIC instead makes ages go negative after any suspend.
 //
-// dunst stamps history with CLOCK_BOOTTIME, which INCLUDES suspend; the
-// original's comment records verifying that on this host, and that using
-// CLOCK_MONOTONIC instead makes ages go negative after any suspend.
-//
-// Go's standard library exposes no clock_gettime, and this module has no
-// dependencies to add one, so the value comes from /proc/uptime -- which is the
-// same clock. The cost is resolution: /proc/uptime is centiseconds where
-// clock_gettime is nanoseconds. Invisible here, because the only consumers
-// bucket the result into "now"/seconds/minutes/hours/days.
+// Go's standard library exposes no clock_gettime and this module has no dependencies
+// to add one, so the value comes from /proc/uptime, the same clock at centisecond
+// resolution.
 var BoottimeSeconds = func() float64 {
 	text, ok := ReadTextFile("/proc/uptime")
 	if !ok {
@@ -59,10 +53,8 @@ func dunstHistoryItems() []HistoryItem {
 	return ParseHistoryItems(RunText(defaultTimeout, "dunstctl", "history"))
 }
 
-// CollectNotifications mirrors notifications.notifications_state. Named for
-// the package's convention -- pure parsers are XFromParts and their results
-// are plain nouns, so the impure wrapper is CollectX and cannot collide with
-// the type it returns.
+// CollectNotifications is named for the package's convention: pure parsers are
+// XFromParts with plain-noun results, so the impure wrapper is CollectX.
 func CollectNotifications() NotificationsState {
 	items := dunstHistoryItems()
 	pausedText := RunText(defaultTimeout, "dunstctl", "is-paused")
@@ -83,7 +75,6 @@ func runDunstctl(args ...string) {
 	RunStatus(dunstctlTimeout, "dunstctl", args...)
 }
 
-// ToggleGroup mirrors notifications.toggle_group.
 func ToggleGroup(app string) (NotificationsState, error) {
 	if app == "" {
 		return NotificationsState{}, errValue("notif toggle-group requires an app name")
@@ -98,7 +89,6 @@ func ToggleGroup(app string) (NotificationsState, error) {
 	return CollectNotifications(), nil
 }
 
-// DismissNotification mirrors notifications.dismiss_notification.
 func DismissNotification(id any) (NotificationsState, error) {
 	value, ok := pyInt(id)
 	if !ok {
@@ -108,7 +98,6 @@ func DismissNotification(id any) (NotificationsState, error) {
 	return CollectNotifications(), nil
 }
 
-// ClearGroup mirrors notifications.clear_group.
 func ClearGroup(app string) (NotificationsState, error) {
 	if app == "" {
 		return NotificationsState{}, errValue("notif clear-group requires an app name")
@@ -123,20 +112,17 @@ func ClearGroup(app string) (NotificationsState, error) {
 	return CollectNotifications(), nil
 }
 
-// ClearAllNotifications mirrors notifications.clear_all_notifications.
 func ClearAllNotifications() NotificationsState {
 	runDunstctl("history-clear")
 	return CollectNotifications()
 }
 
-// ToggleDND mirrors notifications.toggle_dnd.
 func ToggleDND() NotificationsState {
 	runDunstctl("set-paused", "toggle")
 	return CollectNotifications()
 }
 
-// MarkSeen mirrors notifications.mark_seen: the badge counts what arrived after
-// the last time the popup was opened.
+// MarkSeen: the badge counts what arrived after the last time the popup was opened.
 func MarkSeen() NotificationsState {
 	items := dunstHistoryItems()
 	newest := int64(BoottimeSeconds() * 1_000_000)

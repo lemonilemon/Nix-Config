@@ -11,8 +11,7 @@ import (
 // and "this month", labelling its date range, and breaking it down per agent.
 
 // Punctuation the AI popup renders. Escapes, not literals: an en dash is not a
-// hyphen and a middle dot is not a period, and neither difference survives a
-// careless edit or shows up in a diff.
+// hyphen and a middle dot is not a period.
 const (
 	enDash    = "\u2013" // week range separator
 	middleDot = "\u00B7" // field separator in tooltips and agent lists
@@ -22,7 +21,6 @@ const (
 // which is why the week arithmetic below never touches a time.Time.
 const weekSeconds = 7 * 86400
 
-// agentDisplayNames mirrors collectors.AGENT_DISPLAY_NAMES.
 var agentDisplayNames = map[string]string{
 	"claude":   "Claude",
 	"codex":    "Codex",
@@ -33,7 +31,6 @@ var agentDisplayNames = map[string]string{
 	"droid":    "Droid",
 }
 
-// AgentDisplayName mirrors collectors.agent_display_name.
 func AgentDisplayName(key any) string {
 	name, isText := key.(string)
 	if !isText || name == "" {
@@ -45,15 +42,12 @@ func AgentDisplayName(key any) string {
 	return PyTitle(strings.ReplaceAll(name, "_", " "))
 }
 
-// Date formats. Spelled out here because every one of them is a strftime
-// directive in the original and the mapping is not guessable.
+// Date formats, spelled out because each is a strftime directive in the original
+// and the mapping is not guessable.
 //
-// The month and weekday NAMES are safe as fixed English. CPython does not call
-// setlocale(LC_TIME, "") at startup and this backend never calls setlocale
-// itself, so the process stays in the C locale and %B/%b/%a are English no
-// matter what LC_TIME says -- verified by running the original under three
-// other locales. Adding locale support later would break that equivalence,
-// which is the whole reason this note is here.
+// The month and weekday NAMES are safe as fixed English: neither side calls
+// setlocale, so %B/%b/%a stay in the C locale whatever LC_TIME says. Adding locale
+// support later would break that.
 const (
 	layoutISODate   = "2006-01-02"   // %F
 	layoutYearWeek  = "2006-01"      // %Y-%m
@@ -65,15 +59,13 @@ func localTime(epoch float64) time.Time {
 	return time.Unix(int64(epoch), 0).Local()
 }
 
-// CurrentPeriodKey mirrors collectors.current_period_key.
 func CurrentPeriodKey(kind string, rows []map[string]any, now float64) string {
 	if kind == "monthly" {
 		return localTime(now).Format(layoutYearWeek)
 	}
 	if kind == "weekly" {
-		// Align to ccusage's own week boundaries: step forward from the most
-		// recent known week start in 7-day increments until `now` is covered,
-		// rather than guessing which weekday a week starts on.
+		// Align to ccusage's own week boundaries: step forward from the most recent
+		// known week start in 7-day increments until `now` is covered.
 		latest, found := 0.0, false
 		for _, row := range rows {
 			start, ok := ParseISOEpoch(orDefault(row["period"], "") + "T00:00:00")
@@ -94,9 +86,8 @@ func CurrentPeriodKey(kind string, rows []map[string]any, now float64) string {
 	return localTime(now).Format(layoutISODate)
 }
 
-// SyntheticPeriodRow mirrors collectors.synthetic_period_row: a zero-usage row
-// keyed to the CURRENT period, so an idle day, week or month renders as itself
-// with no usage rather than borrowing the last active row.
+// SyntheticPeriodRow is a zero-usage row keyed to the CURRENT period, so an idle
+// day, week or month renders as itself rather than borrowing the last active row.
 func SyntheticPeriodRow(kind string, rows []map[string]any, now float64) map[string]any {
 	field := "date"
 	if kind == "weekly" || kind == "monthly" {
@@ -105,7 +96,6 @@ func SyntheticPeriodRow(kind string, rows []map[string]any, now float64) map[str
 	return map[string]any{field: CurrentPeriodKey(kind, rows, now)}
 }
 
-// SelectPeriodRow mirrors collectors.select_period_row.
 func SelectPeriodRow(rows []any, kind string, nowEpoch float64) map[string]any {
 	now := nowOr(nowEpoch)
 
@@ -145,16 +135,10 @@ func SelectPeriodRow(rows []any, kind string, nowEpoch float64) map[string]any {
 	return SyntheticPeriodRow(kind, dictRows, now)
 }
 
-// PeriodRangeLabel mirrors collectors.period_range_label.
-//
-// ONE DIVERGENCE, deliberate. For kind "monthly" with a non-string period, the
-// original's strptime raises TypeError and the except branch returns the value
-// UNCHANGED -- so a numeric period leaks into the state as a JSON number where
-// every other path yields a string. This stringifies instead, because AiPeriod
-// types Range as a string and reproducing a latent type bug into a typed struct
-// buys nothing. Unreachable from ccusage, which emits "2024-01"; pinned by
-// test_period_range_label_leaks_a_non_string_month in the gate so the claim
-// cannot rot.
+// PeriodRangeLabel carries ONE DELIBERATE DIVERGENCE: for kind "monthly" with a
+// non-string period the original returns the value UNCHANGED, leaking a JSON
+// number into the state where every other path yields a string. This stringifies
+// instead. Unreachable from ccusage, and pinned by the gate so the claim cannot rot.
 func PeriodRangeLabel(kind string, period any, nowEpoch float64) string {
 	if !pyTruthy(period) {
 		return ""
@@ -204,7 +188,6 @@ func parseYearMonth(text string) (time.Time, bool) {
 	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local), true
 }
 
-// PeriodAgents mirrors collectors.period_agents.
 func PeriodAgents(row map[string]any) []PeriodAgent {
 	total := NumberValue(row, "totalTokens", "total_tokens", "tokens")
 	entries := ListValue(row, "agents")
@@ -260,17 +243,14 @@ func PeriodAgents(row map[string]any) []PeriodAgent {
 	return sorted
 }
 
-// PeriodState mirrors collectors.period_state.
 func PeriodState(rows []any, kind, label string, nowEpoch float64) AiPeriod {
 	now := nowOr(nowEpoch)
 	row := SelectPeriodRow(rows, kind, now)
 	values := DailyTokenValues(row)
 
 	// The original recomputes the input+output+cache fallback here when
-	// values["total"] is non-positive. NOT ported: daily_token_values has
-	// already applied exactly that fallback, so the second one can only ever
-	// recompute the same number. Verified by exhausting the branch over 200k
-	// generated rows; mutation testing is what surfaced it as unreachable.
+	// values["total"] is non-positive. NOT ported: daily_token_values has already
+	// applied it, so the second one can only recompute the same number.
 	return AiPeriod{
 		Label:  label,
 		Range:  PeriodRangeLabel(kind, pyOr(pyOr(row["period"], row["date"]), ""), now),
@@ -280,10 +260,8 @@ func PeriodState(rows []any, kind, label string, nowEpoch float64) AiPeriod {
 	}
 }
 
-// ApplyQuotas mirrors collectors.apply_quotas.
-//
-// Takes and returns a value rather than mutating through a pointer: the
-// original mutates its argument AND returns it, and every caller uses the
+// ApplyQuotas takes and returns a value rather than mutating through a pointer:
+// the original mutates its argument AND returns it, and every caller uses the
 // return, so value semantics lose nothing and cannot alias.
 func ApplyQuotas(state AiUsage, quotas []Quota) AiUsage {
 	state.Quotas = quotas
@@ -301,13 +279,8 @@ func ApplyQuotas(state AiUsage, quotas []Quota) AiUsage {
 		state.Meta.Status = "Quota only"
 	}
 
-	// Tint the bar amber when any subscription is near its limit.
-	//
-	// The original guards this with `source != "missing"`, which is dead: the
-	// block above has already moved a missing source to "quota" whenever there
-	// is a live quota to tint from, and with no live quota the loop does
-	// nothing anyway. Dropped rather than reproduced, on the same evidence as
-	// the fallback in PeriodState.
+	// Tint the bar amber when any subscription is near its limit. The original's
+	// `source != "missing"` guard is dead here and is dropped rather than reproduced.
 	for _, quota := range live {
 		if quota.Class == "warning" || quota.Class == "critical" {
 			state.Class = "warning"
@@ -315,8 +288,6 @@ func ApplyQuotas(state AiUsage, quotas []Quota) AiUsage {
 		}
 	}
 
-	// Rebuild the tooltip so hovering the bar leads with the glanceable thing:
-	// each live subscription's headroom, then today's local spend.
 	lines := []string{"AI usage"}
 	for _, quota := range live {
 		head := quota.Name
@@ -343,7 +314,6 @@ func ApplyQuotas(state AiUsage, quotas []Quota) AiUsage {
 	return state
 }
 
-// AiUsageStateFromJSON mirrors collectors.ai_usage_state_from_json.
 func AiUsageStateFromJSON(reportJSON string, nowEpoch float64) AiUsage {
 	now := nowOr(nowEpoch)
 
@@ -356,9 +326,8 @@ func AiUsageStateFromJSON(reportJSON string, nowEpoch float64) AiUsage {
 	weekly := ListValue(report, "weekly")
 	monthly := ListValue(report, "monthly")
 
-	// A report is usable when ccusage returned any rows at all. A current day
-	// with no recorded usage is valid data (Today = 0), not a missing
-	// collector, so it must not fall through to the placeholder.
+	// A report is usable when ccusage returned any rows at all: a current day with no
+	// recorded usage is valid data (Today = 0), not a missing collector.
 	if len(daily) == 0 && len(weekly) == 0 && len(monthly) == 0 {
 		return AiUsageDefault()
 	}

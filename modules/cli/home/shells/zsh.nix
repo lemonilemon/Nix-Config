@@ -8,11 +8,6 @@
     programs.zsh = {
       enable = true;
       shellAliases = {
-        # Use lsd instead
-        # ll = "ls -alF";
-        # la = "ls -A";
-        # l = "ls -CF";
-        # ls = "ls --color=auto";
         lg = "lazygit";
         ".." = "cd ..";
       };
@@ -21,19 +16,11 @@
         enable = true;
         plugins = [
           { name = "nix-community/nix-zsh-completions"; }
-          # Use zsh-autocomplete instead
-          # { name = "zsh-users/zsh-autosuggestions"; }
-          # { name = "zsh-users/zsh-history-substring-search"; }
           {
             name = "marlonrichert/zsh-autocomplete";
             tags = [ "at:main" ];
           }
           { name = "loiccoyle/zsh-github-copilot"; }
-          # Use zoxide instead
-          # {
-          #   name = "b4b4r07/enhancd";
-          #   tags = [ "use:init.sh" ];
-          # }
           { name = "chisui/zsh-nix-shell"; }
         ];
       };

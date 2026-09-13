@@ -1,15 +1,7 @@
 // Package state holds the bar's live state and the snapshot eww consumes.
 //
-// Every type here is a struct rather than a map. That is load-bearing: pyjson
-// emits struct fields in declaration order but sorts map keys, and EmitLoop
-// decides whether to write by comparing encoded bytes, so the encoding has to be
-// a function of the state alone.
-//
-// The particular order below is the order the Python built each dict in. It no
-// longer has to match anything -- eww reads the snapshot by key -- so treat it
-// as history rather than a constraint. What must not drift is the CONTENT of
-// Default(), which the eww-backend flake check pins against eww.yuck's :initial
-// literal.
+// Structs, not maps: pyjson emits struct fields in declaration order but sorts
+// map keys, and EmitLoop decides whether to write by comparing encoded bytes.
 package state
 
 import "ewwbar/internal/collect"

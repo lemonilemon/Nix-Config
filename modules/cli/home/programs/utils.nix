@@ -41,8 +41,6 @@
         enable = true;
         config = {
           pager = "less -FR";
-          # Theme controlled by catppuccin
-          # theme = "Catppuccin-mocha";
         };
       };
       ripgrep.enable = true;

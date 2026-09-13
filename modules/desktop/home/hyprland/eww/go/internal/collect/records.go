@@ -12,26 +12,13 @@ import (
 // The shared store behind the per-network caches: what each network measured,
 // keyed by NetworkManager connection UUID.
 //
-// Two of these exist -- the speed record and the connectivity-policy record --
-// and they want exactly the same machinery: a versioned file under
-// XDG_STATE_HOME, an atomic write, a bound on how many networks are remembered,
-// and a refusal to keep a record that cannot say when it was taken. This file is
-// that machinery once, rather than in each of them.
-//
-// A map keyed by connection rather than a single "last result", and that is the
-// substance of both features rather than an implementation detail. One slot
-// would show the hotel's answers while sitting at home; keyed by connection, a
-// record can only surface on the network it came from.
-//
-// Every read path degrades to "no data" rather than to an error. Losing either
-// file costs a few facts that can be measured again in seconds, and refusing to
-// start because one failed to parse would cost the whole bar.
+// Keyed by connection rather than a single "last result", which is the substance
+// of both features -- one slot would show the hotel's answers while sitting at
+// home. Every read path degrades to "no data" rather than to an error.
 
-// datedRecord is one per-network fact that can say when it was taken.
-//
-// The timestamp is what makes a stored answer safe to show: both cards render an
-// age, and a record that cannot supply one would be presented as though it had
-// just been taken.
+// datedRecord is one per-network fact that can say when it was taken. Both cards
+// render an age, and a record that cannot supply one would be presented as though
+// it had just been taken.
 type datedRecord interface {
 	takenAt() float64
 }
@@ -39,19 +26,16 @@ type datedRecord interface {
 func (r SpeedtestRecord) takenAt() float64 { return r.MeasuredAt }
 func (r NetPolicyRecord) takenAt() float64 { return r.ProbedAt }
 
-// recordSnapshot is the on-disk shape. The json tags are load-bearing: the
-// speed file was written by an earlier version of this code that spelled the
-// struct out by hand, and it has to keep parsing.
+// recordSnapshot is the on-disk shape. The json tags are load-bearing: the speed
+// file was written by an earlier version that spelled the struct out by hand, and
+// it has to keep parsing.
 type recordSnapshot[T any] struct {
 	Version int          `json:"version"`
 	Records map[string]T `json:"records"`
 }
 
-// pruneRecords keeps the `limit` most recently taken entries.
-//
-// Ties are broken by UUID so the result is deterministic. Without that, a file
-// written twice from the same state could differ, which would make the atomic
-// write churn for nothing and any future golden test unreproducible.
+// pruneRecords keeps the `limit` most recently taken entries, breaking ties by
+// UUID so the same state always writes the same file.
 func pruneRecords[T datedRecord](records map[string]T, limit int) map[string]T {
 	if limit <= 0 || len(records) <= limit {
 		out := make(map[string]T, len(records))
@@ -96,11 +80,8 @@ func encodeRecords[T datedRecord](version int, records map[string]T) (string, er
 }
 
 // parseRecords decodes a record file, reporting ok=false when there is nothing
-// usable in it.
-//
-// Undated records are dropped rather than kept, for the reason datedRecord
-// gives: a card's whole contract is that every figure on it can say how old it
-// is, and a record that cannot would render as an answer from 1970.
+// usable. Undated records are dropped rather than kept: one would render as an
+// answer from 1970.
 func parseRecords[T datedRecord](text string, version int) (map[string]T, bool) {
 	var snapshot recordSnapshot[T]
 	decoder := json.NewDecoder(strings.NewReader(text))
@@ -108,10 +89,9 @@ func parseRecords[T datedRecord](text string, version int) (map[string]T, bool) 
 	if err := decoder.Decode(&snapshot); err != nil {
 		return nil, false
 	}
-	// And nothing after it. A file holding a valid snapshot followed by garbage
-	// -- a torn write that writeFileAtomic should prevent but a stray editor or
-	// a half-restored backup would not -- would otherwise be accepted on the
-	// strength of its first document alone.
+	// And nothing after it: a valid snapshot followed by garbage -- a torn write,
+	// or a half-restored backup -- would otherwise be accepted on the strength of
+	// its first document alone.
 	if err := decoder.Decode(new(json.RawMessage)); !errors.Is(err, io.EOF) {
 		return nil, false
 	}

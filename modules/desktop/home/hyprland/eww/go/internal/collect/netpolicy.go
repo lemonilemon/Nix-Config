@@ -7,63 +7,43 @@ import (
 	"time"
 )
 
-// What the network will and will not LET you do, as opposed to how fast it does
-// it.
+// What the network will and will not LET you do, as opposed to how fast it does it.
 //
-// This is the question the speed card cannot answer and the one that actually
-// ruins an afternoon. Nobody's day is destroyed by 40 Mb/s instead of 80; plenty
-// of days are destroyed by a hotel network that silently drops port 22.
-//
-// It caches per connection for the same reason the speed record does, but the
-// caching is worth far more here: policy is a firewall configuration that holds
-// for years, where throughput is stale in days. One probe stays true for as long
-// as you keep visiting the place.
+// Cached per connection like the speed record, and worth far more here: policy is
+// a firewall configuration that holds for years where throughput is stale in days.
 //
 // Two things that belong to this question are deliberately NOT probed, because
 // measuring them honestly is not possible from one end:
 //
 //   - WireGuard and other UDP tunnels. UDP has no handshake, so a dial succeeds
-//     locally whether or not anything survives the first hop; telling "blocked"
-//     from "working" needs a cooperating server to answer, and guessing from a
-//     silent socket would produce a confident wrong answer.
-//   - Portal re-authentication intervals. That is an observation over time, not
-//     a probe, and it needs the connectivity watcher to notice a flip back to
-//     "portal" rather than anything this file can ask.
+//     locally whether or not anything survives the first hop.
+//   - Portal re-authentication intervals. That is an observation over time, and
+//     needs the connectivity watcher rather than anything this file can ask.
 
 const (
 	// Applied to every check, DNS included -- the resolver seam below carries
 	// this as a context deadline, because net.LookupHost has none of its own.
-	//
-	// Not quite the wall-clock cost of the probe: the checks run concurrently,
-	// but the SSH one resolves and then dials, and may dial more than one
-	// address, so its worst case is a small multiple of this. The common case
-	// is well under a second.
 	netPolicyTimeout = 2500 * time.Millisecond
 
 	// The control. An IP literal rather than a hostname on purpose: this is the
-	// one check that must not depend on DNS, because DNS is separately under
-	// test and a resolver failure would otherwise report every port as blocked.
+	// one check that must not depend on DNS, which is separately under test.
 	netPolicyBaseline = "1.1.1.1:443"
 
-	// A real SSH endpoint that is always listening. Reached by name, which is
-	// deliberate -- if the name will not resolve, the result is "unknown"
-	// rather than "blocked", because a DNS failure says nothing about port 22.
+	// A real SSH endpoint that is always listening, reached by name: if the name
+	// will not resolve the result is "unknown" rather than "blocked", because a
+	// DNS failure says nothing about port 22.
 	netPolicySSHHost = "github.com"
 	netPolicySSHPort = "22"
 
 	// Cloudflare's resolver over IPv6. A v4-only network fails this instantly
-	// with "network unreachable" rather than timing out, so the common negative
-	// case costs nothing.
+	// with "network unreachable" rather than timing out.
 	netPolicyIPv6 = "[2606:4700:4700::1111]:443"
 
-	// A name that must never resolve. RFC 2606 reserves .invalid precisely so
-	// that it cannot, so an address coming back means something between here
-	// and the root is rewriting answers -- the NXDOMAIN hijacking that captive
-	// portals and some ISPs do.
+	// A name that must never resolve. RFC 2606 reserves .invalid precisely so that
+	// it cannot, so an address coming back means something is rewriting answers.
 	//
 	// Testing a name that SHOULD resolve and comparing addresses would not work:
-	// anycast and CDNs legitimately hand different answers to different
-	// resolvers, and every one of those would read as a hijack.
+	// anycast and CDNs legitimately hand different answers to different resolvers.
 	netPolicyInvalidHost = "probe-a4f19c73.invalid"
 
 	// And a name that should resolve, to tell "DNS is lying" from "DNS is dead".
@@ -73,14 +53,11 @@ const (
 	netPolicySSHAddresses = 3
 )
 
-// The two network seams, package-level for the same reason RunText is: a test
-// swaps them and InstallFixture drives both at once. Nothing in production
-// reassigns them.
+// The two network seams, package-level for the same reason RunText is: a test swaps
+// them and InstallFixture drives both at once.
 //
-// They exist mainly so the suite cannot reach the network. The control tests
-// install an empty fixture specifically so a handler under test cannot touch the
-// developer's session, and a probe that dialled github.com from `go test` would
-// walk straight through that rail.
+// They exist mainly so the suite cannot reach the network -- a probe that dialled
+// github.com from `go test` would walk straight through that rail.
 var (
 	DialTCP = func(address string, timeout time.Duration) bool {
 		conn, err := net.DialTimeout("tcp", address, timeout)
@@ -91,10 +68,9 @@ var (
 		return true
 	}
 
-	// Deadline-bearing, unlike net.LookupHost, which has none. Without it a
-	// resolver that never answers blocks the probe's WaitGroup forever, and
-	// because netPolicyProbing is only cleared after that wait, the guard would
-	// then refuse to probe any network for the rest of the session.
+	// Deadline-bearing, unlike net.LookupHost. Without it a resolver that never
+	// answers blocks the probe's WaitGroup forever, and since netPolicyProbing is
+	// only cleared after that wait, the guard would refuse to probe anything again.
 	LookupHost = func(name string) ([]string, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), netPolicyTimeout)
 		defer cancel()
@@ -102,20 +78,12 @@ var (
 	}
 )
 
-// NetPolicy is the readout, which is one line and a tooltip rather than a row
-// of status chips.
+// NetPolicy is the readout: one line and a tooltip rather than a row of status
+// chips.
 //
-// The chips came first and were wrong. Three coloured dots labelled SSH, DNS and
-// IPv6 need a legend the popup has nowhere to put, spend two thirds of their
-// pixels announcing that things work, and -- worst -- rendered the ordinary case
-// of a v4-only network as a greyed-out dot beside two green ones, which reads as
-// a fault. A network with nothing wrong should say so in one quiet line and
-// stop talking.
-//
-// So Caption is the whole design: it names a CONSEQUENCE ("SSH and git push are
-// blocked here") rather than a mechanism, and Class decides how loudly. Detail
-// carries the three raw findings into the tooltip, where completeness is free
-// because nobody reads a tooltip by accident.
+// Caption names a CONSEQUENCE ("SSH and git push are blocked here") rather than a
+// mechanism, and Class decides how loudly. Detail carries the three raw findings
+// into the tooltip.
 type NetPolicy struct {
 	Status  string `json:"status"`
 	Class   string `json:"class"`
@@ -149,14 +117,10 @@ type NetPolicyRecord struct {
 	ProbedAt float64 `json:"probed_at"`
 }
 
-// ProbeNetPolicy runs every check concurrently and reports what it found.
-//
-// ok=false means the probe was INCONCLUSIVE, not that the network is hostile,
-// and the distinction is the difference between a useful cache and a poisoned
-// one. If a plain HTTPS connection to an IP address fails, this link is not
-// carrying traffic at all -- mid-DHCP, or a moment of outage -- and recording
-// that as "SSH blocked, DNS broken" would pin a verdict on a network that was
-// merely not ready yet, with nothing to ever retry it.
+// ProbeNetPolicy runs every check concurrently. ok=false means the probe was
+// INCONCLUSIVE, not that the network is hostile: if a plain HTTPS connection to an
+// IP address fails, the link is not carrying traffic at all, and recording that as
+// "SSH blocked, DNS broken" would pin a verdict with nothing to ever retry it.
 func ProbeNetPolicy() (NetPolicyRecord, bool) {
 	var (
 		baseline, ssh, ipv6 bool
@@ -176,10 +140,9 @@ func ProbeNetPolicy() (NetPolicyRecord, bool) {
 			return
 		}
 		sshResolved = true
-		// Every address, not just the first. A v4-only network handed an
-		// AAAA record first would otherwise report the port blocked when it is
-		// merely the wrong address family -- and this machine is v4-only, so
-		// that is the common case rather than the exotic one.
+		// Every address, not just the first. A v4-only network handed an AAAA record
+		// first would otherwise report the port blocked when it is merely the wrong
+		// address family, and this machine is v4-only.
 		for _, address := range addresses[:min(len(addresses), netPolicySSHAddresses)] {
 			if DialTCP(net.JoinHostPort(address, netPolicySSHPort), netPolicyTimeout) {
 				ssh = true
@@ -235,11 +198,8 @@ func ProbeNetPolicy() (NetPolicyRecord, bool) {
 	return record, true
 }
 
-// NetPolicyCardFrom renders the readout.
-//
-// Same rule as the speed card, and for the same reason: a result belongs to the
-// connection it was taken on, so a network with no record of its own says so
-// rather than showing the last network's answers.
+// NetPolicyCardFrom follows the speed card's rule: a result belongs to the
+// connection it was taken on, so a network with no record of its own says so.
 func NetPolicyCardFrom(record NetPolicyRecord, haveRecord, probing bool,
 	class string, nowEpoch float64) NetPolicy {
 	card := NetPolicyDefault()
@@ -269,15 +229,9 @@ func NetPolicyCardFrom(record NetPolicyRecord, haveRecord, probing bool,
 
 // netPolicyCaption says the worst thing, in terms of what it stops you doing.
 //
-// Only ever ONE finding, and the ordering is the whole content of this function.
-// A hijacked resolver outranks a blocked port because it breaks things silently
-// and in ways that look like somebody else's fault; a blocked port outranks
-// missing IPv6 because missing IPv6 is not a fault at all. Anything not chosen
-// is still in the tooltip.
-//
-// IPv6 never becomes the headline. On most networks it is absent and nothing
-// cares, so leading with it would cry wolf on the common case -- it earns a
-// four-word suffix on the all-clear line and nothing more.
+// Only ever ONE finding, and the ordering is the whole content of this function: a
+// hijacked resolver outranks a blocked port, which outranks missing IPv6. IPv6
+// never becomes the headline -- on most networks it is absent and nothing cares.
 func netPolicyCaption(record NetPolicyRecord) (string, string) {
 	switch {
 	case record.DNS == "hijacked":
@@ -298,11 +252,8 @@ func netPolicyCaption(record NetPolicyRecord) (string, string) {
 	return "SSH and lookups work here", "quiet"
 }
 
-// netPolicyDetail is the tooltip: every finding, plus when it was taken.
-//
-// Padded into columns because the bar renders in a monospaced font, so this
-// lines up, and because a tooltip is read deliberately -- the one place where
-// showing all three facts costs nothing.
+// netPolicyDetail is the tooltip: every finding, plus when it was taken. Padded
+// into columns because the bar renders in a monospaced font.
 func netPolicyDetail(record NetPolicyRecord, nowEpoch float64) string {
 	ssh := map[string]string{
 		"ok": "reachable", "blocked": "blocked", "unknown": "not verified",
@@ -375,31 +326,22 @@ func NetPolicyCardFor(uuid, class string, nowEpoch float64) NetPolicy {
 	return NetPolicyCardFrom(record, haveRecord, probing, class, nowEpoch)
 }
 
-// EnsureNetPolicy probes this connection if it has never been probed.
+// EnsureNetPolicy probes this connection if it has never been probed. Automatic,
+// unlike the speed test, because it moves a few kilobytes and finishes in under
+// three seconds.
 //
-// Automatic, unlike the speed test, and the difference is the cost: this moves a
-// few kilobytes and finishes in under three seconds, where a speed test moves 70
-// megabytes and saturates the link. Something that cheap should not need asking
-// for -- the answer is wanted at exactly the moment you join an unfamiliar
-// network, which is the moment you are least likely to think of pressing a
-// button.
+// publish is called when the probe starts and again when it lands; persist once,
+// after the record is in the cache. Two callbacks rather than a return value,
+// because this returns as soon as the probe is launched.
 //
-// publish is called when the probe starts and again when it lands; persist is
-// called once, after the record is in the cache. Two callbacks rather than a
-// return value the caller waits on, because this returns as soon as the probe is
-// launched.
+// connectivity gates the whole thing, and that gate is what keeps the cache honest:
+// behind a captive portal DNS really is hijacked and port 22 really is blocked, but
+// only until you sign in -- and since the record would then exist, nothing would
+// ever re-probe it. Policy does not drift, so a record is never refreshed on a
+// timer, which is exactly why it must not be written until it means something.
 //
-// connectivity gates the whole thing, and that gate is what keeps the cache
-// honest. NetworkManager's own verdict is the only cheap way to know the link is
-// actually usable, and probing before it says "full" is how a hotel network gets
-// permanently recorded as hostile: behind a captive portal DNS really is
-// hijacked and port 22 really is blocked, but only until you sign in -- and
-// since the record would then exist, nothing would ever re-probe it.
-//
-// Returns false when there is nothing to do: no identity, a link that is not
-// carrying traffic yet, a probe already in flight, or an answer already on file.
-// Policy does not drift, so a record is never refreshed on a timer -- which is
-// exactly why it must not be written until it means something.
+// Returns false when there is nothing to do: no identity, a link not carrying
+// traffic yet, a probe already in flight, or an answer already on file.
 func EnsureNetPolicy(uuid, name, connectivity string, publish, persist func()) bool {
 	if uuid == "" || connectivity != "full" {
 		return false
@@ -419,10 +361,9 @@ func EnsureNetPolicy(uuid, name, connectivity string, publish, persist func()) b
 		record, conclusive := ProbeNetPolicy()
 		record.Name = name
 
-		// The identity is re-read here for the reason RunSpeedtest re-reads it:
-		// the probe takes a couple of seconds, which is long enough to walk out
-		// of range or roam onto another profile, and filing these answers under
-		// the network we started on would poison that record permanently.
+		// The identity is re-read here for the reason RunSpeedtest re-reads it: the
+		// probe takes a couple of seconds, long enough to roam onto another profile,
+		// and filing these answers under the network we started on would poison it.
 		landed := CollectNetworkIdentity()
 
 		netPolicyLock.Lock()
@@ -434,9 +375,8 @@ func EnsureNetPolicy(uuid, name, connectivity string, publish, persist func()) b
 		netPolicyLock.Unlock()
 
 		publish()
-		// Nothing to write when the probe was inconclusive or landed elsewhere;
-		// the next tick will try again, which is the whole point of not caching
-		// it.
+		// Nothing to write when the probe was inconclusive or landed elsewhere; the
+		// next tick will try again.
 		if conclusive && landed.UUID == uuid {
 			persist()
 		}

@@ -1,18 +1,12 @@
 package collect
 
-// fullTitleCase is the titlecase mapping for the 48 code points whose
-// titlecase form is longer than one character.
+// fullTitleCase is the titlecase mapping for the 48 code points whose titlecase
+// form is longer than one character.
 //
-// GENERATED from CPython's str.title() over the whole code point range and
-// committed, for the same reasons as state/defaults.go: it changes about once
-// per Unicode revision, and generating it at build time would mean
-// import-from-derivation. Values are escapes rather than literals because most
-// of them are invisible, decomposed, or both -- U+01F0 titlecases to "J" plus a
-// COMBINING CARON, which no editor will show you as two characters.
-//
-// unicode.ToTitle cannot express these: it maps one rune to one rune, and
-// Unicode's full case mappings are one-to-many. Without the table, "\uFB01ne"
-// titlecases to itself instead of "Fine".
+// GENERATED from CPython's str.title() and committed. unicode.ToTitle cannot
+// express these: it maps one rune to one rune, where Unicode's full case mappings
+// are one-to-many, so without the table "\uFB01ne" titlecases to itself rather
+// than "Fine". Values are escapes because most are invisible or decomposed.
 var fullTitleCase = map[rune]string{
 	'\u00DF': "Ss",                 // LATIN SMALL LETTER SHARP S
 	'\u0149': "\u02BCN",            // LATIN SMALL LETTER N PRECEDED BY APOSTROPHE

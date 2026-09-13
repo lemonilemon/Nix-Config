@@ -12,10 +12,8 @@ import (
 	"ewwbar/internal/run"
 )
 
-// popupWindows is the full set of popup windows the helper manages. `eww close`
-// is fire-and-forget here (runEww ignores the exit status): naming a window that
-// is closed or not yet defined just prints a warning and exits non-zero, which
-// we ignore — so `close` can safely name every popup plus the backdrop at once.
+// popupWindows is every popup window the helper manages. `eww close` ignores its
+// exit status, so naming a window that is already closed is safe.
 var popupWindows = []string{
 	"volume_popup",
 	"bluetooth_popup",
@@ -35,9 +33,8 @@ const popupUsage = "usage: eww-popup toggle <window> [screen] | close"
 
 var errPopupUsage = errors.New(popupUsage)
 
-// parseOpenWindows reads `eww active-windows`, which prints one
-// "<id>: <window-name>" per line. A popup opened without an explicit --id has
-// id == name, so the id (left of ":") identifies whether that popup is open.
+// parseOpenWindows reads `eww active-windows`, one "<id>: <window-name>" per
+// line. A popup opened without an explicit --id has id == name.
 func parseOpenWindows(activeWindowsText string) map[string]bool {
 	openIDs := make(map[string]bool)
 	for _, line := range strings.Split(activeWindowsText, "\n") {
@@ -94,18 +91,9 @@ func popupEwwCalls(command string, args []string, openIDs map[string]bool) ([][]
 		}
 		calls := [][]string{closeCall()}
 		if !openIDs[name] {
-			// Was closed: open the backdrop first so the popup stacks above it,
-			// then the popup, both on the clicked screen. (If it was open, the
-			// close above already dismissed it — a toggle-off.)
-			//
-			// --no-daemonize for the reason the open-bars script in
-			// eww/default.nix spells out: an `eww open` the daemon is too busy
-			// to answer within ~100 ms otherwise makes the client fork a daemon
-			// of its own, and that daemon's backend opens a second bar. A popup
-			// click during a speed test is exactly the busy moment that does it.
-			// The cost of the flag is that such a click opens nothing instead of
-			// opening a whole second desktop's worth of eww; clicking again
-			// works.
+			// --no-daemonize pairs with the open-bars script in eww/default.nix: without it
+			// an `eww open` the daemon cannot answer within ~100 ms makes the client fork a
+			// second daemon, which opens a second bar.
 			calls = append(calls, []string{"--no-daemonize", "open", backdropWindow, "--screen", screen})
 			calls = append(calls, []string{"--no-daemonize", "open", name, "--screen", screen})
 		}
@@ -149,8 +137,6 @@ func runPopupWith(argv []string, deps popupDeps) int {
 
 func Run(argv []string) int {
 	return runPopupWith(argv, popupDeps{
-		// The 2 s timeout mirrors the Python client's run_text default: if the
-		// eww daemon is up but wedged, a bar click must still return.
 		activeWindows: func() string { return run.Text(2*time.Second, "eww", "active-windows") },
 		focusedMon:    func() string { return focusedMonitorFromJSON(run.Text(2*time.Second, "hyprctl", "monitors", "-j")) },
 		runEww:        func(args []string) { run.Eww(args) },

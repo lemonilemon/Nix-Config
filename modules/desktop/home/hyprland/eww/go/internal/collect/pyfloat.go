@@ -7,22 +7,16 @@ import (
 	"unicode"
 )
 
-// PyFloat is Python's float(str): the conversion number_value falls back to
-// when a report carries a number as a string.
-//
-// strconv.ParseFloat is not it. Four divergences, each verified against CPython
-// 3.14 rather than assumed:
+// PyFloat is Python's float(str). strconv.ParseFloat is not it; four divergences:
 //
 //   - Whitespace. float(" 1.5 ") is 1.5; ParseFloat rejects it. The set float()
-//     strips is str.isspace() MINUS U+001C-U+001F, so it is neither Go's
-//     unicode.IsSpace nor this package's Strip. See isPyFloatSpace.
-//   - Underscores. float("1_000") is 1000.0, permitted between digits only.
-//     Go allows them only alongside a base prefix, so ParseFloat("1_000") errors.
-//   - Hex floats. ParseFloat("0x1p-2") is 0.25; float() raises. This is the
-//     dangerous direction -- Go silently reading a value where the original
-//     returned 0 -- so it is rejected explicitly rather than left to chance.
-//   - Non-ASCII decimal digits. float("١٢٣") is 123.0: CPython maps any
-//     Unicode Nd rune through its decimal value. ParseFloat sees garbage.
+//     strips is str.isspace() MINUS U+001C-U+001F. See isPyFloatSpace.
+//   - Underscores. float("1_000") is 1000.0, permitted between digits only; Go
+//     allows them only alongside a base prefix.
+//   - Hex floats. ParseFloat("0x1p-2") is 0.25; float() raises. Rejected
+//     explicitly rather than left to chance.
+//   - Non-ASCII decimal digits. float("١٢٣") is 123.0: CPython maps any Unicode
+//     Nd rune through its decimal value. ParseFloat sees garbage.
 //
 // Reports ok=false exactly where float() raises ValueError.
 func PyFloat(text string) (float64, bool) {
@@ -43,7 +37,7 @@ func PyFloat(text string) (float64, bool) {
 	}
 
 	// CPython takes a signed NaN and discards the sign; ParseFloat accepts
-	// "nan" but rejects "+nan" and "-nan". Caught by the gate, not predicted.
+	// "nan" but rejects "+nan" and "-nan".
 	if len(text) > 1 && (text[0] == '+' || text[0] == '-') && strings.EqualFold(body, "nan") {
 		return math.NaN(), true
 	}
@@ -65,10 +59,9 @@ func PyFloat(text string) (float64, bool) {
 	return value, true
 }
 
-// isPyFloatSpace is the whitespace float() skips: str.isspace() without the
-// four separator controls. isPySpace includes them, because str.strip() does.
-// Two Python functions, two different definitions of whitespace; keeping them
-// as separate predicates is the only way that stays visible.
+// isPyFloatSpace is the whitespace float() skips: str.isspace() without the four
+// separator controls. isPySpace includes them, because str.strip() does. Two
+// Python functions, two definitions of whitespace.
 func isPyFloatSpace(r rune) bool {
 	if r >= 0x1c && r <= 0x1f {
 		return false
@@ -104,14 +97,11 @@ func asciiFoldDigits(s string) string {
 
 // unicodeDigitValue is unicodedata.decimal(r) for the Nd category.
 //
-// There is no stdlib lookup for this and no room for a 760-entry table, so it
-// leans on a property of the UCD: Nd characters come in contiguous, ascending
-// runs of ten, and Go's range table splits on exactly those block boundaries,
-// so a range always begins at a zero digit. That was verified over all 760 Nd
-// runes against unicodedata rather than taken on faith, back when CPython was
-// still here to be asked. If a future Unicode revision breaks the alignment,
-// nothing in this repo will notice -- re-run the sweep by hand against
-// unicodedata.decimal if you touch this.
+// No stdlib lookup exists, so this leans on a UCD property: Nd characters come in
+// contiguous ascending runs of ten and Go's range table splits on those block
+// boundaries, so a range always begins at a zero digit. Verified over all 760 Nd
+// runes. If a future Unicode revision breaks the alignment nothing here will
+// notice -- re-run the sweep by hand against unicodedata.decimal if you touch this.
 func unicodeDigitValue(r rune) (int, bool) {
 	for _, rg := range unicode.Nd.R16 {
 		if rg.Stride == 1 && r >= rune(rg.Lo) && r <= rune(rg.Hi) {

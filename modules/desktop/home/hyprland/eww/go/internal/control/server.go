@@ -19,24 +19,17 @@ import (
 	"ewwbar/internal/state"
 )
 
-// controlWorkers bounds how many handlers run at once.
-//
-// Enough to absorb a scroll gesture without letting a stuck handler -- every
-// one of them shells out -- spawn work without bound. Excess connections wait
-// on a parked goroutine rather than being refused by the kernel, which is what
-// the Python's ThreadPoolExecutor queue does.
+// controlWorkers bounds how many handlers run at once. Excess connections wait on
+// a parked goroutine rather than being refused by the kernel.
 const controlWorkers = 8
 
-// readPayloadLimit caps a single request. Not in the original, which reads
-// until a newline with no ceiling; a client that connects and streams without
-// ever sending one would grow the buffer until the daemon died.
+// readPayloadLimit caps a single request: a client that streams without ever
+// sending a newline would otherwise grow the buffer until the daemon died.
 const readPayloadLimit = 1 << 20
 
-// ReadPayload mirrors control.read_control_payload: read until a newline or
-// EOF, decode as UTF-8 replacing anything invalid, strip, and parse.
-//
-// An empty request is an empty payload rather than an error, which is what
-// makes a bare connect-and-close a no-op instead of a logged failure.
+// ReadPayload reads until a newline or EOF, replaces invalid UTF-8, and parses.
+// An empty request is an empty payload, not an error, so a bare connect-and-close
+// is a no-op.
 func ReadPayload(conn io.Reader) (map[string]any, error) {
 	var buf bytes.Buffer
 	chunk := make([]byte, 4096)
@@ -64,9 +57,8 @@ func ReadPayload(conn io.Reader) (map[string]any, error) {
 	return payload, nil
 }
 
-// replaceInvalidUTF8 is bytes.decode("utf-8", errors="replace"). Go strings
-// hold arbitrary bytes, so invalid sequences survive unless replaced here, and
-// they would then reach the JSON decoder as-is.
+// replaceInvalidUTF8 is bytes.decode("utf-8", errors="replace"): Go strings hold
+// arbitrary bytes, so invalid sequences would otherwise reach the JSON decoder.
 func replaceInvalidUTF8(s string) string {
 	if utf8.ValidString(s) {
 		return s
@@ -84,9 +76,8 @@ func replaceInvalidUTF8(s string) string {
 	return out.String()
 }
 
-// WriteResponse mirrors control.write_control_response. A client that has
-// already gone away is not an error worth reporting: eww.yuck's handlers fire
-// and forget, so a closed pipe here is the normal end of a --quiet call.
+// WriteResponse ignores a client that has already gone away: eww.yuck's handlers
+// fire and forget, so a closed pipe is the normal end of a --quiet call.
 func WriteResponse(conn io.Writer, reply Reply) {
 	encoded, err := pyjson.Encode(reply, true)
 	if err != nil {
@@ -95,16 +86,12 @@ func WriteResponse(conn io.Writer, reply Reply) {
 	_, _ = io.WriteString(conn, encoded+"\n")
 }
 
-// ServeConnection mirrors control.serve_control_connection.
 func ServeConnection(store *state.Store, conn net.Conn) {
 	defer conn.Close()
 
 	reply := func() Reply {
 		payload, err := ReadPayload(conn)
 		if err != nil {
-			// The message differs from CPython's JSONDecodeError text. The
-			// client prints whatever arrives and eww.yuck ignores it on the
-			// --quiet path, so the shape is what matters, not the wording.
 			return ErrorReply(err.Error())
 		}
 		result, err := Handle(store, payload)
@@ -118,13 +105,9 @@ func ServeConnection(store *state.Store, conn net.Conn) {
 	WriteResponse(conn, reply)
 }
 
-// persistWallpaperPick mirrors nothing in CPython; it is post-port behavior
-// (the login-reveal contract), which is why it hangs off the serve loop
-// instead of Handle or SetWallpaper -- those journals are pinned by the
-// golden replay. It persists the reply's wallpaper.current rather than the
-// requested path: current is what awww actually reports on screen, so a
-// swallowed awww failure re-records the surviving wallpaper instead of one
-// that never appeared.
+// persistWallpaperPick persists the reply's wallpaper.current rather than the
+// requested path: current is what awww reports on screen, so a swallowed awww
+// failure re-records the surviving wallpaper instead of one that never appeared.
 func persistWallpaperPick(payload map[string]any, reply Reply) {
 	if payloadString(payload, "command", "") != "wallpaper" ||
 		payloadString(payload, "action", "") != "set" {
@@ -141,17 +124,14 @@ func persistWallpaperPick(payload map[string]any, reply Reply) {
 	}
 }
 
-// Listen prepares the control socket and returns a listener.
-//
-// Split out from Serve so a caller -- and a test -- can bind without also
-// entering the accept loop.
+// Listen prepares the control socket and returns a listener, split from Serve so
+// a caller can bind without entering the accept loop.
 func Listen() (net.Listener, error) {
 	socketPath := paths.ControlSocket()
 
-	// A stale socket from a killed daemon would make bind fail with EADDRINUSE,
-	// so it is removed first. This is also why nothing may run this against the
-	// live runtime directory: it unlinks whatever is at that path, including a
-	// socket a running daemon is serving on.
+	// A stale socket from a killed daemon would make bind fail with EADDRINUSE. This
+	// unlinks whatever is at that path, so never run it against the live runtime
+	// directory of a daemon that is serving.
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("unable to unlink %s: %w", socketPath, err)
 	}
@@ -163,25 +143,17 @@ func Listen() (net.Listener, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to bind %s: %w", socketPath, err)
 	}
-	// Owner only. Best effort, as in the original: a socket that cannot be
-	// chmodded is still better than no control channel.
+	// Owner only, best effort: a socket that cannot be chmodded is still
+	// better than no control channel.
 	_ = os.Chmod(socketPath, 0o600)
 	return listener, nil
 }
 
-// Serve mirrors control.control_server: accept forever, hand each connection
-// to a bounded pool.
+// Serve accepts forever and hands each connection to a bounded pool.
 //
-// accept() must never wait on a handler. eww.yuck binds eww-barctl to
-// :onscroll, and a scroll wheel delivers ticks far faster than a command that
-// shells out can be served; a serve-then-accept loop let the backlog fill and
-// the kernel refused the rest with EAGAIN, which the client reports as a failed
-// command and --quiet swallows entirely. Measured against a 40-client burst
-// before that was fixed in the Python: 30 dropped.
-//
-// The backlog itself is Go's default rather than the original's explicit 128.
-// net.Listen reads /proc/sys/net/core/somaxconn, which is 4096 on this host, so
-// the depth is not the constraint the pool size is.
+// accept() must never wait on a handler: eww.yuck binds eww-barctl to :onscroll,
+// and a serve-then-accept loop lets the backlog fill until the kernel refuses
+// connections with EAGAIN, which --quiet swallows entirely.
 func Serve(store *state.Store, listener net.Listener) {
 	slots := make(chan struct{}, controlWorkers)
 	for {
@@ -193,9 +165,8 @@ func Serve(store *state.Store, listener net.Listener) {
 			fmt.Fprintf(os.Stderr, "eww-bar control server: accept failed: %v\n", err)
 			continue
 		}
-		// The goroutine waits for a slot; Accept does not. That is the whole
-		// point of the pool, and reversing it reintroduces the dropped-scroll
-		// bug the comment above describes.
+		// The goroutine waits for a slot; Accept does not. Reversing that
+		// reintroduces the dropped-scroll bug.
 		go func(c net.Conn) {
 			slots <- struct{}{}
 			defer func() { <-slots }()
@@ -208,17 +179,9 @@ func isClosed(err error) bool {
 	return errors.Is(err, net.ErrClosed)
 }
 
-// WriteBackendPidfile mirrors control.write_backend_pidfile, returning the
-// cleanup the caller should run at shutdown.
-//
-// The cleanup re-reads the file and only removes it if it still holds OUR pid,
-// so a daemon that starts while an old one is shutting down does not have its
-// pidfile deleted by the corpse.
-//
-// Go has no atexit, so the caller wires this to its signal handling. The
-// original relies on atexit, which does NOT run on SIGTERM -- so in practice
-// the Python leaves its pidfile behind when systemd stops it, and this does
-// not. That is a deliberate improvement, not a divergence to preserve.
+// WriteBackendPidfile returns the cleanup the caller should run at shutdown. The
+// cleanup re-reads the file and removes it only if it still holds OUR pid, so a
+// daemon starting while an old one exits does not lose its pidfile to the corpse.
 func WriteBackendPidfile() func() {
 	pidfile := paths.BackendPidfile()
 	pid := strconv.Itoa(os.Getpid())

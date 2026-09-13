@@ -21,7 +21,6 @@ type BluetoothDevice struct {
 	Connected string `json:"connected"`
 }
 
-// BluetoothState is the shape collectors.bluetooth_state_from_text returns.
 type BluetoothState struct {
 	Text    string            `json:"text"`
 	Tooltip string            `json:"tooltip"`
@@ -30,13 +29,9 @@ type BluetoothState struct {
 	Devices []BluetoothDevice `json:"devices"`
 }
 
-// ParseController mirrors collectors.parse_controller.
-//
-// The bool is the point. bluetoothctl prints "Powered: yes", and passing that
-// raw string outward is what made eww.scss's .bluetooth.off rule unreachable
-// for as long as it existed -- the class rendered as "no". Normalising at the
-// parse boundary is the fix, so the return type here is deliberately not a
-// string.
+// ParseController returns a bool, deliberately not a string: bluetoothctl prints
+// "Powered: yes", and passing that raw outward is what made eww.scss's
+// .bluetooth.off rule unreachable, because the class rendered as "no".
 func ParseController(controllerText string) (alias, address string, powered bool) {
 	for _, line := range SplitLines(controllerText) {
 		stripped := Strip(line)
@@ -62,7 +57,6 @@ func ParseController(controllerText string) (alias, address string, powered bool
 	return alias, address, powered
 }
 
-// ParseDeviceInfo mirrors collectors.parse_device_info.
 func ParseDeviceInfo(infoText, fallbackAlias string) (alias, battery string) {
 	alias = fallbackAlias
 	for _, line := range SplitLines(infoText) {
@@ -78,7 +72,6 @@ func ParseDeviceInfo(infoText, fallbackAlias string) (alias, battery string) {
 	return alias, battery
 }
 
-// BluetoothStateFromText mirrors collectors.bluetooth_state_from_text.
 func BluetoothStateFromText(controllerText, devicesText string, infoByAddress map[string]string) BluetoothState {
 	controllerAlias, controllerAddress, powered := ParseController(controllerText)
 	poweredFlag := "false"

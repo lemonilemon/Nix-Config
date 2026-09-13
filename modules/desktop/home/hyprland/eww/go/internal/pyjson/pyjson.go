@@ -7,22 +7,14 @@ import (
 	"unicode/utf8"
 )
 
-// String renders s the way CPython's
-// json.dumps(s, ensure_ascii=True, separators=(",", ":")) does.
-//
-// encoding/json is deliberately not used for this. It differs from CPython in
-// two ways that both reach the wire: it escapes <, > and & as </>/
-// & (CPython leaves them literal), and it emits non-ASCII as raw UTF-8
-// (CPython escapes it to \uXXXX). Both are decode-identical, but matching
-// CPython byte-for-byte means the equivalence gate against the Python client is
-// a plain diff rather than a decode-and-compare, which is worth ~30 lines.
+// String renders s as CPython's json.dumps(s, ensure_ascii=True) does: non-ASCII
+// escaped to \uXXXX, and <, > and & left literal. encoding/json does neither.
 func String(s string) string {
 	return encodeString(s, true)
 }
 
-// StringRaw renders s the way json.dumps(s, ensure_ascii=False) does: the same
-// escaping of quotes, backslashes and control characters, but non-ASCII passes
-// through as UTF-8. This is what the state emitter uses.
+// StringRaw is the ensure_ascii=False form: non-ASCII passes through as UTF-8.
+// This is what the state emitter uses.
 func StringRaw(s string) string {
 	return encodeString(s, false)
 }
@@ -55,13 +47,12 @@ func encodeString(s string, ascii bool) string {
 			case r < 0x7f:
 				b.WriteRune(r)
 			case !ascii:
-				// ensure_ascii=False: everything above ASCII goes out as UTF-8,
-				// including U+007F, which the ASCII path escapes.
+				// Everything above ASCII goes out as UTF-8, including U+007F,
+				// which the ASCII path escapes.
 				b.WriteRune(r)
 			case r == utf8.RuneError:
-				// A lone surrogate or invalid byte. CPython's encoder would
-				// raise; the client's callers are argv, so emit the
-				// replacement character rather than fail a bar click.
+				// A lone surrogate or invalid byte: emit the replacement character
+				// rather than fail a bar click.
 				b.WriteString(`�`)
 			case r > 0xffff:
 				hi, lo := utf16.EncodeRune(r)
@@ -89,18 +80,14 @@ func hex4(v uint16) string {
 	})
 }
 
-// Payloads are ordered slices rather than maps
-// because encoding/json sorts map keys, and the Python client emits them in
-// insertion order -- another difference that would show up in a byte diff.
-// Field is one key/value pair.
+// Payloads are ordered slices rather than maps because encoding/json sorts map
+// keys. Field is one key/value pair.
 type Field struct {
 	Key   string
 	Value string
 }
 
-// F is shorthand for a Field. The payload tables in package ipc mirror the
-// Python dict literals they were ported from, and keyed struct literals would
-// bury the shape those tables exist to make obvious.
+// F is shorthand for a Field.
 func F(key, value string) Field { return Field{Key: key, Value: value} }
 
 // Payload is an ordered set of fields.

@@ -53,7 +53,6 @@ in
       modules = [
         { nixpkgs.hostPlatform = system; }
 
-        # Core modules
         ../modules
         ../overlays
 
@@ -61,7 +60,6 @@ in
         inputs.catppuccin.nixosModules.catppuccin
         inputs.sops-nix.nixosModules.sops
 
-        # Home Manager integration
         inputs.home-manager.nixosModules.home-manager
         {
           home-manager = {

@@ -13,29 +13,18 @@ import (
 	"ewwbar/internal/collect"
 )
 
-// golden holds every case the differential gate generated, with the answer that
-// run verified against CPython: 42,621 cases over 97 entry points.
-//
-// This file is what the port's safety survives on. The gate could ask "does Go
-// agree with CPython?"; with CPython gone the only answerable question is "does
-// Go still answer what it answered when we checked?" -- which needs these exact
-// inputs and outputs.
+// golden holds 42,621 recorded cases over 97 entry points, each with the answer
+// verified against CPython before the Python backend was deleted.
 //
 // It CANNOT BE REGENERATED. The generator was
-// tests/eww_bar_backend/test_go_equivalence.py, driven as
-//
-//	EWW_GOLDEN_OUT=.../golden.jsonl.gz python3 -m unittest \
-//	    tests.eww_bar_backend.test_go_equivalence
-//
-// and it was deleted with the rest of the Python backend. Recovering it means
-// going back through history:
+// tests/eww_bar_backend/test_go_equivalence.py, deleted with the rest of the
+// Python; recovering it means going back through history:
 //
 //	git log --diff-filter=D -- tests/eww_bar_backend/test_go_equivalence.py
 //	git show <that commit>^:tests/eww_bar_backend/test_go_equivalence.py
 //
 // So treat a failure here as a regression in the Go, never as a stale recording
-// to be refreshed. Adding coverage means writing an ordinary Go test, not
-// appending to this file.
+// to be refreshed. Adding coverage means writing an ordinary Go test.
 //
 // Recorded under TZ=UTC, which TestMain re-pins.
 //
@@ -43,30 +32,22 @@ import (
 var golden []byte
 
 func TestMain(m *testing.M) {
-	// UTC, pinned, and this is load-bearing. Period labels, clock fields and
-	// every reset time resolve through the local zone, so the recorded answers
-	// are only meaningful in the zone they were recorded in. The file is
-	// generated under TZ=UTC; without this the suite passes on the machine that
-	// generated it and fails everywhere else -- which is exactly how it first
-	// showed up, green locally and red in the Nix sandbox where there is no
-	// /etc/localtime.
+	// UTC, pinned, and load-bearing: period labels, clock fields and every
+	// reset time resolve through the local zone, so the recorded answers are
+	// only meaningful in the zone they were recorded in.
 	time.Local = time.UTC
 
-	// The same rail package control and package watch use: several recorded
-	// calls are fixture-driven collectors, and a collector shells out.
+	// Several recorded calls are fixture-driven collectors, and a collector
+	// shells out.
 	restore := collect.InstallFixture(map[string]string{})
 	code := m.Run()
 	restore()
 	os.Exit(code)
 }
 
-// canonical renders a value so two JSON encodings of the same data compare
-// equal regardless of how they were produced.
-//
-// Needed because the two sides encode differently: a Go answer may be a struct,
-// which marshals in field order, while the same value read back from the golden
-// file is a map, which marshals sorted. Round-tripping both through `any`
-// puts them in the same form.
+// canonical renders a value so two JSON encodings of the same data compare equal:
+// a Go answer may be a struct, which marshals in field order, while the same value
+// read back from the golden file is a map, which marshals sorted.
 func canonical(value any) (string, error) {
 	encoded, err := json.Marshal(value)
 	if err != nil {
@@ -180,8 +161,7 @@ func TestGoldenReplay(t *testing.T) {
 	}
 
 	// A guard against the file silently narrowing: the port covers 97 distinct
-	// entry points, and a regeneration that lost most of them would still pass
-	// every case it kept.
+	// entry points, and a regeneration that lost most would still pass what it kept.
 	if len(byFunction) < 90 {
 		t.Fatalf("golden file covers only %d functions", len(byFunction))
 	}
@@ -220,37 +200,16 @@ func TestGoldenReplay(t *testing.T) {
 	}
 }
 
-// controlHandleCases is how many recorded cases bundle a whole bar snapshot
-// into their answer. Pinned for the same reason supersededHyprctlCases is: the
-// narrowing below applies to exactly these, and it must not spread.
+// controlHandleCases is how many recorded cases bundle a whole bar snapshot into
+// their answer. Pinned so the narrowing below applies to exactly these.
 const controlHandleCases = 46
 
-// narrowSnapshot restricts a ControlHandle answer to the state keys the
-// recording actually has an opinion about.
+// narrowSnapshot restricts a ControlHandle answer to the state keys the recording
+// actually has an opinion about.
 //
-// ControlHandle is the only recorded function that carries a whole bar snapshot
-// in its answer, and that snapshot is a photograph of the state as it stood
-// while CPython was still around. Any field added to the bar afterwards changes
-// all 46 recorded answers at once, in a way no amount of correctness in the Go
-// can avoid -- the network popup's connectivity, connection identity and speed
-// card were the first, and they will not be the last.
-//
-// So the recording keeps every assertion it can still make and loses only the
-// one it cannot: that no field was ever added. A key it recorded is compared
-// exactly as before, so a changed value, a deleted key and a rename all still
-// fail. A key it never saw is dropped from the comparison.
-//
-// Both sides are re-encoded through the same marshaller afterwards. The
-// recorded snapshot is a string holding CPython's own byte-for-byte encoding,
-// which pyjson reproduces; re-encoding only one side would compare Go's
-// separators against Python's and fail every case for a reason that has nothing
-// to do with the state.
-//
-// This is NOT the sanctioned skip above and must not become it. Those 13 cases
-// are dropped whole because the recording is wrong about the world; these 46
-// stay green on everything they recorded, including their reply and their
-// side-effect journal. New state fields get ordinary Go tests, exactly as the
-// golden file's own note requires.
+// Its snapshot is a photograph of the state as it stood while CPython was still
+// around, so any field added to the bar afterwards changes all 46 recorded answers
+// at once, which no amount of correctness in the Go can avoid.
 func narrowSnapshot(recorded, produced any) (any, any) {
 	recordedMap, recordedOK := recorded.(map[string]any)
 	producedMap, producedOK := produced.(map[string]any)

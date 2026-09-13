@@ -7,9 +7,8 @@ import (
 	"strconv"
 )
 
-// The two collectors that walk sysfs. Both glob, so they get a seam of their
-// own: ListDir answers one directory, and these need a pattern across two
-// levels.
+// The two collectors that walk sysfs. Both glob, so they get a seam of their own:
+// ListDir answers one directory, and these need a pattern across two levels.
 
 // GlobFiles is the seam for pathlib's Path.glob.
 var GlobFiles = func(pattern string) []string {
@@ -21,16 +20,13 @@ var GlobFiles = func(pattern string) []string {
 	return matches
 }
 
-// ModuleEnabled mirrors common.module_enabled.
-//
-// default.nix writes exactly "1" or "0" into EWW_BAR_<NAME> on the eww-bar
-// service, so only that literal "0" disables. An absent variable means enabled,
-// which keeps the backend usable when run by hand outside the unit.
+// ModuleEnabled: default.nix writes exactly "1" or "0" into EWW_BAR_<NAME> on the
+// eww-bar service, so only that literal "0" disables. An absent variable means
+// enabled, which keeps the backend usable when run by hand outside the unit.
 func ModuleEnabled(name string) bool {
 	return os.Getenv("EWW_BAR_"+name) != "0"
 }
 
-// CollectTemperature mirrors collectors.temperature_state.
 func CollectTemperature() Temperature {
 	readings := []int64{}
 	for _, path := range GlobFiles("/sys/class/hwmon/hwmon*/temp*_input") {
@@ -47,20 +43,16 @@ func CollectTemperature() Temperature {
 	return TemperatureStateFromReadings(readings)
 }
 
-// batteryFiles are every file BatteryStateFromFiles may look at. Read eagerly
-// rather than on demand because the pure half takes a map, and a battery
-// directory holds a dozen files at most.
+// batteryFiles are every file BatteryStateFromFiles may look at, read eagerly
+// because the pure half takes a map and a battery directory holds a dozen at most.
 var batteryFiles = []string{
 	"capacity", "status", "voltage_now",
 	"energy_now", "power_now", "energy_full", "energy_full_design",
 	"charge_now", "current_now", "charge_full", "charge_full_design",
 }
 
-// CollectBattery mirrors collectors.battery_state.
-//
-// The EWW_BAR_BATTERY gate is what keeps a desktop from rendering a battery
-// module that would read as "100%, charging" forever, and it is checked before
-// any filesystem work.
+// CollectBattery checks the EWW_BAR_BATTERY gate before any filesystem work: it is
+// what keeps a desktop from rendering a battery module reading "100%, charging".
 func CollectBattery() Battery {
 	if !ModuleEnabled("BATTERY") {
 		return BatteryDefault()

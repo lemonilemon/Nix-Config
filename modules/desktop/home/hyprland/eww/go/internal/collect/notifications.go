@@ -51,13 +51,9 @@ type NotificationsState struct {
 	Groups []NotificationGroup `json:"groups"`
 }
 
-// pyStr renders a decoded JSON value the way Python's str() would.
-//
-// The distinction Go loses by default is int versus float: json.loads gives 5
-// for "5" and 5.0 for "5.0", and str() of those is "5" and "5.0". Decoding into
-// float64 collapses both to 5, so the history is decoded with UseNumber and the
-// original literal is kept. Booleans are Python-cased, though False never
-// reaches here -- the caller's `or` treats it as falsy first.
+// pyStr renders a decoded JSON value the way Python's str() would. The distinction
+// Go loses by default is int versus float: str() of 5 and 5.0 is "5" and "5.0", so
+// the history is decoded with UseNumber and the original literal kept.
 func pyStr(value any) string {
 	switch typed := value.(type) {
 	case nil:
@@ -91,9 +87,9 @@ func pyTruthy(value any) bool {
 		}
 		return typed.String() != ""
 	case float64:
-		// Reachable whenever a caller decoded without UseNumber. Without this
-		// case the switch fell through to `return true`, so a JSON 0 read as
-		// truthy -- which made SplitMonitors treat `"disabled": 0` as disabled.
+		// Reachable whenever a caller decoded without UseNumber. Without this case
+		// the switch fell through to `return true`, so a JSON 0 read as truthy --
+		// which made SplitMonitors treat `"disabled": 0` as disabled.
 		return typed != 0
 	case int:
 		return typed != 0
@@ -107,11 +103,9 @@ func pyTruthy(value any) bool {
 	return true
 }
 
-// dunstField mirrors notifications._field.
-//
-// Note what it does NOT do: if the value is not a {"type":..,"data":..} wrapper
-// it returns the default, not the value. A bare `"appname": "kitty"` therefore
-// reads as absent. That is the original's behaviour and dunst always wraps.
+// Note what dunstField does NOT do: if the value is not a {"type":..,"data":..}
+// wrapper it returns the default, not the value, so a bare `"appname": "kitty"`
+// reads as absent. dunst always wraps.
 func dunstField(item map[string]any, name string, def any) any {
 	value, present := item[name]
 	if !present {
@@ -128,9 +122,8 @@ func dunstField(item map[string]any, name string, def any) any {
 	return inner
 }
 
-// toInt is Python's int() over the values that reach it here: it truncates
-// floats toward zero and parses integral strings, and reports failure where
-// Python would raise ValueError (which the caller turns into `continue`).
+// toInt is Python's int() over the values that reach it: truncates floats toward
+// zero, parses integral strings, and reports failure where Python would raise.
 func toInt(value any) (int64, bool) {
 	switch typed := value.(type) {
 	case json.Number:
@@ -157,11 +150,9 @@ func toInt(value any) (int64, bool) {
 	return 0, false
 }
 
-// ParseHistoryItems mirrors notifications.parse_history_items.
-//
-// `dunstctl history` wraps everything in {"type": "aa{sv}", "data": [[...]]}
-// and every field in {"type": ..., "data": ...}. timestamp is MICROSECONDS on
-// the boot clock, not wall time.
+// ParseHistoryItems: `dunstctl history` wraps everything in
+// {"type": "aa{sv}", "data": [[...]]} and every field in {"type":.., "data":..}.
+// timestamp is MICROSECONDS on the boot clock, not wall time.
 func ParseHistoryItems(historyJSON string) []HistoryItem {
 	decoder := json.NewDecoder(bytes.NewReader([]byte(historyJSON)))
 	decoder.UseNumber() // keep 5 distinct from 5.0, see pyStr
@@ -203,10 +194,9 @@ func ParseHistoryItems(historyJSON string) []HistoryItem {
 		})
 	}
 
-	// SliceStable, not Slice: Python's sort is stable, and dunst can stamp two
-	// notifications with the same microsecond. An unstable sort would reorder
-	// them arbitrarily between runs, which the emit loop would see as a change
-	// and push to eww for no reason.
+	// SliceStable, not Slice: dunst can stamp two notifications with the same
+	// microsecond, and an unstable sort would reorder them between runs, which the
+	// emit loop would see as a change and push to eww for no reason.
 	sort.SliceStable(items, func(a, b int) bool {
 		return items[a].Timestamp > items[b].Timestamp
 	})
@@ -221,7 +211,6 @@ func orDefault(value any, fallback string) string {
 	return pyStr(value)
 }
 
-// FormatAge mirrors notifications.format_age.
 func FormatAge(seconds float64) string {
 	switch {
 	case seconds < 10:
@@ -237,7 +226,6 @@ func FormatAge(seconds float64) string {
 	}
 }
 
-// NotificationsStateFromParts mirrors notifications.notifications_state_from_parts.
 func NotificationsStateFromParts(
 	items []HistoryItem,
 	pausedText string,
@@ -245,9 +233,8 @@ func NotificationsStateFromParts(
 	collapsed map[string]bool,
 	lastSeenUS int64,
 ) NotificationsState {
-	// grouped + order, not a plain map: Go map iteration is randomised and the
-	// original relies on first-appearance order, which is what puts the most
-	// recent app at the top of the popup.
+	// grouped + order, not a plain map: Go map iteration is randomised, and
+	// first-appearance order is what puts the most recent app at the top.
 	grouped := map[string][]NotificationItem{}
 	var order []string
 
@@ -257,13 +244,10 @@ func NotificationsStateFromParts(
 			grouped[app] = []NotificationItem{}
 			order = append(order, app)
 		}
-		// NOT covered by the equivalence gate, and cannot be: FormatAge returns
-		// "now" for everything below 10, so clamping -8 to 0 changes no output
-		// anyone can observe. The clamp is defensive against a future threshold
-		// change, and removing it would pass every test here. Kept because the
-		// original has it and a negative age is reachable -- dunst stamps
-		// CLOCK_BOOTTIME, and a notification can be newer than the reading the
-		// caller took a moment earlier.
+		// NOT covered by the equivalence gate and cannot be: FormatAge returns "now"
+		// for everything below 10. Kept because a negative age is reachable -- dunst
+		// stamps CLOCK_BOOTTIME, and a notification can be newer than the caller's
+		// reading taken a moment earlier.
 		age := math.Max(0, (nowMonotonicUS-float64(item.Timestamp))/1_000_000)
 		grouped[app] = append(grouped[app], NotificationItem{
 			ID:      item.ID,

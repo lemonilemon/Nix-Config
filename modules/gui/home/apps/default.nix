@@ -16,8 +16,6 @@
         tradingview
         gopeed
         podman-desktop
-        # libreoffice
-        # inputs.claude-desktop.packages.${system}.claude-desktop
       ]
       # Gated on the vault flag rather than listed unconditionally, so one option
       # governs the app, nvim's workspace and the Syncthing folder together.

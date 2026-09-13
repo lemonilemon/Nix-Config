@@ -6,11 +6,9 @@ package collect
 
 const glyphAiUsage = "\U000F0674" // U+F0674, the robot glyph on the bar face
 
-// PeriodAgent is one per-agent row inside a period, in emit order.
-//
-// The original builds this with a sixth key, "sort", holding the raw token
-// count, sorts on it and then deletes it. Go sorts on a value it already has,
-// so there is no field to delete -- but the emitted key order is the same five.
+// PeriodAgent is one per-agent row inside a period, in emit order. The original
+// carries a sixth "sort" key holding the raw token count and deletes it after
+// sorting; Go sorts on a value it already has, and the emitted keys are the same five.
 type PeriodAgent struct {
 	Key     string `json:"key"`
 	Name    string `json:"name"`
@@ -44,7 +42,6 @@ type AiMeta struct {
 	Refreshing string `json:"refreshing"`
 }
 
-// AiUsage is collectors.ai_usage_state's shape.
 type AiUsage struct {
 	Text    string    `json:"text"`
 	Tooltip string    `json:"tooltip"`
@@ -57,10 +54,8 @@ type AiUsage struct {
 	Meta    AiMeta    `json:"meta"`
 }
 
-// AiUsageDefault is common.AI_USAGE_DEFAULT.
-//
-// A function, not a var: the original deep-copies it at every use, and a shared
-// Go value that a caller mutated would corrupt every later reader.
+// AiUsageDefault is a function, not a var: a shared Go value that a caller mutated
+// would corrupt every later reader.
 func AiUsageDefault() AiUsage {
 	blankPeriod := func(label string) AiPeriod {
 		return AiPeriod{

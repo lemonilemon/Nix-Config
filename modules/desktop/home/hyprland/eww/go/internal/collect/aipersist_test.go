@@ -43,14 +43,11 @@ const (
 
 // pinClock freezes timeNow and the zone for the duration of a test.
 //
-// The zone is not incidental. restoredClock decides between a bare time and a
-// date by comparing LOCAL calendar days, so the same pair of epochs is
-// same-day in one zone and consecutive days in another: at UTC+8 the two
-// constants above straddle midnight. Package collect has no TestMain, so
-// time.Local is whatever the machine says -- CST+0800 on this host, UTC in the
-// Nix sandbox, which has no /etc/localtime. Pinning it here is what keeps this
-// test from passing locally and failing in the build, the failure mode
-// replay_test.go:46 documents having already been through once.
+// The zone is not incidental: restoredClock compares LOCAL calendar days, so the
+// two constants above are same-day in UTC and straddle midnight at UTC+8. Package
+// collect has no TestMain, so time.Local is CST+0800 on this host and UTC in the
+// Nix sandbox -- pinning it is what keeps this from passing locally and failing in
+// the build.
 func pinClock(t *testing.T, epoch float64) {
 	t.Helper()
 	savedNow, savedZone := timeNow, time.Local
@@ -59,10 +56,8 @@ func pinClock(t *testing.T, epoch float64) {
 	t.Cleanup(func() { timeNow, time.Local = savedNow, savedZone })
 }
 
-// A card carries Updated as a bare HH:MM with no date. Restoring one unchanged
-// would render yesterday's 14:32 as though the probe had just run, and nothing
-// on screen would contradict it -- the failure is silent and the user acts on a
-// number that is a day old.
+// A card carries Updated as a bare HH:MM with no date, so restoring one unchanged
+// would render yesterday's 14:32 as though the probe had just run.
 func TestRestoredQuotaCardsSayWhenTheyWereTaken(t *testing.T) {
 	pinClock(t, sameDayLaterEpoch)
 
@@ -80,15 +75,14 @@ func TestRestoredQuotaCardsSayWhenTheyWereTaken(t *testing.T) {
 	if claude.Status == "live" {
 		t.Error("a restored card still claims to be live")
 	}
-	// eww.yuck renders quota.status verbatim once it is not "live", so this
-	// string is what reaches the screen.
+	// eww.yuck renders quota.status verbatim once it is not "live".
 	if claude.Status != "as of 14:32" {
 		t.Errorf("status = %q, want \"as of 14:32\"", claude.Status)
 	}
 }
 
 // A week-old snapshot rendered as a bare "as of 14:32" is the exact ambiguity
-// this label exists to remove, so an older save has to name the day instead.
+// this label exists to remove.
 func TestRestoredCardsFromAnEarlierDayShowTheDate(t *testing.T) {
 	pinClock(t, threeDaysLaterEpoch)
 
@@ -108,8 +102,6 @@ func TestRestoredCardsFromAnEarlierDayShowTheDate(t *testing.T) {
 	}
 }
 
-// The numbers are the reason to restore at all. A label that says "as of" while
-// the bars are blank is no better than the "--" this replaces.
 func TestRestoredQuotaCardsKeepTheirWindows(t *testing.T) {
 	text, _ := EncodeQuotaSnapshot(liveCards(), savedEpoch)
 
@@ -127,9 +119,8 @@ func TestRestoredQuotaCardsKeepTheirWindows(t *testing.T) {
 	}
 }
 
-// A remembered failure is worse than no memory. "not logged in" restored at
-// boot blames the user for a condition that a since-completed login may have
-// cleared, and it looks identical to a live reading of the same problem.
+// A remembered failure is worse than no memory: "not logged in" restored at boot
+// blames the user for a condition a since-completed login may have cleared.
 func TestRestoreDropsCardsThatWereNotLive(t *testing.T) {
 	cards := liveCards()
 	cards[1].Status = "not logged in"
@@ -147,8 +138,6 @@ func TestRestoreDropsCardsThatWereNotLive(t *testing.T) {
 	}
 }
 
-// If nothing in the file was ever live there is nothing worth showing, and the
-// caller should fall through to the normal defaults.
 func TestRestoreRejectsASnapshotWithNoLiveCards(t *testing.T) {
 	cards := liveCards()
 	for i := range cards {
@@ -169,8 +158,8 @@ func TestParseQuotaSnapshotSurvivesGarbage(t *testing.T) {
 	}
 }
 
-// A save that captured one good card and two failures would be restored next
-// boot as a card set that never existed at the same moment.
+// One good card and two failures would be restored next boot as a card set that
+// never existed at the same moment.
 func TestSaveQuotaSnapshotRefusesAPartialSet(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "ai-quotas.json")
 	cards := liveCards()
@@ -184,8 +173,7 @@ func TestSaveQuotaSnapshotRefusesAPartialSet(t *testing.T) {
 	}
 }
 
-// A refresh that found nothing must not be the thing that empties the file --
-// that is precisely when the stored copy is the only copy.
+// A refresh that found nothing must not be the thing that empties the file.
 func TestSaveHistoryNeverTruncatesToEmpty(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "ai-history.json")
 	days := []HistoryDay{{Date: "2025-11-21", Tokens: 172043, Cost: 0.31}}
@@ -222,7 +210,6 @@ func TestHistoryRoundTripsThroughDisk(t *testing.T) {
 	}
 }
 
-// A missing file is the normal first-run state, not an error.
 func TestLoadingAbsentFilesYieldsNothing(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "does-not-exist.json")
 
@@ -237,9 +224,8 @@ func TestLoadingAbsentFilesYieldsNothing(t *testing.T) {
 	}
 }
 
-// The temp file is created in the destination directory, so a failure to clean
-// up leaves litter next to the real file -- and the next Load would not see it,
-// making the leak invisible until the directory is inspected by hand.
+// The temp file is created in the destination directory, so a failure to clean up
+// leaves litter the next Load would not see.
 func TestAtomicWriteLeavesNoTempFiles(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "ai-history.json")
@@ -261,9 +247,8 @@ func TestAtomicWriteLeavesNoTempFiles(t *testing.T) {
 	}
 }
 
-// Overwriting must replace the file wholesale. A shorter new payload written
-// over a longer old one without truncation would leave trailing bytes and
-// produce JSON that parses as the OLD content plus garbage.
+// A shorter new payload written over a longer old one without truncation would
+// leave trailing bytes and parse as the OLD content plus garbage.
 func TestAtomicWriteFullyReplacesALongerFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "ai-history.json")
 

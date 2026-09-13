@@ -23,10 +23,5 @@
         mode = "0755";
       };
     };
-    # programs.zsh = {
-    #   initExtraBeforeCompInit = ''
-    #     eval "$(op completion zsh)"; compdef _op op
-    #   '';
-    # };
   };
 }

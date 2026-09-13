@@ -15,18 +15,12 @@
   nixpkgs.config.nix.nixPath = [
     "nixpkgs=${pkgs.path}"
   ];
-  # environment.sessionVariables = {
-  #   NIXPKGS_ALLOW_UNFREE = "1";
-  # };
 
-  # Shell configuration
   programs.zsh.enable = lib.mkDefault true;
   environment.shells = [ pkgs.zsh ];
 
-  # Security settings
   security.sudo.wheelNeedsPassword = lib.mkDefault false;
 
-  # Container support
   virtualisation.containers.enable = lib.mkDefault true;
   virtualisation = {
     docker = {
@@ -47,7 +41,6 @@
     docker-compose
   ];
 
-  # User configuration
   users.users.${username} = {
     isNormalUser = true;
     shell = pkgs.zsh;
@@ -60,12 +53,9 @@
     group = username;
   };
 
-  # Create user group
   users.groups.${username} = { };
 
-  # Default time zone (can be overridden by hosts)
   time.timeZone = lib.mkDefault "Asia/Taipei";
 
-  # System state version
   system.stateVersion = "25.11";
 }

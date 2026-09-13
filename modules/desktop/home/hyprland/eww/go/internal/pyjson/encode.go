@@ -10,26 +10,12 @@ import (
 	"strings"
 )
 
-// Encode renders value the way CPython's json.dumps does with
-// separators=(",", ":").
+// Encode renders value as CPython's json.dumps does with separators=(",", ":").
 //
-// ensureASCII picks between the two settings this backend actually uses, and
-// they are NOT the same call. The original spelled the difference as:
-//
-//	state.py    json.dumps(state, separators=(",", ":"), ensure_ascii=False)
-//	control.py  json.dumps(payload, separators=(",", ":"))   # ensure_ascii=True
-//
-// which is now state.Store's Encode(bar, false) against server.go's
-// Encode(reply, true).
-//
-// So the state emitter puts Nerd Font glyphs on the wire as raw UTF-8 while the
-// control socket escapes them to \uXXXX. Getting that backwards would not break
-// anything visibly -- eww decodes both -- but it changes every byte of the
-// snapshot, which is the thing the port has to prove it did not change.
-//
-// encoding/json is not used because it differs in four ways at once: it escapes
-// <, > and & unless told not to, it sorts map keys, it formats floats by its own
-// rule, and it renders a nil slice as null.
+// ensureASCII is false for the state emitter and true for the control socket.
+// Swapping them changes every byte of the snapshot without breaking anything
+// visibly. encoding/json is not used: it escapes <, > and &, sorts map keys,
+// formats floats by its own rule, and renders a nil slice as null.
 func Encode(value any, ensureASCII bool) (string, error) {
 	var b strings.Builder
 	if err := encodeValue(&b, reflect.ValueOf(value), ensureASCII); err != nil {
@@ -87,11 +73,9 @@ func encodeValue(b *strings.Builder, v reflect.Value, ascii bool) error {
 		b.WriteString(encodeString(v.String(), ascii))
 
 	case reflect.Slice, reflect.Array:
-		// A nil slice renders as [], not null. This is the whole nil-vs-empty
-		// hazard: eww.yuck has nine (for ...) loops and eight arraylength()
-		// calls over these fields, and the . index operator hard-errors on
-		// null -- 115 such errors are already in this host's journal from an
-		// unrelated cause. Python has no nil slice to get this wrong with.
+		// A nil slice renders as [], not null: eww.yuck has nine (for ...) loops
+		// and eight arraylength() calls over these fields, and the . index
+		// operator hard-errors on null.
 		b.WriteByte('[')
 		for i := 0; i < v.Len(); i++ {
 			if i > 0 {
@@ -115,9 +99,8 @@ func encodeValue(b *strings.Builder, v reflect.Value, ascii bool) error {
 	return nil
 }
 
-// encodeStruct writes fields in DECLARATION order, which is what makes a struct
-// the right model for the bar state: Python dicts preserve insertion order and
-// a Go map does not.
+// encodeStruct writes fields in DECLARATION order, which is why the bar state is
+// a struct rather than a map.
 func encodeStruct(b *strings.Builder, v reflect.Value, ascii bool) error {
 	b.WriteByte('{')
 	first := true
@@ -151,10 +134,8 @@ func encodeStruct(b *strings.Builder, v reflect.Value, ascii bool) error {
 	return nil
 }
 
-// encodeMap sorts its keys, which CPython does NOT do -- json.dumps preserves
-// insertion order unless sort_keys=True. Nothing in the emitted state is a map
-// for exactly that reason; this exists so a nested map in some future value
-// produces stable output rather than a different byte string every run.
+// encodeMap sorts its keys, which CPython does NOT. Nothing in the emitted state
+// is a map; this exists so a future nested map still produces stable output.
 func encodeMap(b *strings.Builder, v reflect.Value, ascii bool) error {
 	if v.Kind() == reflect.Map && v.IsNil() {
 		b.WriteString("null")
@@ -186,21 +167,13 @@ func encodeMap(b *strings.Builder, v reflect.Value, ascii bool) error {
 	return nil
 }
 
-// encodeFloat matches CPython's repr(), which json.dumps uses verbatim.
-//
-// strconv's 'g' is not it. Both produce the shortest round-tripping digits, but
-// they switch to exponent notation at different points and Go drops a trailing
-// ".0": repr(1e15) is "1000000000000000.0" where 'g' gives "1e+15", and
+// encodeFloat matches CPython's repr(), which json.dumps uses verbatim. strconv's
+// 'g' is not it: repr(1e15) is "1000000000000000.0" where 'g' gives "1e+15", and
 // repr(100.0) is "100.0" where 'g' gives "100".
-//
-// No value in the bar state is a float today -- a live snapshot is 161 strings,
-// 16 ints and 15 lists -- so this is here to stay correct if one appears, not
-// because one has.
 func encodeFloat(b *strings.Builder, f float64) error {
 	if math.IsNaN(f) || math.IsInf(f, 0) {
-		// CPython emits NaN/Infinity/-Infinity, which is not valid JSON and
-		// which eww would reject. Refuse rather than emit a snapshot that
-		// silently breaks the bar.
+		// CPython emits NaN/Infinity, which is not valid JSON and which eww
+		// would reject. Refuse rather than break the bar.
 		return fmt.Errorf("pyjson: cannot encode non-finite float %v", f)
 	}
 
@@ -240,13 +213,8 @@ type Pair struct {
 	Value any
 }
 
-// Ordered is a JSON object that remembers its insertion order.
-//
-// The daemon's state will be a struct, and struct fields already encode in
-// declaration order -- this exists so the differential gate can byte-compare
-// arbitrary nested objects against json.dumps. Decoding into map[string]any
-// throws the order away, which would leave the gate unable to check the one
-// property the snapshot depends on.
+// Ordered is a JSON object that remembers its insertion order, so the
+// differential gate can byte-compare nested objects against json.dumps.
 type Ordered []Pair
 
 func encodeOrdered(b *strings.Builder, o Ordered, ascii bool) error {
@@ -265,9 +233,7 @@ func encodeOrdered(b *strings.Builder, o Ordered, ascii bool) error {
 	return nil
 }
 
-// DecodeOrdered parses JSON while preserving object key order, so a value can
-// be round-tripped through this package without losing what json.dumps would
-// have emitted.
+// DecodeOrdered parses JSON while preserving object key order.
 func DecodeOrdered(data []byte) (any, error) {
 	decoder := json.NewDecoder(strings.NewReader(string(data)))
 	decoder.UseNumber()

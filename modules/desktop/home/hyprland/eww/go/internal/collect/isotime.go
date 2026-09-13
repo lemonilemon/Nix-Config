@@ -7,14 +7,10 @@ import (
 	"unicode/utf8"
 )
 
-// ParseISOEpoch mirrors collectors.parse_iso_epoch.
-//
-// Two parsers in sequence, because the original has two: datetime.fromisoformat
-// first, then a strict strptime over the first 19 characters. They do not
-// accept the same language -- fromisoformat demands zero-padded fields while
-// strptime's %m/%d/%H accept one or two digits -- so "2024-1-5T1:2:3" is
-// rejected by the first and accepted by the second. Dropping either would
-// silently change which timestamps resolve.
+// ParseISOEpoch runs two parsers in sequence: fromisoformat, then a strict
+// strptime over the first 19 characters. They do not accept the same language --
+// fromisoformat demands zero-padded fields where strptime's %m/%d/%H take one or
+// two digits -- so dropping either changes which timestamps resolve.
 func ParseISOEpoch(value any) (float64, bool) {
 	text, isString := value.(string)
 	if !isString || text == "" {
@@ -37,12 +33,8 @@ func ParseISOEpoch(value any) (float64, bool) {
 	return 0, false
 }
 
-// FormatClockTime mirrors collectors.format_clock_time.
-//
-// Takes any rather than float64 because the None branch is part of the
-// original's contract even though both call sites guard it. A non-numeric,
-// non-nil argument raises TypeError in CPython where this returns "--"; no
-// caller can reach it, and returning the placeholder is the safer divergence.
+// FormatClockTime takes any rather than float64 because the None branch is part of
+// the contract. A non-numeric, non-nil argument returns "--" where CPython raises.
 func FormatClockTime(epoch any) string {
 	if epoch == nil {
 		return "--"
@@ -55,46 +47,27 @@ func FormatClockTime(epoch any) string {
 	return time.Unix(int64(math.Floor(seconds)), 0).Local().Format("2006-01-02 15:04")
 }
 
-// microsToSeconds is datetime.timestamp(): a microsecond count as a float64
-// second count.
-//
-// The whole seconds and the sub-second remainder are converted separately, and
-// that is not cosmetic. Converting the total first -- float64(micros)/1e6 --
-// rounds twice once the count passes 2^53, which happens at roughly the year
-// 2255, and the gate caught it at 9998-12-31: "…00,25" came back as
-// …400.24997 instead of …400.25. Python never has the problem because its
-// int/int division is correctly rounded at arbitrary precision.
-//
-// Splitting keeps both halves exact: whole seconds stay well inside float64's
-// integer range, and the remainder is under one.
+// microsToSeconds is datetime.timestamp(). Whole seconds and the sub-second
+// remainder are converted separately: converting the total rounds twice once the
+// count passes 2^53, which the gate caught at 9998-12-31.
 func microsToSeconds(micros int64) float64 {
 	// Go truncates both operators toward zero, so the two parts keep a
 	// consistent sign and add back correctly for negative epochs.
 	return float64(micros/1e6) + float64(micros%1e6)/1e6
 }
 
-// parseISOFormat is datetime.fromisoformat, returning microseconds since the
-// Unix epoch.
-//
-// Microseconds rather than a time.Time so that fractional UTC offsets survive:
+// parseISOFormat is datetime.fromisoformat, returning microseconds since the Unix
+// epoch. Microseconds rather than a time.Time so fractional UTC offsets survive:
 // fromisoformat accepts "+23:59:59.999999", which time.FixedZone cannot hold.
 //
-// The accepted grammar was characterised against CPython 3.14, not read off the
-// ISO 8601 standard, and it is wider than RFC 3339 in ways that matter:
-// the date/time separator is any single character, week dates parse,
-// "T24:00:00" rolls to the next midnight, and both basic and extended forms are
-// allowed. It is also narrower in places: "2024-01" and bare years raise, as do
-// ordinal dates and any leading or trailing space.
+// The accepted grammar was characterised against CPython 3.14, not read off ISO
+// 8601. Wider than RFC 3339: the date/time separator is any single character, week
+// dates parse, "T24:00:00" rolls to the next midnight, basic and extended forms
+// are both allowed. Narrower: "2024-01", bare years, ordinal dates and any leading
+// or trailing space all raise.
 //
-// KNOWN LIMIT, at the very edges of the calendar. Within one UTC offset of
-// datetime.min or datetime.max, CPython's .timestamp() raises for a NAIVE
-// value -- parse_iso_epoch then falls through to its strptime leg, losing any
-// fractional seconds, or returns None when that leg cannot match either. The
-// trigger is CPython's _mktime probing the platform's localtime around the
-// boundary, so it moves with the host timezone and is not reproducible here
-// with any fidelity. Go instead computes the arithmetic answer. Unreachable in
-// practice: every caller passes either an RFC 3339 timestamp from a live HTTP
-// API or a locally built "<period>T00:00:00" from ccusage.
+// KNOWN LIMIT within one UTC offset of datetime.min or datetime.max, where CPython
+// probes the platform's localtime and Go computes the arithmetic answer instead.
 func parseISOFormat(s string) (int64, bool) {
 	year, month, day, rest, ok := parseISODate(s)
 	if !ok {
@@ -108,8 +81,7 @@ func parseISOFormat(s string) (int64, bool) {
 	}
 
 	// Exactly one separator character, and it may be anything at all --
-	// "2024-01-15X10:30:00" parses. Consumed as a rune: the separator is not
-	// required to be ASCII.
+	// "2024-01-15X10:30:00" parses. Consumed as a rune, not a byte.
 	_, width := utf8.DecodeRuneInString(rest)
 	clock := rest[width:]
 	if clock == "" {
@@ -121,15 +93,12 @@ func parseISOFormat(s string) (int64, bool) {
 		return 0, false
 	}
 	// Hour 24 is midnight of the following day, and only when nothing else is
-	// set; time.Date normalises the rollover, so this only has to reject the
-	// combinations CPython refuses.
+	// set; time.Date normalises the rollover.
 	if hour == 24 && (minute != 0 || second != 0 || micros != 0) {
 		return 0, false
 	}
-	// Hour 24 also relaxes the day's LOWER bound to zero, so "2024-01-00T24:00:00"
-	// is 1 January while "2024-01-00" and "2024-01-00T00:00:00" both raise. The
-	// upper bound does not move -- "2024-01-32T24:00:00" still fails -- and
-	// time.Date turns day 0 plus 24 hours into the first of the month by itself.
+	// Hour 24 also relaxes the day's LOWER bound to zero: "2024-01-00T24:00:00" is
+	// 1 January while "2024-01-00T00:00:00" raises. The upper bound does not move.
 	if day == 0 && hour != 24 {
 		return 0, false
 	}
@@ -205,15 +174,9 @@ func parseISOWeekDate(s string, year, head int, extended bool) (int, int, int, s
 	i := head + 3
 	weekday := 1
 	if extended {
-		// "-D" is the weekday only when what FOLLOWS it is not another digit.
-		// That lookahead is how CPython tells "2024-W03-3T10:00" (weekday 3,
-		// then a time) from "2024-W03-110+00:00", where the "-" is the
-		// date/time separator and "110" is a basic-format time. Without it the
-		// second parses as a completely different instant.
-		//
-		// The basic branch below needs no such lookahead: the only inputs it
-		// would change are ones the narrowing at the end of this function
-		// rejects either way, so adding it there is unreachable code.
+		// "-D" is the weekday only when what FOLLOWS it is not another digit. That
+		// lookahead is how CPython tells "2024-W03-3T10:00" from
+		// "2024-W03-110+00:00", where the "-" is the date/time separator.
 		if i+1 < len(s) && s[i] == '-' && isASCIIDigit(s[i+1]) &&
 			(i+2 >= len(s) || !isASCIIDigit(s[i+2])) {
 			weekday, _ = atoiFixed(s[i+1 : i+2])
@@ -227,9 +190,8 @@ func parseISOWeekDate(s string, year, head int, extended bool) (int, int, int, s
 		return 0, 0, 0, "", false
 	}
 
-	// Week 1 is the week containing 4 January, so step back to its Monday and
-	// count forward. The round-trip through ISOWeek is what rejects a 53rd week
-	// in a year that has only 52: that Monday belongs to the next ISO year.
+	// Week 1 is the week containing 4 January. The round-trip through ISOWeek is
+	// what rejects a 53rd week in a year that has only 52.
 	jan4 := time.Date(year, time.January, 4, 0, 0, 0, 0, time.UTC)
 	weekMonday := jan4.AddDate(0, 0, -((int(jan4.Weekday())+6)%7)+(week-1)*7)
 	if isoYear, isoWeek := weekMonday.ISOWeek(); isoYear != year || isoWeek != week {
@@ -239,20 +201,11 @@ func parseISOWeekDate(s string, year, head int, extended bool) (int, int, int, s
 
 	// DELIBERATE NARROWING, the one place this file is not fromisoformat.
 	//
-	// A basic week date followed immediately by another digit ("2024W03110:30")
-	// is ambiguous: CPython resolves it with an undocumented heuristic that
-	// picks the date/time separator by position, and its choice does not follow
-	// from the string in any way I could derive -- "2024W0311030+00:00" splits
-	// after 7 characters while "2024W031030+00:00" splits after 8.
-	//
-	// Rather than guess a rule and be wrong in both directions, this rejects the
-	// shape outright, which is the safe direction: Go declines where CPython
-	// might parse, and never invents an instant CPython would not. Nothing
-	// reaches parse_iso_epoch in this form -- the callers pass RFC 3339 from two
-	// HTTP APIs and a locally built "<period>T00:00:00" -- and both sides
-	// already agree on every extended week date, which is the ISO form anything
-	// real emits. The golden replay pins the divergence at exactly this shape
-	// and always None, so it cannot widen unnoticed.
+	// A basic week date followed immediately by another digit ("2024W03110:30") is
+	// ambiguous, and CPython resolves it with a positional heuristic that does not
+	// follow from the string. This rejects the shape outright rather than guessing:
+	// Go declines where CPython might parse, never the reverse. The golden replay
+	// pins the divergence at exactly this shape and always None.
 	if !extended && rest != "" && isASCIIDigit(rest[0]) {
 		return 0, 0, 0, "", false
 	}
@@ -273,29 +226,23 @@ func parseISOClock(s string) (hour, minute, second int, micros, offset int64, ha
 		}
 		hasOffset = true
 	} else if n := len(s); n > 0 && s[n-1] == 'Z' {
-		// Unreachable from ParseISOEpoch, which substitutes Z away before
-		// calling. Kept because fromisoformat itself accepts it, and this
-		// function should be the grammar rather than the grammar-as-used.
+		// Unreachable from ParseISOEpoch, which substitutes Z away first. Kept
+		// because fromisoformat accepts it, and this function is the grammar.
 		body = s[:n-1]
 		hasOffset = true
 	}
 
 	// An empty fraction is legal only when a zone follows: "10:30:00." is
-	// rejected, "10:30:00.+00:00" is accepted as zero microseconds, and
-	// "10:30:00.," is rejected again. Verified against CPython; not a rule
-	// anyone would guess.
+	// rejected, "10:30:00.+00:00" is zero microseconds, "10:30:00.," is rejected.
 	body, micros, ok = splitFraction(body, hasOffset)
 	if !ok {
 		return 0, 0, 0, 0, 0, false, false
 	}
 
-	// A second quirk in the same neighbourhood, found by sweeping body lengths
-	// rather than by reading the spec: when a zone follows, a BASIC-format time
-	// body of odd length has its final digit silently discarded, so
-	// "T030+00:00" is 03:00 and "T0300000+00:00" is 03:00:00. The same bodies
-	// are rejected outright with no zone, and the extended forms ("03:0") are
-	// rejected either way. Reproduced, not corrected: the contract of this
-	// function is fromisoformat, quirks included.
+	// When a zone follows, a BASIC-format time body of odd length has its final
+	// digit silently discarded: "T030+00:00" is 03:00 and "T0300000+00:00" is
+	// 03:00:00. The same bodies are rejected with no zone, and extended forms
+	// are rejected either way. Reproduced, not corrected.
 	if hasOffset && !strings.Contains(body, ":") {
 		if n := len(body); n == 3 || n == 5 || n == 7 {
 			body = body[:n-1]
@@ -406,18 +353,13 @@ func parseISOOffset(s string) (int64, bool) {
 	return sign * total, true
 }
 
-// parseStrptimeSeconds is time.strptime(s, "%Y-%m-%dT%H:%M:%S") fed to
-// time.mktime.
+// parseStrptimeSeconds is time.strptime(s, "%Y-%m-%dT%H:%M:%S") fed to time.mktime,
+// deliberately a different grammar from parseISOFormat: %m, %d, %H, %M and %S each
+// accept one OR two digits, which is what rescues "2024-1-5T1:2:3".
 //
-// Deliberately not the same grammar as parseISOFormat. Python's strptime
-// directives are regexes, and %m, %d, %H, %M and %S each accept one OR two
-// digits, so this leg is what rescues "2024-1-5T1:2:3".
-//
-// Two behaviours here are not obvious from the format string, and the
-// equivalence gate found both. Python compiles the format with re.IGNORECASE,
-// so the literal T matches a lowercase t. And _strptime builds a datetime.date
-// to derive the weekday, so the calendar IS validated: "2024-02-30" raises
-// rather than normalising to 1 March the way a bare mktime would.
+// Two behaviours are not visible in the format string: the format compiles with
+// re.IGNORECASE so the literal T matches a lowercase t, and the calendar IS
+// validated, so "2024-02-30" raises rather than normalising to 1 March.
 func parseStrptimeSeconds(s string) (int64, bool) {
 	rest := s
 	year, rest, ok := takeDigits(rest, 4, 4)

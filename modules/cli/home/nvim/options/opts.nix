@@ -63,7 +63,6 @@
       mouse = "a";
       conceallevel = 1;
 
-      # use utf-8 encoding
       encoding = "utf-8";
       fileencoding = "utf-8";
 
@@ -74,44 +73,35 @@
       # fire CursorHold sooner for faster auto-reload detection (community standard)
       updatetime = 300;
 
-      # keymapping timeout
       ttimeout = true; # separate mapping and keycode timeout
       timeoutlen = 300;
       ttimeoutlen = 20;
 
-      # use undofile
       backup = false;
       swapfile = false;
       undofile = true;
 
-      # line number
       number = true;
       numberwidth = 4;
 
-      # search
       incsearch = true;
       hlsearch = false;
 
-      # sound
       visualbell = true;
 
-      # style
       background = "dark";
       termguicolors = true;
 
-      # indentation
       expandtab = true;
       tabstop = 4;
       softtabstop = -1;
       shiftwidth = 4;
 
-      # Don't show mode
       showmode = false;
 
       # Preview substitutions live as you type
       inccommand = "split";
     };
-    # Clipboard
     clipboard = {
       providers = {
         wl-copy.enable = true;

@@ -7,11 +7,9 @@ import (
 	"ewwbar/internal/paths"
 )
 
-// These replace the 13 recorded cases that internal/replay steps over. Those
-// cases pin hyprctl's pre-0.56 command line, which Hyprland no longer accepts;
-// see recordsSupersededHyprctl for why the recording is skipped rather than
-// edited. What follows asserts the same behaviour against the surface that
-// exists now.
+// These replace the 13 recorded cases internal/replay steps over: they pin
+// hyprctl's pre-0.56 command line, which Hyprland no longer accepts. See
+// recordsSupersededHyprctl for why the recording is skipped rather than edited.
 
 // journalHas reports whether the fixture journal contains an entry, and returns
 // its index so ordering can be asserted.
@@ -32,12 +30,9 @@ const (
 	dpmsOffCall = "status\x1fhyprctl\x1fdispatch\x1f" + hyprDpmsOff
 )
 
-// The bug this whole file exists for. `hyprctl dispatch dpms off` is a syntax
-// error under Hyprland 0.56 and exits 7, so SetDisplayMode returned before
-// WriteDisplayMode and the mode file was never created -- which meant
-// ReadDisplayMode kept answering "normal" and the panel kept saying "Normal
-// desktop" however many times the button was pressed. Nothing reported it,
-// because every button passes --quiet.
+// The bug this whole file exists for. `hyprctl dispatch dpms off` is a syntax error
+// under Hyprland 0.56 and exits 7, so SetDisplayMode returned before WriteDisplayMode
+// and the panel kept saying "Normal desktop" however many times the button was pressed.
 func TestHeadlessUsesTheLuaDpmsCallAndRecordsTheMode(t *testing.T) {
 	restore := InstallFixture(map[string]string{"env.XDG_RUNTIME_DIR": "/run"})
 	defer restore()
@@ -48,9 +43,8 @@ func TestHeadlessUsesTheLuaDpmsCallAndRecordsTheMode(t *testing.T) {
 
 	dpms := journalIndex(t, dpmsOffCall)
 	// The mode file is the thing that was never written. Asserted through the
-	// journal rather than the returned Display, because the fixture's
-	// WriteTextFile only records the call -- it does not store the value, so a
-	// later ReadTextFile cannot see it.
+	// journal rather than the returned Display, because the fixture's WriteTextFile
+	// only records the call and does not store the value.
 	wrote := journalIndex(t, "write\x1f"+paths.DisplayMode()+"\x1fheadless")
 
 	// Written LAST, so a failure part-way leaves the file describing the mode
@@ -74,9 +68,8 @@ func TestNormalUsesTheLuaDpmsCall(t *testing.T) {
 	dpms := journalIndex(t, dpmsOnCall)
 	reload := journalIndex(t, "status\x1fhyprctl\x1freload")
 
-	// The screens have to be back before hypridle is allowed to act again, so
-	// the reload precedes the inhibitor release. Asserting the pair keeps that
-	// ordering from being reshuffled by a later edit.
+	// The screens have to be back before hypridle may act again, so the reload
+	// precedes the inhibitor release.
 	if dpms >= 0 && reload >= 0 && dpms > reload {
 		t.Errorf("dpms on ran after reload (%d > %d)", dpms, reload)
 	}
@@ -96,11 +89,9 @@ func TestRestoreUsesTheLuaDpmsCall(t *testing.T) {
 	}
 }
 
-// External mode's other call was the dangerous one. `hyprctl keyword monitor
-// <name>,disable` answers "keyword can't work with non-legacy parsers" and
-// exits ZERO, so runHyprctl saw success: the mode file would be written and the
-// panel would report "External monitors active" with the internal display still
-// lit. The eval form errors with exit 7 like everything else.
+// External mode's other call was the dangerous one: `hyprctl keyword monitor
+// <name>,disable` answers "keyword can't work with non-legacy parsers" and exits
+// ZERO, so the panel would report "External monitors active" with the display lit.
 func TestExternalDisablesTheInternalPanelThroughEval(t *testing.T) {
 	restore := InstallFixture(map[string]string{
 		"hyprctl\x1fmonitors\x1f-j": `[
@@ -119,9 +110,8 @@ func TestExternalDisablesTheInternalPanelThroughEval(t *testing.T) {
 		"status\x1fhyprctl\x1feval\x1f"+hyprDisableMonitor("eDP-1"))
 	dpms := journalIndex(t, dpmsOnCall)
 
-	// DPMS on BEFORE disabling the panel: an enabled monitor can still be
-	// DPMS-off, arriving here from headless or an idle blank, and disabling it
-	// first would leave a dark screen with no way back.
+	// DPMS on BEFORE disabling the panel: an enabled monitor can still be DPMS-off,
+	// and disabling it first would leave a dark screen with no way back.
 	if dpms >= 0 && disable >= 0 && dpms > disable {
 		t.Errorf("disabled the internal panel before turning DPMS on (%d < %d)",
 			disable, dpms)
@@ -136,9 +126,8 @@ func TestExternalDisablesTheInternalPanelThroughEval(t *testing.T) {
 	}
 }
 
-// The Lua form has to be exactly what Hyprland accepts. Verified by hand
-// against 0.56.1: `disabled` is the field, while `disable` and `enabled` are
-// both rejected as unknown fields, and the whole call must be one argument.
+// Verified by hand against 0.56.1: `disabled` is the field, `disable` and
+// `enabled` are both rejected, and the whole call must be one argument.
 func TestDisableMonitorRendersTheAcceptedLuaForm(t *testing.T) {
 	got := hyprDisableMonitor("eDP-1")
 	want := `hl.monitor{ output = "eDP-1", disabled = true }`
@@ -148,7 +137,7 @@ func TestDisableMonitorRendersTheAcceptedLuaForm(t *testing.T) {
 }
 
 // A monitor name is interpolated into Lua source, so a name carrying a quote
-// would otherwise end the string and change the statement.
+// would end the string and change the statement.
 func TestDisableMonitorQuotesTheMonitorName(t *testing.T) {
 	got := hyprDisableMonitor(`weird"name`)
 	if strings.Contains(got, `"weird"name"`) {
@@ -159,7 +148,7 @@ func TestDisableMonitorQuotesTheMonitorName(t *testing.T) {
 	}
 }
 
-// Nothing may reach for the old surface again. Both forms fail against 0.56,
+// Nothing may reach for the old surface again: both forms fail against 0.56,
 // and one of them fails silently.
 func TestNoDisplayPathUsesTheSupersededHyprctlForms(t *testing.T) {
 	for _, action := range []string{"restore", "normal", "headless"} {

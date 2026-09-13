@@ -1,7 +1,5 @@
-// Command eww-bar-backend is the eww bar's state daemon.
-//
-// It writes one JSON snapshot per line to stdout, which eww's `deflisten`
-// reads, and serves the control socket eww-barctl talks to.
+// Command eww-bar-backend is the eww bar's state daemon: one JSON snapshot per
+// line on stdout for eww's deflisten, plus the eww-barctl control socket.
 package main
 
 import (
@@ -12,9 +10,6 @@ import (
 )
 
 func main() {
-	// argv[1] is accepted and checked rather than ignored: the eww.yuck
-	// deflisten invokes `eww-bar-backend bar`, and silently accepting any word
-	// there would hide a typo in the widget definition as a working daemon.
 	mode := "bar"
 	if len(os.Args) > 1 {
 		mode = os.Args[1]

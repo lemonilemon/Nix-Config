@@ -1,15 +1,6 @@
-// Package replay answers one recorded call against the ported collectors.
-//
-// It is the shared body of two things: the golden replay test, and the diffgen
-// command, which the eww-backend flake check drives to produce the default
-// snapshot. During the port a third caller drove diffgen from Python and diffed
-// the two implementations line by line; that gate is gone with the Python.
-//
-// Outliving the gate is the point. The differential question -- "does Go agree
-// with CPython?" -- stopped being answerable the moment the Python was deleted.
-// What replaces it is "does Go still answer what it answered when we checked it
-// against CPython?", and that needs exactly these inputs and the recorded
-// outputs, which is why this dispatch is a package rather than a main.
+// Package replay answers one recorded call against the ported collectors: the
+// shared body of the golden replay test and the diffgen command, which the
+// eww-backend flake check drives to produce the default snapshot.
 package replay
 
 import (
@@ -380,9 +371,8 @@ func Answer(c Call) (any, error) {
 		return []any{internal, external}, nil
 
 	case "EncodeJSON":
-		// The argument is decoded to the same generic shapes the daemon will
-		// hold, then re-encoded, so this compares the ENCODER against
-		// json.dumps rather than a Go struct against a Python dict.
+		// Decoded to generic shapes and re-encoded, so this compares the ENCODER
+		// against json.dumps rather than a Go struct against a Python dict.
 		if len(c.Args) != 2 {
 			return nil, fmt.Errorf("EncodeJSON: want 2 args")
 		}
@@ -391,7 +381,7 @@ func Answer(c Call) (any, error) {
 			return nil, err
 		}
 		// DecodeOrdered, not Unmarshal: object key order is the property being
-		// checked, and a map would discard it before the encoder ever saw it.
+		// checked, and a map would discard it before the encoder saw it.
 		value, err := pyjson.DecodeOrdered(c.Args[0])
 		if err != nil {
 			return nil, err
@@ -419,13 +409,9 @@ func Answer(c Call) (any, error) {
 			Groups []string `json:"groups"`
 		}{Sinks: nilSlice, Groups: []string{}}, false)
 
-	// --- impure collectors, driven from a command -> output fixture ---------
-	//
-	// The first argument is a map keyed by the argv joined with \x1f, standing
-	// in for the subprocess. It is what makes these cases replayable at all: the
-	// recorded answer is a function of the fixture, not of the machine, so a
-	// collector that shells out to nmcli returns the same thing on a laptop with
-	// no network as it did on the machine that recorded it.
+	// Impure collectors, driven from a command -> output fixture. The first argument
+	// is a map keyed by the argv joined with \x1f, standing in for the subprocess, so
+	// the recorded answer is a function of the fixture and not of the machine.
 
 	case "CollectActiveWindow", "CollectWorkspace", "CollectMedia",
 		"CollectTrayCount", "CollectBluetooth", "CollectVolume",
@@ -445,10 +431,9 @@ func Answer(c Call) (any, error) {
 		return withFixture(c)
 
 	case "CollectVolumeSequence":
-		// Two calls under two fixtures, sharing one warm cache. The second
-		// fixture has no pactl output at all, so if the cache is working the
-		// sinks survive and if it is not they vanish -- which single-call
-		// testing cannot distinguish, because the cache starts cold every time.
+		// Two calls under two fixtures, sharing one warm cache. The second has no
+		// pactl output at all, so a working cache keeps the sinks and a broken one
+		// loses them -- which single-call testing cannot distinguish.
 		var first, second map[string]string
 		if err := args(c, &first, &second); err != nil {
 			return nil, err
@@ -470,9 +455,8 @@ func Answer(c Call) (any, error) {
 		return []any{a, b}, nil
 
 	case "DefaultSnapshot":
-		// The bytes BarState() emits before a single collector has run. This is
-		// what eww.yuck's :initial literal has to match, and what the whole
-		// encoder chain has to reproduce.
+		// The bytes BarState() emits before a single collector has run. eww.yuck's
+		// :initial literal has to match this.
 		return state.New().Snapshot()
 
 	case "NetPolicyDefault":
@@ -480,22 +464,15 @@ func Answer(c Call) (any, error) {
 		return collect.NetPolicyDefault(), nil
 
 	case "NetRateDefault":
-		// The net_rate defvar's default, checkable by hand for the same reason
-		// AiHistoryDefault is: check_yuck_initial.py reads only line 1, so
-		// nothing in the build compares this literal against the Go value.
-		//
-		// Not in the golden recording, and safe to add for the same reason.
+		// The net_rate defvar's default. Not covered by check_yuck_initial.py,
+		// which reads only line 1 of the file.
 		return collect.NetRateDefault(), nil
 
 	case "AiHistoryDefault":
-		// The ai_history defvar's default, so drift between it and the literal
-		// in eww.yuck can be checked by hand. It is NOT covered by
-		// check_yuck_initial.py, which reads only line 1 of the file -- and a
-		// key missing from that literal renders as the text "null" rather than
-		// as absent, which is how the warning label once shipped saying "null".
-		//
-		// Not in the golden recording, and safe to add: TestGoldenReplay
-		// iterates the recorded cases, so a new fn here is never invoked by it.
+		// The ai_history defvar's default. Not covered by check_yuck_initial.py
+		// either, and a key missing from that literal renders as the text "null"
+		// rather than as absent -- which is how the warning label once shipped
+		// saying "null".
 		return collect.AiHistoryDefault(), nil
 
 	case "CPUStateFromSamples":
@@ -530,13 +507,11 @@ func Answer(c Call) (any, error) {
 		}
 		return collect.VolumeEventIsRelevant(line), nil
 
-	// -- AI usage: value probing, epoch parsing ---------------------------
+	// AI usage: value probing, epoch parsing.
 	//
-	// Anything that can produce a non-finite float is answered as an IEEE bit
-	// pattern rather than a number. Go's encoding/json refuses Inf and NaN
-	// outright while Python's json emits bare Infinity, so a float("1e999")
-	// case would fail in the harness rather than in the code under test. Bits
-	// also make the comparison exact for -0.0 and for every NaN payload.
+	// Anything that can produce a non-finite float is answered as an IEEE bit pattern:
+	// Go's encoding/json refuses Inf and NaN where Python's json emits them bare, and
+	// bits also make -0.0 and every NaN payload compare exactly.
 	case "PyFloat":
 		var text string
 		if err := args(c, &text); err != nil {
@@ -614,7 +589,7 @@ func Answer(c Call) (any, error) {
 		}
 		return collect.PyTitle(text), nil
 
-	// -- AI usage: the provider quota cards --------------------------------
+	// AI usage: the provider quota cards.
 
 	case "QuotaWindowClass":
 		var percent int
@@ -691,7 +666,7 @@ func Answer(c Call) (any, error) {
 		}
 		return collect.ClaudeQuotaStateFromJSON(usageJSON, plan, now), nil
 
-	// -- AI usage: periods and assembly ------------------------------------
+	// AI usage: periods and assembly.
 
 	case "AgentDisplayName":
 		var key any
@@ -774,13 +749,9 @@ func Answer(c Call) (any, error) {
 	return nil, fmt.Errorf("unknown fn: %s", c.Fn)
 }
 
-// floatBits answers a float as its IEEE bit pattern, canonicalising NaN.
-//
-// Bits are the comparison currency for anything that can go non-finite,
-// because encoding/json refuses Inf and NaN where Python's json emits them
-// bare. NaN is canonicalised first: CPython's float("nan") carries payload
-// 0x7FF8000000000000 and Go's math.NaN() carries 0x7FF8000000000001, and that
-// difference is in the runtimes' choice of quiet NaN, not in the port.
+// floatBits answers a float as its IEEE bit pattern, canonicalising NaN first:
+// CPython's float("nan") carries payload 0x7FF8000000000000 and Go's math.NaN()
+// carries 0x7FF8000000000001, a difference in the runtimes rather than the port.
 func floatBits(value float64) uint64 {
 	if math.IsNaN(value) {
 		return 0x7FF8000000000000
@@ -788,9 +759,8 @@ func floatBits(value float64) uint64 {
 	return math.Float64bits(value)
 }
 
-// withFixture installs a fake RunText/ReadTextFile for the duration of one
-// call, then restores them. Not concurrent-safe, and does not need to be:
-// diffgen answers one line at a time.
+// withFixture installs a fake RunText/ReadTextFile for one call, then restores
+// them. Not concurrent-safe: diffgen answers one line at a time.
 func withFixture(c Call) (any, error) {
 	if len(c.Args) < 1 {
 		return nil, fmt.Errorf("%s: want a fixture map", c.Fn)
@@ -841,7 +811,7 @@ func withFixture(c Call) (any, error) {
 	case "CollectNetwork":
 		return collect.CollectNetwork(), nil
 
-	// -- AI usage: the impure shell ----------------------------------------
+	// AI usage: the impure shell.
 
 	case "ClaudeCredentialsPaths":
 		return collect.ClaudeCredentialsPaths(), nil
@@ -875,8 +845,8 @@ func withFixture(c Call) (any, error) {
 		return collect.QuotaStates(refresh), nil
 
 	case "QuotaStatesSequence":
-		// Two calls, the second with refresh=false, so the cache is observable
-		// at all -- a single call can never show whether it was used.
+		// Two calls, the second with refresh=false, so the cache is observable at
+		// all -- a single call can never show whether it was used.
 		first := collect.QuotaStates(true)
 		second := collect.QuotaStates(false)
 		return []any{first, second}, nil
@@ -901,10 +871,8 @@ func withFixture(c Call) (any, error) {
 		return []any{good, stale}, nil
 
 	case "AiUsageStateGoodTwice":
-		// Two GOOD reports back to back. The stale branch's `source ==
-		// "missing"` guard is only observable here: with one good call the
-		// remembered state is still empty, and with a good-then-broken pair
-		// both the guarded and unguarded versions take the stale path.
+		// Two GOOD reports back to back. The stale branch's `source == "missing"`
+		// guard is only observable here.
 		first := collect.AiUsageState(true)
 		second := collect.AiUsageState(true)
 		return []any{first, second}, nil
@@ -924,11 +892,9 @@ func withFixture(c Call) (any, error) {
 		}, refreshQuotas)
 		return map[string]any{"published": published, "result": result}, nil
 
-	// -- display and inhibitors --------------------------------------------
-	//
-	// These answer with the side-effect journal beside the return value: what
-	// set_display_mode DOES is its whole content, and a comparison of the
-	// returned Display alone would pass with the body deleted.
+	// Display and inhibitors. These answer with the side-effect journal beside the
+	// return value: what set_display_mode DOES is its whole content, and comparing
+	// the returned Display alone would pass with the body deleted.
 
 	case "IdleInhibitedState":
 		return map[string]any{"result": collect.IdleInhibitedState(),
@@ -994,7 +960,7 @@ func withFixture(c Call) (any, error) {
 		return map[string]any{"result": result, "error": errText(err),
 			"journal": collect.FixtureJournal()}, nil
 
-	// -- notification actions and the wallpaper picker ---------------------
+	// Notification actions and the wallpaper picker.
 
 	case "CollectNotifications":
 		collect.ResetNotifyUIState()
@@ -1026,11 +992,9 @@ func withFixture(c Call) (any, error) {
 		return []any{first, second}, nil
 
 	case "NotifMarkSeenRewind":
-		// The badge must never move BACKWARDS, and that takes THREE calls to
-		// see. Mark against a recent history, mark again against an older one
-		// (where an unguarded update would rewind lastSeen), then read the
-		// recent history back: only the third call's `new` count differs, and
-		// only because the second either kept or lost the high-water mark.
+		// The badge must never move BACKWARDS, and that takes THREE calls to see:
+		// mark against a recent history, mark again against an older one, then read
+		// the recent history back.
 		var histKeys []string
 		if err := json.Unmarshal(c.Args[1], &histKeys); err != nil {
 			return nil, err
@@ -1045,9 +1009,9 @@ func withFixture(c Call) (any, error) {
 				return inner(t, name, argv...)
 			}
 		}
-		// The last entry is a PLAIN READ, not another mark. mark_seen updates
-		// the high-water mark before it reads state back, so a third mark
-		// would repair the rewind before anyone could observe it.
+		// The last entry is a PLAIN READ, not another mark: mark_seen updates the
+		// high-water mark before it reads state back, so a third mark would repair
+		// the rewind before anyone could observe it.
 		results := []any{}
 		for i, body := range histKeys {
 			swap(body)
@@ -1061,10 +1025,8 @@ func withFixture(c Call) (any, error) {
 		return results, nil
 
 	case "ControlHandle":
-		// The handler answers with its reply JSON, the side-effect journal, and
-		// the state it wrote -- all three, because a reply that is right while
-		// the state update is wrong leaves the bar showing stale values with no
-		// error anywhere.
+		// All three, because a reply that is right while the state update is wrong
+		// leaves the bar showing stale values with no error anywhere.
 		var payload map[string]any
 		if err := json.Unmarshal(c.Args[1], &payload); err != nil {
 			return nil, err
@@ -1128,9 +1090,8 @@ func withFixture(c Call) (any, error) {
 			"journal": collect.FixtureJournal()}, nil
 
 	case "AiRefreshCycleProbeTicks":
-		// Which ticks actually run the expensive probe. Observable only across
-		// a run of ticks, and only because a non-refreshing tick hits the warm
-		// cache instead of shelling out.
+		// Which ticks actually run the expensive probe. Observable only across a
+		// run of ticks, and only because a non-refreshing tick hits the warm cache.
 		var quotaEvery int64
 		var ticks int
 		if err := json.Unmarshal(c.Args[1], &quotaEvery); err != nil {
@@ -1181,9 +1142,8 @@ func notifAction(action, arg string) map[string]any {
 		"journal": collect.FixtureJournal()}
 }
 
-// okOrNil drops a Go zero value on the error path. Python raises there and the
-// caller records result=None; returning "" would be a harness difference
-// reported as a port difference.
+// okOrNil drops a Go zero value on the error path, where Python raises and the
+// caller records result=None.
 func okOrNil(value any, err error) any {
 	if err != nil {
 		return nil
@@ -1205,9 +1165,8 @@ func args(c Call, targets ...any) error {
 		return fmt.Errorf("%s: want %d args, got %d", c.Fn, len(targets), len(c.Args))
 	}
 	for i, target := range targets {
-		// UseNumber, matching how the daemon will decode: it keeps 5 distinct
-		// from 5.0 for str(), and keeps every number a json.Number so the
-		// truthiness and equality helpers see one type rather than two.
+		// UseNumber, matching how the daemon decodes: it keeps 5 distinct from 5.0
+		// for str(), and keeps every number one type for the truthiness helpers.
 		decoder := json.NewDecoder(bytes.NewReader(c.Args[i]))
 		decoder.UseNumber()
 		if err := decoder.Decode(target); err != nil {

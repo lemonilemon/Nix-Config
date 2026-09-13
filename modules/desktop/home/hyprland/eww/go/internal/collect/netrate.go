@@ -9,27 +9,18 @@ import (
 
 // Live throughput on whichever interface owns the default route.
 //
-// Answers a different question from the speed test beside it, and the pair is
-// deliberate: the speed test says what this network COULD do, measured once and
-// remembered; this says what is being used right now. "Is something eating my
-// connection" is the question you have far more often than "what is my ceiling",
-// and until now nothing in the bar could answer it.
+// Answers a different question from the speed test beside it: that says what this
+// network COULD do, measured once and remembered, while this says what is being
+// used right now.
 //
-// Two file reads and no forks. /proc/net/route names the interface carrying
-// traffic and /proc/net/dev holds every interface's cumulative counters, so a
-// tick costs about as much as the CPU collector's two reads -- which is why
+// Two file reads and no forks -- /proc/net/route and /proc/net/dev -- which is why
 // this can run at 2 s where the nmcli-driven network state runs at 60.
 //
-// Megabits per second, not megabytes, and that is for consistency rather than
-// convention: the speed card two rows down reports Mb/s, and a meter reading
-// "1.2 MB/s" beside a ceiling of "86.0 Mb/s" invites a comparison that is wrong
-// by a factor of eight. Same units means the reading can be read against the
-// ceiling directly, which is the useful thing to do with it.
+// Megabits per second, not megabytes, so the reading can be compared directly
+// against the speed card's ceiling two rows down.
 
-// NetRate is the live throughput readout.
-//
-// Device is carried so the popup can say which interface the numbers describe
-// when it is not the obvious one -- a VPN tunnel taking the default route reads
+// NetRate is the live throughput readout. Device is carried so the popup can say
+// which interface the numbers describe: a VPN tunnel taking the default route reads
 // very differently from the Wi-Fi underneath it.
 type NetRate struct {
 	Down   string `json:"down"`
@@ -48,14 +39,9 @@ func NetRateDefault() NetRate {
 	return NetRate{Down: speedtestDash, Up: speedtestDash, Device: ""}
 }
 
-// DefaultRouteInterfaceFromProc picks the interface owning the default route
-// out of /proc/net/route.
-//
-// Same rule as DefaultRouteDevice, which reads `ip route` instead: the default
-// route is the one covering everything -- zero destination AND zero mask -- and
-// the lowest metric wins when several links have one. This reads the kernel's table directly because it runs every two
-// seconds, and forking `ip` at that rate to learn something that changes hourly
-// would be the most expensive thing the daemon does.
+// DefaultRouteInterfaceFromProc picks the interface owning the default route out of
+// /proc/net/route: zero destination AND zero mask, lowest metric winning. Reads the
+// kernel's table directly rather than forking `ip` at this tick rate.
 func DefaultRouteInterfaceFromProc(routeText string) string {
 	best, bestMetric, found := "", 0, false
 	for index, line := range SplitLines(routeText) {
@@ -66,9 +52,8 @@ func DefaultRouteInterfaceFromProc(routeText string) string {
 		}
 		fields := SplitWhitespaceN(line, -1)
 		// Destination AND mask must both be zero. A split-default VPN route of
-		// 0.0.0.0/1 also has a zero destination but a non-zero mask, and with
-		// the lower metric such routes usually carry, matching on destination
-		// alone would meter the tunnel while claiming to meter the link.
+		// 0.0.0.0/1 also has a zero destination but a non-zero mask, and matching on
+		// destination alone would meter the tunnel while claiming to meter the link.
 		if len(fields) < 8 || fields[1] != "00000000" || fields[7] != "00000000" {
 			continue
 		}
@@ -89,15 +74,12 @@ func DefaultRouteInterfaceFromProc(routeText string) string {
 }
 
 // InterfaceBytesFromProc reads one interface's cumulative counters out of
-// /proc/net/dev.
-//
-// Lines look like:
+// /proc/net/dev. Lines look like:
 //
 //	wlo1: 1234567  890 0 0 0 0 0 0  76543  210 0 0 0 0 0 0
 //
-// Split on the colon rather than on whitespace, because a long interface name
-// runs right up against it with no space -- "enp0s31f6:1234" is one whitespace
-// field, and the counters would be read one column out of step.
+// Split on the colon, not on whitespace: a long interface name runs right up
+// against it, so "enp0s31f6:1234" is one field and the counters shift a column.
 func InterfaceBytesFromProc(devText, device string) (uint64, uint64, bool) {
 	for _, line := range SplitLines(devText) {
 		name, rest, found := strings.Cut(line, ":")
@@ -122,12 +104,9 @@ func InterfaceBytesFromProc(devText, device string) (uint64, uint64, bool) {
 	return 0, 0, false
 }
 
-// FormatRateMbps renders a byte-per-second figure as megabits per second.
-//
-// Zero renders as "0.0" rather than as the placeholder the speed card uses. The
-// distinction carries real information here: a speed card with no record has
-// never been measured, while a rate of zero IS a measurement -- nothing is
-// using the connection.
+// FormatRateMbps renders bytes per second as megabits per second. Zero renders as
+// "0.0" rather than the speed card's placeholder: a card with no record has never
+// been measured, while a rate of zero IS a measurement.
 func FormatRateMbps(bytesPerSecond float64) string {
 	if bytesPerSecond < 0 {
 		return speedtestDash
@@ -162,20 +141,10 @@ func ResetNetRate() {
 	netRateLast = netRateSample{}
 }
 
-// RateFromSamples turns two counter readings into a rate.
-//
-// ok=false every time the pair cannot be trusted, and the cases are the point
-// rather than defensive padding:
-//
-//   - no previous sample, which is the first tick after startup;
-//   - a different interface, because comparing a VPN's counters against the
-//     Wi-Fi's would report the whole of one as a delta of the other;
-//   - counters that went backwards, which is an interface that was taken down
-//     and brought back up rather than negative throughput;
-//   - no elapsed time, which would divide by zero.
-//
-// All four mean the same thing to the caller: show placeholders and wait for
-// the next tick, two seconds away.
+// RateFromSamples turns two counter readings into a rate, reporting ok=false when
+// the pair cannot be trusted: no previous sample, a different interface, counters
+// that went backwards (an interface taken down and brought back up), or no elapsed
+// time. All four mean the same thing to the caller -- show placeholders and wait.
 func RateFromSamples(previous, current netRateSample) (float64, float64, bool) {
 	if !previous.valid || previous.device != current.device {
 		return 0, 0, false

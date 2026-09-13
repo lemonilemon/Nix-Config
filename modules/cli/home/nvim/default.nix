@@ -31,6 +31,7 @@
     # code
     ./plugins/code/typst.nix
     ./plugins/code/markdown.nix
+    ./plugins/code/jupytext.nix
     ./plugins/code/vimtex.nix
     ./plugins/code/competitest.nix
     ./plugins/code/coderunner.nix

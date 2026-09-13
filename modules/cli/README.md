@@ -92,6 +92,7 @@ plugins/
 ├── code/               # Code editing tools
 │   ├── competitest.nix # Competitive programming
 │   ├── coderunner.nix  # Code execution
+│   ├── jupytext.nix    # Jupyter notebooks as plain text
 │   ├── markdown.nix    # Markdown support
 │   ├── template.nix    # File templates
 │   ├── typst.nix       # Typst document system
@@ -154,6 +155,7 @@ plugins/
 - VimTeX for LaTeX
 - Typst support
 - Markdown with preview capabilities
+- Jupyter notebooks (`.ipynb`) edited as plain text via jupytext
 
 **Navigation**:
 - Telescope fuzzy finder (files, grep, buffers, etc.)

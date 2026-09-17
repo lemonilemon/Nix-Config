@@ -13,6 +13,7 @@
         webcord
         spotify
         vlc
+        libreoffice
         tradingview
         gopeed
         podman-desktop

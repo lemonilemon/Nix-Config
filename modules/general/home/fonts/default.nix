@@ -11,6 +11,8 @@
     };
     home.packages = with pkgs; [
       corefonts # Arial, Times New Roman, Courier New, etc.
+      carlito # metric-compatible with Calibri
+      caladea # metric-compatible with Cambria
       cm_unicode
       ubuntu-classic
       source-han-serif

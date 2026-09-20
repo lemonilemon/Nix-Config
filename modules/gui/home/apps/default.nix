@@ -11,6 +11,7 @@
       with pkgs;
       [
         webcord
+        thunderbird
         spotify
         vlc
         tradingview

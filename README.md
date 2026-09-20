@@ -167,7 +167,7 @@ For using Home Manager on non-NixOS distributions:
 │   ├── wsl/          # WSL profile
 │   ├── laptop/       # Laptop profile
 │   └── desktop/      # Desktop profile
-├── overlays/         # Package overlays (Firefox, Spotify, 1Password)
+├── overlays/         # Package overlays (Firefox, Spotify, 1Password, Thunderbird)
 ├── nixpkgs/          # Nixpkgs instantiation with overlays applied
 ├── secrets/          # sops-encrypted files (age recipients in .sops.yaml)
 └── .claude/          # Claude Code integration (skills, permissions)

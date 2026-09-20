@@ -191,7 +191,7 @@ programs.kitty = {
 General GUI applications and utilities.
 
 **Home Manager Apps** (`home/apps/default.nix`):
-- **Communication**: Webcord (Discord client)
+- **Communication**: Webcord (Discord client), Thunderbird (email)
 - **Media**: Spotify (Wayland IME), VLC
 - **Productivity**: LibreOffice (gated on `home.gui.apps.libreoffice.enable`,
   which also gates its MIME defaults; default handler for the Office and

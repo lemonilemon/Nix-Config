@@ -7,6 +7,27 @@
       llm-agents = inputs.llm-agents.packages.${final.stdenv.hostPlatform.system};
     })
 
+    # thunderbird's configureFlags embed onnxruntime's store path, and
+    # onnxruntime follows config.cudaSupport -- so this has to stay in step with
+    # nixpkgs.config.cudaSupport in profiles/desktop/nvidia.nix.
+    (
+      final: prev:
+      if prev.config.cudaSupport or false then
+        {
+          inherit
+            (import inputs.nixpkgs {
+              inherit (final.stdenv.hostPlatform) system;
+              config = prev.config // {
+                cudaSupport = false;
+              };
+            })
+            thunderbird
+            ;
+        }
+      else
+        { }
+    )
+
     # ccusage, taught the prices its own binary does not know.
     #
     # `--offline` is not a cache mode. It means "use the pricing table compiled

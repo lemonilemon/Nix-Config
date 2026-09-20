@@ -5,7 +5,7 @@
 }:
 {
   config = lib.mkIf config.home.gui.browsers.firefox.enable {
-    programs.firefox.enable = false;
+    programs.firefox.enable = true;
 
     xdg.desktopEntries.firefox = {
       name = "Firefox";

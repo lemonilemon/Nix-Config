@@ -54,11 +54,22 @@
           description = "Enable the browsers module";
         };
 
+        default = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.gui.browsers.default";
+          type = lib.types.enum [
+            "zen"
+            "firefox"
+          ];
+          default = "zen";
+          description = "Browser that owns the web MIME types";
+        };
+
         firefox = {
           enable = helpers.mkHomeOpt {
             inherit osConfig;
             path = "home.gui.browsers.firefox.enable";
-            default = config.home.gui.browsers.enable;
+            default = false;
             description = "Enable firefox for browsing";
           };
         };

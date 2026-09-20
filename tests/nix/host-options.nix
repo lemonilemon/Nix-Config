@@ -55,6 +55,19 @@ let
     "draw.desktop"
   ];
 
+  # home.gui.browsers.default is set on the NixOS side and read in Home
+  # Manager. A wrong `path` in its mkHomeOpt drops the value silently, leaving
+  # zen as the handler on a host that asked for firefox.
+  firefoxDefault =
+    (nixosConfigurations.desktop.extendModules {
+      modules = [
+        {
+          home.gui.browsers.firefox.enable = true;
+          home.gui.browsers.default = "firefox";
+        }
+      ];
+    }).config.home-manager.users.lemonilemon;
+
   desktopHome = hosts.desktop.home-manager.users.lemonilemon;
 
   programsOnPackageNames = map (p: p.pname or p.name or "") desktopHome.home.packages;
@@ -251,6 +264,13 @@ let
       name = "libreoffice off/no MIME default points at a LibreOffice entry";
       actual = builtins.any (h: builtins.elem h libreofficeEntries) libreofficeOffHandlers;
       expected = false;
+    }
+
+    # --- browsers: the default enum has to reach Home Manager ---
+    {
+      name = "browsers/NixOS default=firefox owns the https handler";
+      actual = firefoxDefault.xdg.mimeApps.defaultApplications."x-scheme-handler/https";
+      expected = [ "firefox.desktop" ];
     }
 
     # --- global agent instructions ---

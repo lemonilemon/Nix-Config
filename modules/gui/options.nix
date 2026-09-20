@@ -32,10 +32,19 @@
           description = "Enable the browsers module";
         };
 
+        default = lib.mkOption {
+          type = lib.types.enum [
+            "zen"
+            "firefox"
+          ];
+          default = "zen";
+          description = "Browser that owns the web MIME types";
+        };
+
         firefox = {
           enable = lib.mkOption {
             type = lib.types.bool;
-            default = config.home.gui.browsers.enable;
+            default = false;
             description = "Enable firefox for browsing";
           };
         };

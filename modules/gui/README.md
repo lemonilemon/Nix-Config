@@ -54,7 +54,8 @@ home.gui.enable                    # Enable all GUI applications (default: true 
 
 # Browsers
 home.gui.browsers.enable           # Enable browsers (default: follows gui.enable)
-home.gui.browsers.firefox.enable   # Enable Firefox (default: follows browsers.enable)
+home.gui.browsers.default          # Browser owning the web MIME types: "zen" or "firefox" (default: "zen")
+home.gui.browsers.firefox.enable   # Enable Firefox (default: false)
 home.gui.browsers.zen.enable       # Enable Zen Browser (default: follows browsers.enable)
 
 # Development
@@ -82,6 +83,27 @@ nixos.gui.apps.enable              # Enable system apps (default: follows gui.en
 ## Components
 
 ### Web Browsers (`home/browsers/`)
+
+`firefox.enable` and `zen.enable` decide which browsers are *installed*;
+`browsers.default` decides which one owns `text/html` and the `http`, `https`,
+`about` and `unknown` scheme handlers. Both can be installed at once. Naming a
+default that is not enabled fails the build with an assertion rather than
+leaving links with no handler.
+
+Firefox is off by default because Zen is the preferred browser on the graphical
+hosts. A profile that wants Firefox instead sets both flags, which works even
+where `gui.enable` is false, since each browser module is gated on its own
+option:
+
+```nix
+# profiles/wsl/config.nix
+home.gui.browsers.firefox.enable = true;
+home.gui.browsers.default = "firefox";
+```
+
+On a host with `nixpkgs.config.cudaSupport` enabled, turning Firefox on means
+compiling Gecko from source. The Thunderbird overlay in `overlays/default.nix`
+explains why; extend it to `firefox` if that ever happens.
 
 #### Firefox (`firefox.nix`)
 

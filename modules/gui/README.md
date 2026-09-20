@@ -65,6 +65,7 @@ home.gui.development.web.enable    # Enable web dev tools (default: follows deve
 
 # Applications
 home.gui.apps.enable               # Enable general apps (default: follows gui.enable)
+home.gui.apps.libreoffice.enable   # Enable LibreOffice (default: follows apps.enable)
 
 # Terminal
 home.gui.kitty.enable              # Enable Kitty terminal (default: follows gui.enable)
@@ -192,7 +193,10 @@ General GUI applications and utilities.
 **Home Manager Apps** (`home/apps/default.nix`):
 - **Communication**: Webcord (Discord client)
 - **Media**: Spotify (Wayland IME), VLC
-- **Productivity**: LibreOffice, Obsidian (notes; installed only when
+- **Productivity**: LibreOffice (gated on `home.gui.apps.libreoffice.enable`,
+  which also gates its MIME defaults; default handler for the Office and
+  OpenDocument formats, with CSV/TSV deliberately left to the text editor),
+  Obsidian (notes; installed only when
   `home.general.obsidian.enable` is set, which also drives its Syncthing folder
   and nvim workspace), Trading View
 - **Download**: Gopeed

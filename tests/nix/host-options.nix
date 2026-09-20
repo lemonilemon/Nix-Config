@@ -31,6 +31,30 @@ let
 
   programsOffPackageNames = map (p: p.pname or p.name or "") programsOff.home.packages;
 
+  # The package and its MIME defaults are two separate statements in
+  # modules/gui/home/apps/default.nix, and the flag has to take both. Gating
+  # one and not the other still evaluates and still builds, leaving every
+  # Office format in mimeapps.list pointed at an impress.desktop that is not
+  # installed -- which a desktop reports by doing nothing when you open a
+  # file. This also witnesses the NixOS -> Home Manager mirror: the flag is
+  # set here on the NixOS side, so a wrong `path` in the mkHomeOpt would
+  # leave the suite installed with nothing to say so.
+  libreofficeOff =
+    (nixosConfigurations.desktop.extendModules {
+      modules = [ { home.gui.apps.libreoffice.enable = false; } ];
+    }).config.home-manager.users.lemonilemon;
+
+  libreofficeOffHandlers = lib.flatten (
+    lib.attrValues libreofficeOff.xdg.mimeApps.defaultApplications
+  );
+
+  libreofficeEntries = [
+    "writer.desktop"
+    "calc.desktop"
+    "impress.desktop"
+    "draw.desktop"
+  ];
+
   desktopHome = hosts.desktop.home-manager.users.lemonilemon;
 
   programsOnPackageNames = map (p: p.pname or p.name or "") desktopHome.home.packages;
@@ -212,6 +236,20 @@ let
       # nowhere else in this repo.
       name = "programs off/zip in home.packages (utils.nix)";
       actual = builtins.any (n: n == "zip") programsOffPackageNames;
+      expected = false;
+    }
+
+    # --- libreoffice: the flag has to take the MIME defaults with it ---
+    {
+      name = "libreoffice off/libreoffice in home.packages";
+      actual = builtins.any (n: lib.hasPrefix "libreoffice" n) (
+        map (p: p.pname or p.name or "") libreofficeOff.home.packages
+      );
+      expected = false;
+    }
+    {
+      name = "libreoffice off/no MIME default points at a LibreOffice entry";
+      actual = builtins.any (h: builtins.elem h libreofficeEntries) libreofficeOffHandlers;
       expected = false;
     }
 

@@ -13,14 +13,39 @@
         webcord
         spotify
         vlc
-        libreoffice
         tradingview
         gopeed
         podman-desktop
       ]
       # Gated on the vault flag rather than listed unconditionally, so one option
       # governs the app, nvim's workspace and the Syncthing folder together.
-      ++ lib.optional config.home.general.obsidian.enable pkgs.obsidian;
+      ++ lib.optional config.home.general.obsidian.enable pkgs.obsidian
+      ++ lib.optional config.home.gui.apps.libreoffice.enable pkgs.libreoffice;
+
+    xdg.mimeApps = lib.mkIf config.home.gui.apps.libreoffice.enable {
+      enable = true;
+      defaultApplications = {
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation" = [ "impress.desktop" ];
+        "application/vnd.openxmlformats-officedocument.presentationml.slideshow" = [ "impress.desktop" ];
+        "application/vnd.ms-powerpoint" = [ "impress.desktop" ];
+        "application/vnd.ms-powerpoint.presentation.macroEnabled.12" = [ "impress.desktop" ];
+        "application/vnd.oasis.opendocument.presentation" = [ "impress.desktop" ];
+
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = [ "writer.desktop" ];
+        "application/msword" = [ "writer.desktop" ];
+        "application/vnd.ms-word.document.macroEnabled.12" = [ "writer.desktop" ];
+        "application/vnd.oasis.opendocument.text" = [ "writer.desktop" ];
+        "application/rtf" = [ "writer.desktop" ];
+
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" = [ "calc.desktop" ];
+        "application/vnd.ms-excel" = [ "calc.desktop" ];
+        "application/vnd.ms-excel.sheet.macroEnabled.12" = [ "calc.desktop" ];
+        "application/vnd.oasis.opendocument.spreadsheet" = [ "calc.desktop" ];
+
+        "application/vnd.oasis.opendocument.graphics" = [ "draw.desktop" ];
+      };
+    };
+
     programs.ssh = {
       enable = true;
       enableDefaultConfig = false;

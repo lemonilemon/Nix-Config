@@ -54,6 +54,13 @@
           default = config.home.gui.enable;
           description = "Enable the apps module";
         };
+        libreoffice = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = config.home.gui.apps.enable;
+            description = "Enable the LibreOffice office suite";
+          };
+        };
       };
 
       kitty = {

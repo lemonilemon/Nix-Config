@@ -34,6 +34,7 @@ fi
 unset zsh_plugin_dir
 
 if command -v zoxide >/dev/null; then
+  export _ZO_DOCTOR=0 # zoxide's "initialized at the end of ~/.zshrc" check
   eval "$(zoxide init zsh --cmd cd)"
 fi
 

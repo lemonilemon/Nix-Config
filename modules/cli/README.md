@@ -190,7 +190,7 @@ Shell environment configuration:
 
 **zsh** (`zsh.nix`):
 - Interactive shell with extensive customization
-- Plugin management (syntax highlighting, autosuggestions)
+- zplug plugins: zsh-autocomplete, nix-zsh-completions, zsh-nix-shell
 - History configuration
 - Completion system
 - Shell aliases and functions

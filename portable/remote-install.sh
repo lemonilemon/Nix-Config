@@ -80,7 +80,6 @@ if command -v git >/dev/null 2>&1; then
     echo "plugin: $name"
   }
   clone_or_update marlonrichert/zsh-autocomplete zsh-autocomplete main
-  clone_or_update loiccoyle/zsh-github-copilot zsh-github-copilot
 else
   echo "warn: git not found; zsh plugins skipped (the zshrc degrades gracefully)" >&2
 fi

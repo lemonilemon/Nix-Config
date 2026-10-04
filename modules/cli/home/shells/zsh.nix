@@ -20,7 +20,6 @@
             name = "marlonrichert/zsh-autocomplete";
             tags = [ "at:main" ];
           }
-          { name = "loiccoyle/zsh-github-copilot"; }
           { name = "chisui/zsh-nix-shell"; }
         ];
       };
@@ -36,9 +35,6 @@
             if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
           '';
           zshConfig = ''
-            # Bindkeys for zsh-github-copilot
-            bindkey '^[|' zsh_gh_copilot_explain  # bind Alt+shift+\ to explain
-            bindkey '^[\' zsh_gh_copilot_suggest  # bind Alt+\ to suggest
             bindkey "''${key[Up]}" up-line-or-search # bind Up to up-line-or-search
             export LANGUAGE=en_US.UTF-8
             export LC_ALL=en_US.UTF-8

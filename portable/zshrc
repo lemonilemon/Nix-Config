@@ -26,11 +26,6 @@ if is-at-least 5.8 && [[ -r "$zsh_plugin_dir/zsh-autocomplete/zsh-autocomplete.p
 else
   autoload -Uz compinit && compinit
 fi
-# Useless without the GitHub CLI, and it warns on every startup when gh (or
-# its copilot extension) is missing, so gate it on gh being installed.
-if command -v gh >/dev/null && [[ -r "$zsh_plugin_dir/zsh-github-copilot/zsh-github-copilot.plugin.zsh" ]]; then
-  source "$zsh_plugin_dir/zsh-github-copilot/zsh-github-copilot.plugin.zsh"
-fi
 unset zsh_plugin_dir
 
 if command -v zoxide >/dev/null; then
@@ -50,11 +45,6 @@ if [[ $options[zle] = on ]] && command -v fzf >/dev/null; then
   source <(fzf --zsh 2>/dev/null)
 fi
 
-# Bindkeys for zsh-github-copilot (only once the plugin registered them)
-if (( $+functions[zsh_gh_copilot_explain] )); then
-  bindkey '^[|' zsh_gh_copilot_explain # bind Alt+shift+\ to explain
-  bindkey '^[\' zsh_gh_copilot_suggest # bind Alt+\ to suggest
-fi
 # Up searches history for the typed prefix, as on the Nix side. terminfo
 # covers application mode, the raw sequence covers everything else.
 zmodload -F zsh/terminfo +p:terminfo 2>/dev/null

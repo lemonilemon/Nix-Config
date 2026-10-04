@@ -122,8 +122,10 @@
     };
     programs.zsh = {
       enable = true;
+      initContent = lib.mkOrder 545 ''
+        [[ -t 0 && -t 1 ]] && ZSH_TMUX_AUTOSTART=true
+      '';
       localVariables = {
-        ZSH_TMUX_AUTOSTART = true;
         ZSH_TMUX_AUTOCONNECT = true; # Connects to an existing session if one exists
         ZSH_TMUX_FIXTERM = true; # Fixes TERM variable issues when launching tmux from zsh
         ZSH_TMUX_UNICODE = true; # Enables better Unicode support in tmux

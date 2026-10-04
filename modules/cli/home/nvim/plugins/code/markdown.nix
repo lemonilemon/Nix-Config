@@ -40,6 +40,7 @@ in
           completion = {
             min_chars = 2;
           };
+          legacy_commands = false;
           new_notes_location = "current_dir";
           workspaces = [
             {

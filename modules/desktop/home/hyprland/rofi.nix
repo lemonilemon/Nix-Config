@@ -34,8 +34,8 @@ in
     programs.rofi = {
       enable = true;
       package = pkgs.rofi;
-      font = "JetBrains Mono Nerd Font 14";
-      extraConfig = {
+      settings = {
+        font = "JetBrains Mono Nerd Font 14";
         # rofi 2.0 renamed modi -> modes and combi-modi -> combi-modes; the old
         # spellings are dropped silently. No ssh mode: remote work goes through
         # sesh-managed tmux sessions (cli/home/tmux/sesh.nix), not bare ssh.

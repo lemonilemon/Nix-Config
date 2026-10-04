@@ -191,6 +191,8 @@ Shell environment configuration:
 **zsh** (`zsh.nix`):
 - Interactive shell with extensive customization
 - zplug plugins: zsh-autocomplete, nix-zsh-completions, zsh-nix-shell
+- Vi line editing (zsh picks it because `$EDITOR` is nvim); `Ctrl+G` opens the command
+  line in `$EDITOR`, matching Claude Code
 - History configuration
 - Completion system
 - Shell aliases and functions

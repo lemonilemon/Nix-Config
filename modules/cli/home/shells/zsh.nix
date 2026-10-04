@@ -36,6 +36,11 @@
           '';
           zshConfig = ''
             bindkey "''${key[Up]}" up-line-or-search # bind Up to up-line-or-search
+            autoload -Uz edit-command-line
+            zle -N edit-command-line
+            bindkey -M viins '^G' edit-command-line
+            bindkey -M vicmd '^G' edit-command-line
+            KEYTIMEOUT=1 # hundredths of a second
             export LANGUAGE=en_US.UTF-8
             export LC_ALL=en_US.UTF-8
             export LANG=en_US.UTF-8

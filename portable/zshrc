@@ -52,6 +52,11 @@ for k in "$terminfo[kcuu1]" '^[[A'; do
   if [[ -n "$k" ]]; then bindkey "$k" up-line-or-search; fi
 done
 unset k
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey -M viins '^G' edit-command-line
+bindkey -M vicmd '^G' edit-command-line
+KEYTIMEOUT=1 # hundredths of a second
 
 # lazygit that follows the repo you switched to inside it
 if command -v lazygit >/dev/null; then

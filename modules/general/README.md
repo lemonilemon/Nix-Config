@@ -34,6 +34,7 @@ general/
     ├── nixld.nix        # nix-ld configuration
     ├── network.nix      # NetworkManager, wireless and firmware
     ├── firewall.nix     # Firewall ports and trusted subnets
+    ├── printing.nix     # CUPS and Avahi printer discovery
     ├── secrets.nix      # System-level sops-nix key source
     ├── syncthing.nix    # Obsidian vault sync mesh
     └── power.nix        # Governor, auto-cpufreq, powertop, thermald, UPower
@@ -63,6 +64,7 @@ home.general.programlangs.packages = [ pkgs.gcc pkgs.python3 ... ];
 nixos.general.enable            # Enable general NixOS settings (default: true if nixos and general enabled)
 nixos.general.nixld.enable      # Enable nix-ld (default: follows general.enable)
 nixos.general.nix.enable        # Enable Nix settings (default: follows general.enable)
+nixos.general.printing.enable   # Enable CUPS printing (default: false; a profile opts in)
 ```
 
 Form-factor-derived options. Each defaults from `formFactor` (see
@@ -157,6 +159,14 @@ and UDP port lists, and `trustedSubnets`, which are accepted wholesale on the
 input chain. The rules are emitted as `iptables` commands against the
 `nixos-fw` chain because that is NixOS' default firewall backend; they are IPv4
 only.
+
+#### `printing.nix`
+Printing, driven by `nixos.general.printing.enable`: the CUPS daemon plus
+Avahi with the mDNS NSS plug-in, so driverless (IPP Everywhere / AirPrint)
+printers on the local network show up in print dialogs with no queue to
+configure. CUPS listens on `localhost:631` only; its web UI there accepts
+any `wheel` member for admin actions. Off by default: a host opts in from
+its profile's `config.nix`, as the laptop does.
 
 #### `power.nix`
 Power and thermal management, driven by `nixos.general.power.*`: CPU governor,

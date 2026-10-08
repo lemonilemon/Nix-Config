@@ -250,6 +250,14 @@ in
         };
       };
 
+      printing = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Enable CUPS printing, with Avahi to discover network printers";
+        };
+      };
+
       syncthing = {
         enable = lib.mkOption {
           type = lib.types.bool;

@@ -7,6 +7,8 @@
 
   nixos.desktop.gnome.enable = false;
 
+  nixos.general.printing.enable = true;
+
   nixos.desktop.bootloader = "limine";
 
   # This panel is 1920x1200 (AU Optronics 0x339F, eDP-1); the option defaults

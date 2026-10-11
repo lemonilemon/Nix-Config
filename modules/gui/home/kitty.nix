@@ -27,6 +27,7 @@
         strip_trailing_spaces = "smart";
         paste_actions = "confirm-if-large";
         term = "xterm";
+        remember_window_size = false;
       };
       shellIntegration.enableZshIntegration = true;
     };

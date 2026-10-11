@@ -204,6 +204,8 @@ programs.kitty = {
 
 **Key Features**:
 - Integrates well with Hyprland (Wayland-native)
+- Leaves window size and maximize state to Hyprland: `remember_window_size` is off, so a kitty
+  closed while maximized does not make every later kitty open maximized
 - Fast performance with large scrollback
 - Scriptable via kitty remote control
 - Split windows without tmux

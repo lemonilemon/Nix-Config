@@ -197,6 +197,10 @@
               match.tag = "(browser|file)";
               opacity = 0.8;
             }
+            {
+              match.class = ".*";
+              suppress_event = "maximize";
+            }
           ];
 
           layer_rule =

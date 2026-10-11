@@ -185,6 +185,8 @@ includes:
 - Automatic tiling with manual override
 - Multiple workspaces
 - Floating window support
+- Apps cannot maximize themselves: maximize requests from every window are
+  suppressed, so a new window tiles instead of covering the others
 - Window gaps and borders
 - Smooth animations
 - Per-monitor workspace binding

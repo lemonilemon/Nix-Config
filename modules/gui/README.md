@@ -193,10 +193,14 @@ Kitty is a fast, feature-rich, GPU-based terminal emulator.
 ```nix
 programs.kitty = {
   enable = true;
-  theme = "Catppuccin-Mocha";  # Consistent with system theme
+  themeFile = "Catppuccin-Mocha";  # Consistent with system theme
+  font = {
+    size = 16;
+    name = "Meslo LGLDZ Nerd Font";
+  };
   settings = {
-    font_family = "JetBrainsMono Nerd Font";
-    font_size = 12;
+    background_opacity = "0.7";
+    remember_window_size = false;
     # ... additional settings
   };
 };
@@ -477,16 +481,12 @@ home.packages = with pkgs; [
 
 ### Custom Kitty Theme
 
-In `kitty.nix`:
+In `kitty.nix`, drop `themeFile` and set the colors directly:
 ```nix
-programs.kitty = {
-  theme = "Custom";
-  extraConfig = ''
-    # Custom colors
-    foreground #FFFFFF
-    background #000000
-    # ... more settings
-  '';
+programs.kitty.settings = {
+  foreground = "#FFFFFF";
+  background = "#000000";
+  # ... more colors
 };
 ```
 

@@ -529,9 +529,9 @@
       (button :class "popup-footer-action ${bar_state.network.connectivity == 'portal' ? 'portal' : ''}"
         :onclick {bar_state.network.connectivity == "portal"
                    ? "hyprctl dispatch 'hl.dsp.exec_cmd(\"xdg-open http://nmcheck.gnome.org/check_network_status.txt\")'"
-                   : "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty -- nmtui\")'"}
+                   : "hyprctl dispatch 'hl.dsp.exec_cmd(\"nm-connection-editor\")'"}
         (label :text {bar_state.network.connectivity == "portal"
-                       ? "Sign in to network" : "Advanced…"})))))
+                       ? "Sign in to network" : "Edit connections…"})))))
 
 (defwindow network_popup
   :monitor 0

@@ -151,6 +151,7 @@ A dynamic tiling Wayland compositor with modern features.
 - WiFi connection management
 - VPN integration
 - Connection status in system tray
+- `nm-connection-editor` on PATH, opened by the Eww network popup's "Edit connections…"
 
 **Bluetooth** (`bluetooth/`):
 - Bluetooth manager applet

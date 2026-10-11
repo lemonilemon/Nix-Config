@@ -219,6 +219,10 @@
       );
     })
 
+    (final: prev: {
+      sesh = prev.sesh.override { buildGo127Module = final.buildGo126Module; };
+    })
+
     # Use no-remote as default (firefox)
     (final: prev: {
       firefox = prev.firefox.overrideAttrs (oldAttrs: {

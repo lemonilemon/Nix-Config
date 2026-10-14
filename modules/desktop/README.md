@@ -228,7 +228,7 @@ Display managers handle the login screen and session management.
 - Wayland support
 - Theme customization
 - Auto-login options
-- Session selection
+- Session selection (Hyprland's UWSM session entry is hidden)
 
 **Best for**: Hyprland and KDE Plasma setups
 

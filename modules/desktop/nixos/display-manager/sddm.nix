@@ -4,6 +4,13 @@
   pkgs,
   ...
 }:
+let
+  waylandSessions = pkgs.runCommandLocal "sddm-wayland-sessions" { } ''
+    mkdir $out
+    ${pkgs.lndir}/bin/lndir -silent ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions $out
+    rm -f $out/hyprland-uwsm.desktop
+  '';
+in
 {
   config = lib.mkIf (config.nixos.desktop.enable && config.nixos.desktop.displayManager == "sddm") {
     services.displayManager.sddm = {
@@ -21,6 +28,7 @@
           CursorTheme = "BreezeX-RosePine-Linux";
           CursorSize = 24;
         };
+        Wayland.SessionDir = "${waylandSessions}";
       };
       extraPackages = with pkgs; [
         kdePackages.qtsvg

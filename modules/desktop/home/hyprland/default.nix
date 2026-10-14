@@ -38,6 +38,7 @@
       enable = true; # enable Hyprland
       xwayland.enable = true; # enable xwayland
       systemd.enable = true; # import env vars into systemd user session
+      systemd.variables = [ "--all" ];
       # Hyprland 0.57 drops the hyprlang .conf format; settings render to
       # ~/.config/hypr/hyprland.lua as hl.*() calls.
       configType = "lua";

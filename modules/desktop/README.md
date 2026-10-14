@@ -180,6 +180,7 @@ includes:
 - Monitor setup
 - Input device configuration
 - Startup applications
+- Full session environment imported into systemd and D-Bus at startup
 - Integration with waybar, hyprlock, etc.
 
 **Key Features**:

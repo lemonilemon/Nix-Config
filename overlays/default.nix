@@ -223,6 +223,12 @@
       sesh = prev.sesh.override { buildGo127Module = final.buildGo126Module; };
     })
 
+    (final: prev: {
+      bleachbit = prev.bleachbit.overridePythonAttrs (oldAttrs: {
+        propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [ final.python3Packages.psutil ];
+      });
+    })
+
     # Use no-remote as default (firefox)
     (final: prev: {
       firefox = prev.firefox.overrideAttrs (oldAttrs: {

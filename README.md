@@ -204,6 +204,9 @@ just history
 # Test configuration for errors
 just test
 
+# Delete old generations and stale gcroots now (nh; asks first)
+just clean
+
 # List the sops secrets, or edit one by name
 just secrets
 just secrets ssh-hosts

@@ -10,6 +10,7 @@ The General module serves as the foundation for system functionality:
 - **Fonts**: System and user font configuration
 - **Utilities**: Common tools and helpers
 - **nix-ld**: Compatibility layer for running non-NixOS binaries
+- **nh**: Nix CLI helper, with a weekly `nh clean all` of old generations and gcroots
 - **Secrets Management**: Configuration for handling sensitive data
 - **PDF Tools**: PDF viewers and utilities
 
@@ -32,6 +33,7 @@ general/
     ├── base.nix         # Base system settings
     ├── settings.nix     # Nix daemon and flake settings
     ├── nixld.nix        # nix-ld configuration
+    ├── nh.nix           # nh, NH_FLAKE and the weekly cleanup timer
     ├── network.nix      # NetworkManager, wireless and firmware
     ├── firewall.nix     # Firewall ports and trusted subnets
     ├── printing.nix     # CUPS and Avahi printer discovery
@@ -64,6 +66,11 @@ home.general.programlangs.packages = [ pkgs.gcc pkgs.python3 ... ];
 nixos.general.enable            # Enable general NixOS settings (default: true if nixos and general enabled)
 nixos.general.nixld.enable      # Enable nix-ld (default: follows general.enable)
 nixos.general.nix.enable        # Enable Nix settings (default: follows general.enable)
+nixos.general.nh.enable         # Install nh (default: follows general.enable)
+nixos.general.nh.flake          # NH_FLAKE (default: ~/nixos-config#$NIXHOST)
+nixos.general.nh.clean.enable   # Weekly `nh clean all` (default: follows nh.enable)
+nixos.general.nh.clean.keep     # Generations kept per profile regardless of age (default: 5)
+nixos.general.nh.clean.keepSince # Generations and gcroots newer than this are kept (default: "14d")
 nixos.general.printing.enable   # Enable CUPS printing (default: false; a profile opts in)
 ```
 
@@ -144,6 +151,27 @@ Configures [nix-ld](https://github.com/Mic92/nix-ld) for running non-NixOS binar
 - Useful for proprietary software and binary distributions
 
 **Use case**: Running AppImages, downloaded binaries, or software that expects FHS filesystem layout.
+
+#### `nh.nix`
+Installs [nh](https://github.com/nix-community/nh), driven by `nixos.general.nh.*`:
+
+- `NH_FLAKE` names this repo together with the host's `nixosConfigurations`
+  entry, so `nh os switch` needs no arguments. Without the entry nh would look
+  up the hostname, and every host is `SpaceNix`.
+- A weekly systemd timer runs `nh clean all` as root, with `--keep` and
+  `--keep-since` taken from `clean.keep` and `clean.keepSince`. The same
+  arguments are baked into `nh-clean-now`, which adds `--ask` so it shows the
+  plan before deleting; `just clean` and the Eww storage popup's "Clean up now"
+  both run it. `all` covers the system profile and every user's
+  `~/.local/state/nix/profiles`, where Home Manager adds a generation on each
+  switch; `sudo nix-collect-garbage -d` and `nix.gc.automatic` leave those
+  alone. It also deletes gcroots older than `keepSince`, which includes
+  `result` links and `.direnv` shells; nix-direnv rebuilds a shell on the next
+  `cd` into its project.
+- Keep `clean.keep` at or above the bootloader's generation limit, so every
+  boot menu entry still has its system in the store. nh does not otherwise
+  protect a profile's current generation: after rolling back more than `keep`
+  generations, the one in use survives only while it is newer than `keepSince`.
 
 #### `network.nix`
 Network-related system settings, driven by `nixos.general.network.*`:
@@ -485,6 +513,9 @@ uv pip install <package>
 ### Nix Store Growing Large
 
 ```bash
+# Run the weekly nh cleanup now; it shows the plan and asks before deleting
+just clean
+
 # Manual garbage collection
 nix-collect-garbage -d
 

@@ -125,6 +125,7 @@ just update      # update all flake inputs
 just updatep <input>   # update one input
 just changehost <host> # switch to a different host's config
 just gc          # nix-collect-garbage -d
+just clean       # nh clean all with the weekly timer's retention; asks first
 just push        # build toplevel and push closure to cachix
 just secrets [name]   # no name: print the secrets inventory (secrets/README.md);
                       # with name: edit secrets/<name>[.<ext>] with sops

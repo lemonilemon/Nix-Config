@@ -89,6 +89,12 @@ test:
 gc:
     sudo nix-collect-garbage -d
 
+# Run the weekly nh cleanup now: shows the plan, then asks before deleting
+[group('NixOS')]
+clean:
+    @command -v nh-clean-now > /dev/null || { echo "nh-clean-now is not installed: rebuild first" >&2; exit 1; }
+    nh-clean-now
+
 ############################################################################
 #
 #  Secrets (sops + age; the age key is backed up in 1Password)

@@ -123,6 +123,41 @@ in
         };
       };
 
+      nh = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.nixos.general.enable;
+          description = "Enable nh, the Nix CLI helper";
+        };
+
+        flake = lib.mkOption {
+          type = lib.types.str;
+          default = "/home/${username}/nixos-config#${config.environment.sessionVariables.NIXHOST}";
+          description = "NH_FLAKE: the flake and nixosConfigurations entry `nh os` builds by default";
+        };
+
+        clean = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = config.nixos.general.nh.enable;
+            description = "Run `nh clean all` weekly: old generations of every profile, then stale gcroots";
+          };
+
+          keep = lib.mkOption {
+            type = lib.types.ints.positive;
+            # No lower than the bootloader's generation limit (5 in profiles/boot.nix).
+            default = 5;
+            description = "Generations kept per profile regardless of age";
+          };
+
+          keepSince = lib.mkOption {
+            type = lib.types.str;
+            default = "14d";
+            description = "Generations and gcroots newer than this are kept (humantime duration)";
+          };
+        };
+      };
+
       power = {
         enable = lib.mkOption {
           type = lib.types.bool;

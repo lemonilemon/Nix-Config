@@ -2,6 +2,7 @@
   imports = [
     ./base.nix
     ./nixld.nix
+    ./nh.nix
     ./settings.nix
     ./network.nix
     ./power.nix

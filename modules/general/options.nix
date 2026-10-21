@@ -121,6 +121,18 @@ in
           default = config.nixos.general.enable;
           description = "Enable my Nix settings";
         };
+
+        minFree = lib.mkOption {
+          type = lib.types.ints.unsigned;
+          default = if isPhysical then 10 * 1024 * 1024 * 1024 else 0;
+          description = "Bytes: when a build leaves less free space than this in /nix/store, Nix collects garbage; 0 disables it";
+        };
+
+        maxFree = lib.mkOption {
+          type = lib.types.ints.unsigned;
+          default = 30 * 1024 * 1024 * 1024;
+          description = "Bytes: a collection started by minFree stops once this much space is free";
+        };
       };
 
       nh = {

@@ -66,6 +66,7 @@ home.general.programlangs.packages = [ pkgs.gcc pkgs.python3 ... ];
 nixos.general.enable            # Enable general NixOS settings (default: true if nixos and general enabled)
 nixos.general.nixld.enable      # Enable nix-ld (default: follows general.enable)
 nixos.general.nix.enable        # Enable Nix settings (default: follows general.enable)
+nixos.general.nix.maxFree       # Bytes; a minFree collection stops once this much is free (default: 30 GiB)
 nixos.general.nh.enable         # Install nh (default: follows general.enable)
 nixos.general.nh.flake          # NH_FLAKE (default: ~/nixos-config#$NIXHOST)
 nixos.general.nh.clean.enable   # Weekly `nh clean all` (default: follows nh.enable)
@@ -92,6 +93,10 @@ nixos.general.network.wifi.enable       # laptop only; also seeds the bar's Wi-F
 nixos.general.network.firmware.enable   # redistributable firmware (wifi, GPU, microcode)
 
 nixos.general.firewall.enable           # off on wsl
+
+nixos.general.nix.minFree               # Bytes; below this during a build, Nix collects garbage.
+                                        # 10 GiB, or 0 (off) on wsl: its virtual disk reports space
+                                        # the Windows drive may not have
 nixos.general.firewall.allowedTCPPorts  # [ 22 80 443 ]
 nixos.general.firewall.allowedUDPPorts  # [ ]
 nixos.general.firewall.trustedSubnets   # IPv4 subnets accepted wholesale
@@ -130,7 +135,9 @@ Nix daemon and package manager configuration:
 - Experimental features (flakes, nix-command)
 - Binary cache settings
 - Trusted users and substituters
-- Garbage collection settings
+- Garbage collection when the store runs low during a build (`min-free` and
+  `max-free`). It only removes unused store paths, never generations; old
+  generations are the weekly nh timer's job (see `nh.nix`)
 - Auto-optimization
 - Build settings (cores, max-jobs)
 

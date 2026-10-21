@@ -42,6 +42,8 @@
         ];
         accept-flake-config = true;
         auto-optimise-store = true;
+        min-free = config.nixos.general.nix.minFree;
+        max-free = config.nixos.general.nix.maxFree;
         show-trace = true;
       };
       extraOptions = "experimental-features = nix-command flakes";

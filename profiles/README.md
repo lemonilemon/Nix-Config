@@ -297,6 +297,7 @@ Capabilities derived from `formFactor`, each overridable on its own:
 | `nixos.general.power.upower.enable` | true | false | false |
 | `nixos.general.network.wifi.enable` | true | false | false |
 | `nixos.general.firewall.enable` | true | true | false |
+| `nixos.general.nix.minFree` | 10 GiB | 10 GiB | 0 (off) |
 | `home.general.obsidian.enable` | true | true | false |
 | `nixos.general.syncthing.enable` | true | true | false |
 | `nixos.general.syncthing.deviceName` | `laptop` | `desktop` | (module off) |

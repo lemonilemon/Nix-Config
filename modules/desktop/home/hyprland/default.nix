@@ -228,6 +228,7 @@
                   "eww-notifications"
                   "eww-wallpaper"
                   "eww-settings"
+                  "eww-calendar"
                   "eww-bar-modules"
                   "eww-storage"
                 ]

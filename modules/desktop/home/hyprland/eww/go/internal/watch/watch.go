@@ -113,6 +113,16 @@ func PublishNetRate(rate collect.NetRate) {
 	run.Eww([]string{"update", "net_rate=" + encoded})
 }
 
+// PublishBarModules pushes which bar modules are shown. Its own variable rather
+// than a bar_state key so eww.yuck's default can differ per host.
+func PublishBarModules(modules pyjson.Ordered) {
+	encoded, err := pyjson.Encode(modules, false)
+	if err != nil {
+		return
+	}
+	run.Eww([]string{"update", "bar_modules=" + encoded})
+}
+
 // Update is one batch of assignments into BarState.
 //
 // Collectors run OUTSIDE the store lock and hand back a closure that applies what

@@ -64,6 +64,7 @@ home.desktop.enable              # Enable desktop home configuration (default: t
 home.desktop.hyprland.enable     # Enable Hyprland user config (default: follows desktop.enable)
 home.desktop.hyprland.eww.enable                    # Enable Eww bar for Hyprland
 home.desktop.hyprland.eww.laptopControls.enable     # Enable laptop clamshell/headless controls
+home.desktop.hyprland.eww.defaultHiddenModules      # Modules hidden until shown in Settings (laptop: [ "storage" ])
 home.desktop.hyprland.waybar.enable                 # Enable Waybar when Eww is disabled
 ```
 
@@ -100,6 +101,15 @@ A dynamic tiling Wayland compositor with modern features.
 - Codex quota details include available manual resets and their earliest expiry
 - Hypridle pause backed by a systemd user inhibitor
 - Optional laptop controls for external-only and headless/server display modes
+- Storage module: free space on the filesystem holding `/nix/store`. Its popup
+  shows the nh cleanup timer's last and next run (and what the last run freed,
+  from the journal), and opens `nh-clean-now` in kitty, baobab, or BleachBit
+- Settings > Bar modules shows or hides each module. Choices are written to
+  `~/.config/eww-bar/modules.json`, an unmanaged file like
+  `~/.config/hypr/monitors.lua`, as overrides on top of the host's
+  `defaultHiddenModules`; "Reset to defaults" empties it. Hand edits take effect
+  on the next `systemctl --user restart eww-bar`. The module names are listed
+  once in `eww/bar-modules.nix` and once in the Go backend's `barmodules.go`
 
 **Hyprlock** (`hyprlock.nix`):
 - Screen locking utility

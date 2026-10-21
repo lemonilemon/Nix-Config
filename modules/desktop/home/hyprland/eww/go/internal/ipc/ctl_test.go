@@ -53,6 +53,9 @@ func TestControlPayloadFromArgs(t *testing.T) {
 		},
 		{"wallpaper rescan", []string{"wallpaper", "rescan"}, `{"command":"wallpaper","action":"rescan"}`},
 		{"wallpaper set", []string{"wallpaper", "set", "/tmp/a.png"}, `{"command":"wallpaper","action":"set","path":"/tmp/a.png"}`},
+		{"modules toggle", []string{"modules", "toggle", "storage"}, `{"command":"modules","action":"toggle","name":"storage"}`},
+		{"modules reset", []string{"modules", "reset"}, `{"command":"modules","action":"reset"}`},
+		{"storage defaults to refresh", []string{"storage"}, `{"command":"storage","action":"refresh"}`},
 	}
 
 	for _, tc := range cases {

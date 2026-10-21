@@ -13,6 +13,7 @@ import (
 	"ewwbar/internal/paths"
 	"ewwbar/internal/pyjson"
 	"ewwbar/internal/state"
+	"ewwbar/internal/watch"
 )
 
 // Reply is one control response, in key order. Ordered rather than a map because
@@ -272,6 +273,36 @@ func Handle(store *state.Store, payload map[string]any) (Reply, error) {
 		store.Update(func(bar *state.Bar) { bar.Notifications = value })
 		return ok("notif", pair("action", action),
 			pair("notifications", value)), nil
+
+	case "modules":
+		action := payloadString(payload, "action", "")
+		var value pyjson.Ordered
+		var err error
+		switch action {
+		case "toggle":
+			value, err = collect.ToggleBarModule(paths.BarModules(), payloadString(payload, "name", ""))
+		case "reset":
+			value, err = collect.ResetBarModules(paths.BarModules())
+		default:
+			return nil, errValue("modules action must be toggle or reset")
+		}
+		if errors.Is(err, collect.ErrUnknownBarModule) {
+			return nil, err
+		}
+		watch.PublishBarModules(value)
+		if err != nil {
+			return nil, err
+		}
+		return ok("modules", pair("action", action), pair("modules", value)), nil
+
+	case "storage":
+		action := payloadString(payload, "action", "refresh")
+		if action != "refresh" {
+			return nil, errValue("storage action must be refresh")
+		}
+		value := collect.CollectStorage()
+		store.Update(func(bar *state.Bar) { bar.Storage = value })
+		return ok("storage", pair("action", action), pair("storage", value)), nil
 
 	case "wallpaper":
 		action := payloadString(payload, "action", "")

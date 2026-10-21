@@ -42,6 +42,12 @@
         description = "Show the Wi-Fi toggle in the Eww network popup";
       };
 
+      hyprland.eww.defaultHiddenModules = lib.mkOption {
+        type = lib.types.listOf (lib.types.enum (import ./home/hyprland/eww/bar-modules.nix));
+        default = lib.optional (config.formFactor == "laptop") "storage";
+        description = "Eww bar modules hidden until shown from Settings > Bar modules";
+      };
+
       hyprland.waybar.enable = lib.mkOption {
         type = lib.types.bool;
         default = config.home.desktop.hyprland.enable && !config.home.desktop.hyprland.eww.enable;

@@ -30,6 +30,20 @@ func StateFile(name string) string {
 	return filepath.Join(dir, "eww-bar", name)
 }
 
+// ConfigFile is a user-editable settings file under XDG_CONFIG_HOME, falling
+// back to ~/.config. Empty means no settings file is available.
+func ConfigFile(name string) string {
+	dir := os.Getenv("XDG_CONFIG_HOME")
+	if dir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil || home == "" {
+			return ""
+		}
+		dir = filepath.Join(home, ".config")
+	}
+	return filepath.Join(dir, "eww-bar", name)
+}
+
 // AiHistory is the durable daily AI usage rollup behind the popup's History tab.
 func AiHistory() string { return StateFile("ai-history.json") }
 
@@ -39,6 +53,10 @@ func AiQuotas() string { return StateFile("ai-quotas.json") }
 // Speedtest is the last measured throughput per network, keyed by
 // NetworkManager connection UUID.
 func Speedtest() string { return StateFile("speedtest.json") }
+
+// BarModules is which bar modules the user has shown or hidden against the
+// host's defaults; Settings > Bar modules writes it, and it can be edited by hand.
+func BarModules() string { return ConfigFile("modules.json") }
 
 // NetPolicy is what each network allows -- SSH, DNS integrity, IPv6 -- keyed by
 // NetworkManager connection UUID.

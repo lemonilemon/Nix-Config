@@ -8,6 +8,7 @@ let
   cfg = config.home.desktop.hyprland.eww;
 
   palette = import ../theme/palette.nix;
+  barModules = import ./bar-modules.nix;
   paletteScss = pkgs.writeText "_palette.scss" (
     lib.concatStringsSep "\n" (
       lib.mapAttrsToList (name: value: "\$" + name + ": " + value + ";") palette
@@ -119,6 +120,9 @@ let
     # row of SSH/DNS/IPv6 chips first, which cost 69px; folding it into the speed
     # card as one sentence gave 41px back and removed the legend nobody had.
     networkPopupHeight = if cfg.wifi.enable then "314px" else "274px";
+    barModulesDefault = builtins.toJSON (
+      lib.genAttrs barModules (name: if lib.elem name cfg.defaultHiddenModules then "false" else "true")
+    );
   };
 
   openBar = pkgs.writeShellScript "eww-open-bar" ''
@@ -202,6 +206,8 @@ in
 {
   config = lib.mkIf cfg.enable {
     home.packages = with pkgs; [
+      baobab
+      bleachbit
       eww
       ewwBar
       htop
@@ -236,6 +242,7 @@ in
           Environment = [
             "PATH=${runtimePath}"
             "EWW_BAR_BATTERY=${if cfg.battery.enable then "1" else "0"}"
+            "EWW_BAR_DEFAULT_HIDDEN=${lib.concatStringsSep "," cfg.defaultHiddenModules}"
           ];
           ExecStart = "${pkgs.eww}/bin/eww --force-wayland daemon --no-daemonize";
           ExecStartPost = openBar;

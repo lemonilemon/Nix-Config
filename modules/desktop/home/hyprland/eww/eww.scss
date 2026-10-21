@@ -475,6 +475,28 @@ tooltip label {
   background: rgba(243, 139, 168, 0.23);
 }
 
+.storage {
+  color: $rosewater;
+}
+
+.storage.warning {
+  background: rgba(249, 226, 175, 0.10);
+  color: $yellow;
+}
+
+.storage.critical {
+  background: rgba(243, 139, 168, 0.14);
+  color: $red;
+}
+
+.storage.warning:hover {
+  background: rgba(249, 226, 175, 0.17);
+}
+
+.storage.critical:hover {
+  background: rgba(243, 139, 168, 0.23);
+}
+
 @keyframes blink {
   to {
     color: $overlay1;
@@ -1602,6 +1624,46 @@ tooltip label {
 }
 .settings-button:hover { background: rgba(180, 190, 254, 0.12); color: $lavender; }
 .settings-idle.active { background: rgba(249, 226, 175, 0.10); color: $yellow; }
+
+/* Bar modules popup */
+.bar-module-row { margin-top: 1px; }
+.bar-module-icon { color: $overlay0; margin-right: 9px; min-width: 18px; }
+.bar-module-label { color: $overlay1; font-weight: 700; }
+.bar-module-switch { color: $overlay0; font-size: 18px; }
+.bar-module-row.active .bar-module-label { color: $text; }
+.bar-module-row.active .bar-module-switch { color: $lavender; }
+
+.bar-module-row.active.media .bar-module-icon { color: $teal; }
+.bar-module-row.active.window .bar-module-icon { color: $lavender; }
+.bar-module-row.active.notifications .bar-module-icon { color: $subtext0; }
+.bar-module-row.active.network .bar-module-icon { color: $peach; }
+.bar-module-row.active.bluetooth .bar-module-icon { color: $sapphire; }
+.bar-module-row.active.ai_usage .bar-module-icon { color: $mauve; }
+.bar-module-row.active.temperature .bar-module-icon { color: $pink; }
+.bar-module-row.active.cpu .bar-module-icon { color: $mauve; }
+.bar-module-row.active.memory .bar-module-icon { color: $maroon; }
+.bar-module-row.active.storage .bar-module-icon { color: $rosewater; }
+.bar-module-row.active.volume .bar-module-icon { color: $yellow; }
+.bar-module-row.active.battery .bar-module-icon { color: $blue; }
+
+/* Storage popup */
+.accent-storage { @include glass-popup($rosewater); }
+.accent-storage .popup-mark { background: rgba(245, 224, 220, 0.11); border-color: rgba(245, 224, 220, 0.18); color: $rosewater; }
+
+.storage-free { color: $text; font-size: 22px; font-weight: 900; }
+.storage-free-caption { color: $overlay1; font-size: 11px; margin: 0 0 4px 6px; }
+.storage-percent { color: $overlay1; font-size: 11px; }
+.storage-percent.warning { color: $yellow; }
+.storage-percent.critical { color: $red; }
+.storage-meter { margin: 8px 0 4px; }
+.storage-meter trough progress { background: $rosewater; }
+.storage-meter.warning trough progress { background: $yellow; }
+.storage-meter.critical trough progress { background: $red; }
+.storage-row { min-height: 26px; }
+.storage-row-label { color: $overlay1; font-size: 11px; }
+.storage-row-value { color: $text; font-size: 11px; font-weight: 800; margin-left: 12px; }
+.storage-row-value.failed { color: $red; }
+.storage-row-value.running { color: $rosewater; }
 
 .popup-backdrop {
   background: transparent;

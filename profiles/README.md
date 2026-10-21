@@ -302,6 +302,7 @@ Capabilities derived from `formFactor`, each overridable on its own:
 | `nixos.general.syncthing.deviceName` | `laptop` | `desktop` | (module off) |
 | `home.desktop.hyprland.eww.laptopControls.enable` | true | false | - |
 | `home.desktop.hyprland.eww.battery.enable` | true | false | - |
+| `home.desktop.hyprland.eww.defaultHiddenModules` | `[ "storage" ]` | `[ ]` | - |
 | `home.desktop.hyprland.idle.suspend.enable` | true | false | - |
 
 This table is documentation, not an enforced contract. `tests/nix/host-options.nix`

@@ -18,7 +18,9 @@ const Usage = "usage: eww-barctl ping | volume up|down|set <0-100>|mute|sink <na
 	"idle toggle|on|off|status | display normal|external|headless|restore|toggle|status | ai refresh" +
 	" | bluetooth power-toggle|disconnect <mac> | network wifi-toggle" +
 	" | notif toggle-group <app>|dismiss <id>|clear-group <app>|clear-all|dnd-toggle|mark-seen" +
-	" | wallpaper set <path>|rescan"
+	" | wallpaper set <path>|rescan" +
+	" | modules toggle <name>|reset" +
+	" | storage refresh"
 
 var errUsage = errors.New(Usage)
 
@@ -83,6 +85,20 @@ func ControlPayloadFromArgs(args []string) (pyjson.Payload, error) {
 			}
 			return p, nil
 		}
+	case "modules":
+		if len(args) >= 2 {
+			p := pyjson.Payload{pyjson.F("command", "modules"), pyjson.F("action", args[1])}
+			if args[1] == "toggle" && len(args) >= 3 {
+				p = append(p, pyjson.F("name", args[2]))
+			}
+			return p, nil
+		}
+	case "storage":
+		action := "refresh"
+		if len(args) > 1 {
+			action = args[1]
+		}
+		return pyjson.Payload{pyjson.F("command", "storage"), pyjson.F("action", action)}, nil
 	case "wallpaper":
 		if len(args) >= 2 {
 			p := pyjson.Payload{pyjson.F("command", "wallpaper"), pyjson.F("action", args[1])}

@@ -50,6 +50,14 @@
         description = "Show the Wi-Fi toggle in the Eww network popup";
       };
 
+      hyprland.eww.defaultHiddenModules = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.eww.defaultHiddenModules";
+        type = lib.types.listOf (lib.types.enum (import ./hyprland/eww/bar-modules.nix));
+        default = [ ];
+        description = "Eww bar modules hidden until shown from Settings > Bar modules";
+      };
+
       hyprland.waybar.enable = helpers.mkHomeOpt {
         inherit osConfig;
         path = "home.desktop.hyprland.waybar.enable";

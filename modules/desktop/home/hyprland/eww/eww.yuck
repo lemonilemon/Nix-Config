@@ -1,8 +1,12 @@
-(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"\uf10c","ws2_class":"empty","ws2_text":"\uf10c","ws3_class":"empty","ws3_text":"\uf10c","ws4_class":"empty","ws4_text":"\uf10c","ws5_class":"empty","ws5_text":"\uf10c"},"submap":"","clock":{"time":"\uf017 --:--","date":"\uf073 ----","tooltip":""},"media":{"text":"","status":"","icon":"\uf001","class":"","tooltip":""},"ai_usage":{"text":"\udb81\ude74 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":"\uf2db --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"\uf2cb --\u00b0C","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false","connectivity":"unknown","conn_uuid":"","conn_name":"","speed":{"status":"none","down":"\u2014","up":"\u2014","latency":"\u2014","caption":"Not measured on this network"},"policy":{"status":"none","class":"quiet","caption":"Not checked on this network","detail":"Nothing has been checked on this network yet","ssh":"unknown","dns":"unknown","ipv6":"unknown"}},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"\udb80\udc84","alt":"\udb80\udc84","capacity":100,"class":"charging","status":"Unknown","time":"N/A","health":"--","power":"\u2014"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"tray_count":0,"notifications":{"paused":"false","new":0,"count":0,"groups":[]},"wallpaper":{"current":"","count":0,"rows":[]},"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"}}' "eww-bar-backend bar")
+(deflisten bar_state :initial '{"active_window":{"text":"","tooltip":"","class":""},"workspace_state":{"ws1_class":"empty","ws1_text":"\uf10c","ws2_class":"empty","ws2_text":"\uf10c","ws3_class":"empty","ws3_text":"\uf10c","ws4_class":"empty","ws4_text":"\uf10c","ws5_class":"empty","ws5_text":"\uf10c"},"submap":"","clock":{"time":"\uf017 --:--","date":"\uf073 ----","tooltip":""},"media":{"text":"","status":"","icon":"\uf001","class":"","tooltip":""},"ai_usage":{"text":"\udb81\ude74 --","tooltip":"AI usage data is not available yet","class":"missing","source":"missing","updated":"","periods":{"today":{"label":"Today","range":"","tokens":"--","cost":"--","agents":[]},"week":{"label":"This week","range":"","tokens":"--","cost":"--","agents":[]},"month":{"label":"This month","range":"","tokens":"--","cost":"--","agents":[]}},"agents":"--","quotas":[{"key":"claude","name":"Claude","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"codex","name":"Codex","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]},{"key":"antigravity","name":"Antigravity","plan":"--","status":"waiting","class":"missing","updated":"","windows":[],"meta":[]}],"meta":{"pricing":"offline","refresh":"5m","status":"waiting","stale":"false","refreshing":"false"}},"cpu":"\uf2db --%","memory":{"text":"","tooltip":"","class":""},"temperature":{"text":"\uf2cb --\u00b0C","class":""},"network":{"text":"","tooltip":"","class":"","wifi_enabled":"false","connectivity":"unknown","conn_uuid":"","conn_name":"","speed":{"status":"none","down":"\u2014","up":"\u2014","latency":"\u2014","caption":"Not measured on this network"},"policy":{"status":"none","class":"quiet","caption":"Not checked on this network","detail":"Nothing has been checked on this network yet","ssh":"unknown","dns":"unknown","ipv6":"unknown"}},"volume":{"text":"","percent":0,"muted":"false","class":"","sinks":[]},"battery":{"text":"\udb80\udc84","alt":"\udb80\udc84","capacity":100,"class":"charging","status":"Unknown","time":"N/A","health":"--","power":"\u2014"},"bluetooth":{"text":"","tooltip":"","class":"","powered":"false","devices":[]},"tray_count":0,"notifications":{"paused":"false","new":0,"count":0,"groups":[]},"wallpaper":{"current":"","count":0,"rows":[]},"idle_inhibited":"false","display":{"mode":"normal","lid_inhibited":"false","status":"Normal desktop mode","class":"normal"},"storage":{"text":"\udb80\udeca --","tooltip":"","class":"","free":"--","used":"","used_percent":0,"cleanup":{"status":"waiting","last":"","next":""}}}' "eww-bar-backend bar")
 
 (defvar laptop_controls "@laptopControls@")
 (defvar battery_module "@batteryModule@")
 (defvar wifi_controls "@wifiControls@")
+
+; Which bar modules are shown, pushed by the daemon with `eww update` after each
+; Settings > Bar modules toggle. The default is this host's, written by default.nix.
+(defvar bar_modules '@barModulesDefault@')
 
 ; Which monitor owns each workspace, and which monitor is displaying it.
 ;
@@ -100,7 +104,8 @@
         (box :class "bar-island workspace-island" :orientation "h" :space-evenly false
           (workspaces :output output)
           (label :class "submap" :visible {bar_state.submap != ""} :text {bar_state.submap}))
-        (box :class "bar-island media-island" :orientation "h" :space-evenly false :visible {bar_state.media.text != ""}
+        (box :class "bar-island media-island" :orientation "h" :space-evenly false
+          :visible {bar_state.media.text != "" && bar_modules.media == "true"}
           (button :class "media ${bar_state.media.class}"
             :onclick "eww-barctl --quiet media play-pause"
             :onrightclick "eww-barctl --quiet media next"
@@ -108,7 +113,7 @@
             (label :truncate true
               :text {bar_state.media.text != "" ? "${bar_state.media.icon} ${bar_state.media.text}" : ""})))
         (box :class "bar-island window-island" :orientation "h" :space-evenly false
-          :visible {bar_state.active_window.text != ""}
+          :visible {bar_state.active_window.text != "" && bar_modules.window == "true"}
           (label :class "active-window" :truncate true
             :tooltip {bar_state.active_window.tooltip}
             :text {bar_state.active_window.text})))
@@ -131,37 +136,52 @@
             :reveal {bar_state.tray_count <= tray_fold_threshold || tray_force_expanded}
             (systray :class "tray" :icon-size 14 :spacing 8))
           (button :class "module-button notif-bell ${bar_state.notifications.paused == 'true' ? 'dnd' : (bar_state.notifications.new > 0 ? 'has-new' : '')}"
+            :visible {bar_modules.notifications == "true"}
             :timeout "5s"
             :onclick "eww-popup toggle notif_center_popup ${output} && eww-barctl --quiet notif mark-seen"
             :tooltip {bar_state.notifications.paused == "true" ? "Do not disturb" : "${bar_state.notifications.count} notifications"}
             (label :text {bar_state.notifications.paused == "true" ? "󰂛" : (bar_state.notifications.new > 0 ? "󰂚 ${bar_state.notifications.new}" : "󰂜")}))
           (button :class "module-button network ${bar_state.network.class}"
+            :visible {bar_modules.network == "true"}
             :timeout "5s" :onclick "eww-popup toggle network_popup ${output}"
             (label :truncate true :tooltip {bar_state.network.tooltip} :text {bar_state.network.text}))
           (button :class "module-button bluetooth ${bar_state.bluetooth.class}"
-            :visible {bar_state.bluetooth.text != ""}
+            :visible {bar_state.bluetooth.text != "" && bar_modules.bluetooth == "true"}
             :timeout "5s" :onclick "eww-popup toggle bluetooth_popup ${output}"
             (label :truncate true :tooltip {bar_state.bluetooth.tooltip} :text {bar_state.bluetooth.text})))
         (box :class "bar-island sys-island" :orientation "h" :space-evenly false
+          :visible {bar_modules.ai_usage == "true" || bar_modules.temperature == "true" || bar_modules.cpu == "true"
+                    || bar_modules.memory == "true" || bar_modules.storage == "true"}
           (button :class "module-button ai-usage ${bar_state.ai_usage.class}"
+            :visible {bar_modules.ai_usage == "true"}
             :timeout "5s" :onclick "eww-popup toggle ai_usage_popup ${output} && eww-barctl --quiet ai refresh"
             :tooltip {bar_state.ai_usage.tooltip}
             (label :text {bar_state.ai_usage.text}))
-          (label :class "module temperature ${bar_state.temperature.class}" :text {bar_state.temperature.text})
+          (label :class "module temperature ${bar_state.temperature.class}"
+            :visible {bar_modules.temperature == "true"} :text {bar_state.temperature.text})
           (button :class "module-button cpu" :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty -- htop\")'"
+            :visible {bar_modules.cpu == "true"}
             (label :text {bar_state.cpu}))
           (button :class "module-button memory ${bar_state.memory.class}"
+            :visible {bar_modules.memory == "true"}
             :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty -- htop\")'"
             :tooltip {bar_state.memory.tooltip}
-            (label :text {bar_state.memory.text})))
+            (label :text {bar_state.memory.text}))
+          (button :class "module-button storage ${bar_state.storage.class}"
+            :visible {bar_modules.storage == "true"}
+            :timeout "5s"
+            :onclick "eww-popup toggle storage_popup ${output} && eww-barctl --quiet storage refresh"
+            :tooltip {bar_state.storage.tooltip}
+            (label :text {bar_state.storage.text})))
         (box :class "bar-island session-island" :orientation "h" :space-evenly false
           (eventbox
+            :visible {bar_modules.volume == "true"}
             :onscroll "eww-barctl --quiet volume {}"
             (button :class "module-button volume"
               :timeout "5s" :onclick "eww-popup toggle volume_popup ${output}"
               (label :text {bar_state.volume.text})))
           (button :class "module-button battery ${bar_state.battery.class}"
-            :visible {battery_module == "true"}
+            :visible {battery_module == "true" && bar_modules.battery == "true"}
             :timeout "5s" :onclick "eww-popup toggle battery_popup ${output}"
             (label :text {bar_state.battery.text}))
           (button :class "settings-button"
@@ -715,7 +735,7 @@
 
 (defwindow settings_popup
   :monitor 0
-  :geometry (geometry :x "12px" :y "50px" :width "280px" :height "210px" :anchor "top right")
+  :geometry (geometry :x "12px" :y "50px" :width "280px" :height "250px" :anchor "top right")
   :stacking "fg"
   :exclusive false
   :focusable false
@@ -731,6 +751,11 @@
         (box :orientation "h" :space-evenly false
           (label :class "popup-action-icon" :text "󰸉")
           (label :class "popup-action-label" :halign "start" :text "Wallpapers")))
+      (button :class "popup-action" :timeout "5s"
+        :onclick "eww-popup toggle bar_modules_popup"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text "󱥇")
+          (label :class "popup-action-label" :halign "start" :text "Bar modules")))
       (button :class "popup-action" :timeout "5s" :visible {laptop_controls == "true"}
         :onclick "eww-popup toggle display_mode_popup"
         (box :orientation "h" :space-evenly false
@@ -748,6 +773,97 @@
         (box :orientation "h" :space-evenly false
           (label :class "popup-action-icon" :text "󰍺")
           (label :class "popup-action-label" :halign "start" :text "Monitor layout"))))))
+
+; :height is a minimum; both popups below take their content's natural height.
+(defwindow bar_modules_popup
+  :monitor 0
+  :geometry (geometry :x "12px" :y "50px" :width "280px" :height "120px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-bar-modules"
+  (bar_modules_panel))
+
+(defwidget bar_modules_panel []
+  (box :class "popup accent-settings" :orientation "v" :space-evenly false
+    (popup_header :icon "󱥇" :title "Bar modules" :subtitle "Show or hide parts of the bar")
+    (box :class "popup-body bar-modules-body" :orientation "v" :space-evenly false
+      (bar_module_row :name "media" :icon "" :label "Media" :on {bar_modules.media} :available true)
+      (bar_module_row :name "window" :icon "󱂬" :label "Window title" :on {bar_modules.window} :available true)
+      (bar_module_row :name "notifications" :icon "󰂜" :label "Notifications" :on {bar_modules.notifications} :available true)
+      (bar_module_row :name "network" :icon "󰖟" :label "Network" :on {bar_modules.network} :available true)
+      (bar_module_row :name "bluetooth" :icon "󰂯" :label "Bluetooth" :on {bar_modules.bluetooth} :available true)
+      (bar_module_row :name "ai_usage" :icon "󰙴" :label "AI usage" :on {bar_modules.ai_usage} :available true)
+      (bar_module_row :name "temperature" :icon "" :label "Temperature" :on {bar_modules.temperature} :available true)
+      (bar_module_row :name "cpu" :icon "" :label "CPU" :on {bar_modules.cpu} :available true)
+      (bar_module_row :name "memory" :icon "" :label "Memory" :on {bar_modules.memory} :available true)
+      (bar_module_row :name "storage" :icon "󰋊" :label "Storage" :on {bar_modules.storage} :available true)
+      (bar_module_row :name "volume" :icon "" :label "Volume" :on {bar_modules.volume} :available true)
+      (bar_module_row :name "battery" :icon "󰁹" :label "Battery" :on {bar_modules.battery} :available {battery_module == "true"})
+      (button :class "popup-footer-action" :timeout "5s"
+        :onclick "eww-barctl --quiet modules reset"
+        (label :text "Reset to defaults")))))
+
+; The class carries the module name so each icon takes its own module's colour.
+(defwidget bar_module_row [name icon label on available]
+  (button :class "popup-row bar-module-row ${name} ${on == 'true' ? 'active' : ''}"
+    :visible available
+    :timeout "5s"
+    :onclick "eww-barctl --quiet modules toggle ${name}"
+    (box :orientation "h" :space-evenly false
+      (label :class "bar-module-icon" :text icon)
+      (label :class "bar-module-label" :halign "start" :hexpand true :text label)
+      (label :class "bar-module-switch" :text {on == "true" ? "󰔡" : "󰨙"}))))
+
+(defwindow storage_popup
+  :monitor 0
+  :geometry (geometry :x "12px" :y "50px" :width "300px" :height "120px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-storage"
+  (storage_panel))
+
+(defwidget storage_panel []
+  (box :class "popup accent-storage" :orientation "v" :space-evenly false
+    (popup_header :icon "󰋊" :title "Storage" :subtitle {bar_state.storage.used != "" ? "${bar_state.storage.used} used" : "Reading the disk"})
+    (box :class "popup-body" :orientation "v" :space-evenly false
+      (box :class "storage-headline" :orientation "h" :space-evenly false
+        (label :class "storage-free" :text {bar_state.storage.free})
+        (label :class "storage-free-caption" :valign "end" :text "free")
+        (label :class "storage-percent ${bar_state.storage.class}" :halign "end" :hexpand true
+          :text "${bar_state.storage.used_percent}% used"))
+      (progress :class "popup-meter storage-meter ${bar_state.storage.class}" :value {bar_state.storage.used_percent})
+      (box :class "popup-section-label" :orientation "h" :space-evenly false
+        (label :halign "start" :text "AUTOMATIC CLEANUP"))
+      (box :class "popup-empty" :orientation "h" :space-evenly false
+        :visible {bar_state.storage.cleanup.status == "missing"}
+        (label :halign "start" :text "Not set up on this host"))
+      (box :class "storage-rows" :orientation "v" :space-evenly false
+        :visible {bar_state.storage.cleanup.status != "missing"}
+        (storage_row :label "Last run" :value {bar_state.storage.cleanup.last} :status {bar_state.storage.cleanup.status})
+        (storage_row :label "Next run" :value {bar_state.storage.cleanup.next} :status ""))
+      (button :class "popup-action" :timeout "5s"
+        :visible {bar_state.storage.cleanup.status != "missing"}
+        :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty --hold -- nh-clean-now\")' && eww-popup close"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text "󰃢")
+          (label :class "popup-action-label" :halign "start" :text "Clean up now")))
+      (button :class "popup-action" :timeout "5s"
+        :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"baobab\")' && eww-popup close"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text "󰞯")
+          (label :class "popup-action-label" :halign "start" :text "Analyze disk usage")))
+      (button :class "popup-action" :timeout "5s"
+        :onclick "hyprctl dispatch 'hl.dsp.exec_cmd(\"bleachbit\")' && eww-popup close"
+        (box :orientation "h" :space-evenly false
+          (label :class "popup-action-icon" :text "󰗩")
+          (label :class "popup-action-label" :halign "start" :text "Clean app caches"))))))
+
+(defwidget storage_row [label value status]
+  (box :class "popup-row storage-row" :orientation "h" :space-evenly false
+    (label :class "storage-row-label" :halign "start" :text label)
+    (label :class "storage-row-value ${status}" :halign "end" :hexpand true :truncate true :text value)))
 
 (defwindow ai_usage_popup
   :monitor 0

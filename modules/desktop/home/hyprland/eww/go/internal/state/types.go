@@ -26,4 +26,5 @@ type Bar struct {
 	Wallpaper      collect.Wallpaper          `json:"wallpaper"`
 	IdleInhibited  string                     `json:"idle_inhibited"`
 	Display        collect.Display            `json:"display"`
+	Storage        collect.Storage            `json:"storage"`
 }

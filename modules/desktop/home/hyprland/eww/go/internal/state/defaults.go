@@ -64,5 +64,6 @@ func Default() Bar {
 			Mode: "normal", LidInhibited: "false",
 			Status: "Normal desktop mode", Class: "normal",
 		},
+		Storage: collect.StorageDefault(),
 	}
 }

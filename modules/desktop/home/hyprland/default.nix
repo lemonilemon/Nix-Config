@@ -228,6 +228,8 @@
                   "eww-notifications"
                   "eww-wallpaper"
                   "eww-settings"
+                  "eww-bar-modules"
+                  "eww-storage"
                 ]
             )
             ++ lib.optionals config.home.desktop.hyprland.dunst.enable [

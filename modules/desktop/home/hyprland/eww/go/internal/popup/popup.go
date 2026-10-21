@@ -24,6 +24,8 @@ var popupWindows = []string{
 	"notif_center_popup",
 	"wallpaper_picker_popup",
 	"settings_popup",
+	"bar_modules_popup",
+	"storage_popup",
 	"calendar_popup",
 }
 

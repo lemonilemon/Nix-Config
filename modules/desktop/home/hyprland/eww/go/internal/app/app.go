@@ -69,6 +69,9 @@ func Run() int {
 		collect.SeedNetPolicyRecords(restored)
 	}
 
+	collect.LoadBarModules(paths.BarModules())
+	watch.PublishBarModules(collect.BarModulesState())
+
 	seed(store)
 	launchWatchers(ctx, store, idleRefresh)
 
@@ -98,6 +101,7 @@ func seed(store *state.Store) {
 	display := collect.DisplayState("")
 	workspace, monitorWorkspaces := collect.CollectWorkspaceViews()
 	notifications := collect.CollectNotifications()
+	storage := collect.CollectStorage()
 
 	store.Update(func(bar *state.Bar) {
 		bar.ActiveWindow = activeWindow
@@ -114,6 +118,7 @@ func seed(store *state.Store) {
 		bar.Display = display
 		bar.WorkspaceState = workspace
 		bar.Notifications = notifications
+		bar.Storage = storage
 	})
 
 	// After the store, not before: this spawns `eww update`, and the seed's job is to
@@ -196,6 +201,11 @@ func launchWatchers(ctx context.Context, store *state.Store, idleRefresh <-chan 
 	go watch.Periodic(ctx, store, 60*time.Second, func() watch.Update {
 		network := collect.CollectNetwork()
 		return func(bar *state.Bar) { bar.Network = network }
+	})
+
+	go watch.Periodic(ctx, store, 60*time.Second, func() watch.Update {
+		storage := collect.CollectStorage()
+		return func(bar *state.Bar) { bar.Storage = storage }
 	})
 
 	go watch.Periodic(ctx, store, 5*time.Second, func() watch.Update {

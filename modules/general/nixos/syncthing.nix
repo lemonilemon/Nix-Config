@@ -57,19 +57,27 @@ let
   # file would arrive on the other machine as a deletion, and the vault's
   # "vault backup" commits would then record it as one.
   #
-  # Verified against the vault on 2026-08-30: none of these are tracked, and
-  # each is either per-machine UI state or a regenerable cache.
+  # Verified against the vault on 2026-10-22: none of these are tracked, and
+  # each is per-machine state, a regenerable cache, or git's own repository.
   #
   # `.obsidian/plugins/**` is deliberately absent. Git ignores the plugin code
   # (keeping only each plugin's data.json), but syncing it is precisely how the
   # second machine ends up with the same plugins installed.
+  #
+  # Must match the vault's tracked .stignore line for line: it is rewritten from this list.
   ignorePatterns = [
+    ".DS_Store"
+    "Thumbs.db"
+    "*.tmp"
     ".smart-env" # Smart Connections embedding cache: 14M, rewritten constantly
     ".obsidian/workspace.json" # which panes are open, per machine
     ".obsidian/workspace-mobile.json"
     ".obsidian/graph.json" # graph view camera position, per machine
     ".tmp" # local extraction cache
     ".trash" # Obsidian's own trash, per machine
+    ".git"
+    ".claudian"
+    "*.swp"
   ];
 in
 {

@@ -233,7 +233,10 @@ Two things are deliberate and easy to undo by accident:
   auto-commits). Syncthing's ignore list may therefore only name paths the
   vault's own ignore rules already cover — ignoring a *tracked* file would
   reach the other machine as a deletion and get committed as one. The current
-  list is per-machine UI state and regenerable caches only.
+  list is per-machine state, regenerable caches, and `.git` itself, which git
+  already moves between hosts. The vault tracks the same list as `.stignore`,
+  line for line: Syncthing rewrites that file from this list on every start,
+  so the two change together.
 - **Version snapshots are stored outside the vault** via `versioning.fsPath`
   (`~/.local/state/syncthing/versions/`). Syncthing's default location is
   `<folder>/.stversions`, which would put a copy of every past revision inside

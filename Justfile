@@ -85,15 +85,13 @@ test-backend:
 test:
     nix eval .#nixosConfigurations.{{ nixhost }}.config.system.build.toplevel.drvPath --show-trace
 
-[group('NixOS')]
-gc:
-    sudo nix-collect-garbage -d
-
 # Run the weekly nh cleanup now: shows the plan, then asks before deleting
 [group('NixOS')]
 clean:
     @command -v nh-clean-now > /dev/null || { echo "nh-clean-now is not installed: rebuild first" >&2; exit 1; }
     nh-clean-now
+
+alias gc := clean
 
 ############################################################################
 #

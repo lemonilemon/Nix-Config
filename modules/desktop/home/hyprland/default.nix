@@ -202,6 +202,12 @@
               match.class = ".*";
               suppress_event = "maximize";
             }
+          ]
+          ++ lib.optionals config.home.general.obsidian.enable [
+            {
+              match.class = "md.obsidian.Obsidian";
+              opacity = 0.88;
+            }
           ];
 
           layer_rule =

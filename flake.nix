@@ -111,6 +111,12 @@
         })
       );
 
+      packages = eachSystem (system: {
+        eww-bar = self.legacyPackages.${system}.callPackage ./packages/eww-bar/package.nix {
+          colors = import ./modules/desktop/home/hyprland/theme/palette.nix;
+        };
+      });
+
       formatter = eachSystem (
         system:
         let

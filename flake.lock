@@ -967,11 +967,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792638521,
-        "narHash": "sha256-NPC5Oa07uSEURxP9Zjx+OmKEkYNaArvN7zmFjDaYJ5M=",
+        "lastModified": 1792683874,
+        "narHash": "sha256-2YCxz7qz1g+CXRI1Aea5pIOfXC7lbISeVdzI9DvwTMI=",
         "owner": "lemonilemon",
         "repo": "sddm-orrery",
-        "rev": "2d52f8d0803cd70f9db9dd57f971c96e1c247380",
+        "rev": "e58612064cb55d6c7709e5ebfcd998cf9aa6a420",
         "type": "github"
       },
       "original": {

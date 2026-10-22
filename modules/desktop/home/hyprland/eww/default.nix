@@ -243,6 +243,7 @@ in
             "PATH=${runtimePath}"
             "EWW_BAR_BATTERY=${if cfg.battery.enable then "1" else "0"}"
             "EWW_BAR_DEFAULT_HIDDEN=${lib.concatStringsSep "," cfg.defaultHiddenModules}"
+            "CODEX_HOME=${config.home.homeDirectory}/.codex"
           ];
           ExecStart = "${pkgs.eww}/bin/eww --force-wayland daemon --no-daemonize";
           ExecStartPost = openBar;

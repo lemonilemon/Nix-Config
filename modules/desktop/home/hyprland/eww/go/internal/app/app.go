@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -73,7 +74,8 @@ func Run() int {
 	watch.PublishBarModules(collect.BarModulesState())
 
 	seed(store)
-	launchWatchers(ctx, store, idleRefresh)
+	var streams sync.WaitGroup
+	launchWatchers(ctx, store, idleRefresh, &streams)
 
 	go func() {
 		<-stopping
@@ -81,6 +83,8 @@ func Run() int {
 	}()
 
 	watch.EmitLoop(ctx, store, os.Stdout)
+	cancel()
+	streams.Wait()
 	return 0
 }
 
@@ -126,8 +130,17 @@ func seed(store *state.Store) {
 	watch.PublishMonitorWorkspaces(monitorWorkspaces)
 }
 
-// launchWatchers starts every background loop.
-func launchWatchers(ctx context.Context, store *state.Store, idleRefresh <-chan struct{}) {
+// launchWatchers starts every background loop. streams counts the watchers that
+// own a child process.
+func launchWatchers(ctx context.Context, store *state.Store, idleRefresh <-chan struct{}, streams *sync.WaitGroup) {
+	stream := func(watcher func()) {
+		streams.Add(1)
+		go func() {
+			defer streams.Done()
+			watcher()
+		}()
+	}
+
 	go watch.WatchHyprland(ctx, store)
 	go watch.WatchIdleInhibitor(ctx, store, idleRefresh)
 
@@ -244,31 +257,39 @@ func launchWatchers(ctx context.Context, store *state.Store, idleRefresh <-chan 
 		)
 	})
 
-	go watch.WatchCommand(ctx, store, nil, func() watch.Update {
-		network := collect.CollectNetwork()
-		return func(bar *state.Bar) { bar.Network = network }
-	}, "nmcli", "monitor")
+	stream(func() {
+		watch.WatchCommand(ctx, store, nil, func() watch.Update {
+			network := collect.CollectNetwork()
+			return func(bar *state.Bar) { bar.Network = network }
+		}, "nmcli", "monitor")
+	})
 
 	// The line filter is load-bearing, not an optimisation: volume_state shells out to
 	// the same subsystem pactl is reporting on, so without it the watcher becomes its
 	// own event source -- 1248 events a minute, against 82 with the filter.
-	go watch.WatchCommand(ctx, store, collect.VolumeEventIsRelevant, func() watch.Update {
-		volume := collect.CollectVolume(false)
-		return func(bar *state.Bar) { bar.Volume = volume }
-	}, "pactl", "subscribe")
+	stream(func() {
+		watch.WatchCommand(ctx, store, collect.VolumeEventIsRelevant, func() watch.Update {
+			volume := collect.CollectVolume(false)
+			return func(bar *state.Bar) { bar.Volume = volume }
+		}, "pactl", "subscribe")
+	})
 
-	go watch.WatchCommand(ctx, store, nil, func() watch.Update {
-		media := collect.CollectMedia()
-		return func(bar *state.Bar) { bar.Media = media }
-	}, "playerctl", "-F", "metadata", "--format",
-		"{{playerName}} {{status}} {{artist}} {{title}}")
+	stream(func() {
+		watch.WatchCommand(ctx, store, nil, func() watch.Update {
+			media := collect.CollectMedia()
+			return func(bar *state.Bar) { bar.Media = media }
+		}, "playerctl", "-F", "metadata", "--format",
+			"{{playerName}} {{status}} {{artist}} {{title}}")
+	})
 
-	go watch.WatchCommand(ctx, store, nil, func() watch.Update {
-		notifications := collect.CollectNotifications()
-		return func(bar *state.Bar) { bar.Notifications = notifications }
-	}, "dbus-monitor", "--profile", "interface='org.freedesktop.Notifications'")
+	stream(func() {
+		watch.WatchCommand(ctx, store, nil, func() watch.Update {
+			notifications := collect.CollectNotifications()
+			return func(bar *state.Bar) { bar.Notifications = notifications }
+		}, "dbus-monitor", "--profile", "interface='org.freedesktop.Notifications'")
+	})
 
-	go watch.WatchBluetooth(ctx, store)
+	stream(func() { watch.WatchBluetooth(ctx, store) })
 
 	// One shot, off the startup path: scanning the wallpaper directory builds a
 	// thumbnail per image on a cold cache.

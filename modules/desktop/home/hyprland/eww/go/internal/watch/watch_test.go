@@ -196,6 +196,41 @@ func TestWatchCommandHonoursTheLineFilter(t *testing.T) {
 	}
 }
 
+func TestWatchCommandStopsASilentChildOnCancel(t *testing.T) {
+	previous := startCommand
+	t.Cleanup(func() { startCommand = previous })
+
+	stopped := make(chan struct{})
+	startCommand = func(string, ...string) (io.ReadCloser, func(), error) {
+		reader, writer := io.Pipe()
+		return reader, func() {
+			_ = writer.Close()
+			close(stopped)
+		}, nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	returned := make(chan struct{})
+	go func() {
+		WatchCommand(ctx, state.New(), nil, func() Update { return nil }, "fake")
+		close(returned)
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+
+	select {
+	case <-returned:
+	case <-time.After(time.Second):
+		t.Fatal("WatchCommand still waiting on a silent child a second after cancel")
+	}
+	select {
+	case <-stopped:
+	default:
+		t.Fatal("WatchCommand returned without stopping its child")
+	}
+}
+
 func receive(t *testing.T, lines <-chan string) string {
 	t.Helper()
 	select {

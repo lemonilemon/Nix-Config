@@ -429,7 +429,13 @@ func streamCommand(
 	}()
 
 	for {
-		line, open := <-lines
+		var line string
+		var open bool
+		select {
+		case <-ctx.Done():
+			return
+		case line, open = <-lines:
+		}
 		if !open {
 			return
 		}

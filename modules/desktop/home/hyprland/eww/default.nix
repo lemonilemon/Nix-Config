@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  pkgs,
   ...
 }:
 let
@@ -17,6 +18,8 @@ in
       battery.enable = cfg.battery.enable;
       wifi.enable = cfg.wifi.enable;
       defaultHidden = cfg.defaultHiddenModules;
+      ai.ccusage.package = pkgs.llm-agents.ccusage;
+      ai.openusage.package = pkgs.openusage-cli;
     };
   };
 }

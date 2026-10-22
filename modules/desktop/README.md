@@ -117,7 +117,16 @@ A dynamic tiling Wayland compositor with modern features.
   `module.nix` is its Home Manager module (`programs.eww-bar`: services, config
   files, options), and `tests/` holds the two checks the `eww-backend` flake check
   runs. `eww/default.nix` only maps the `home.desktop.hyprland.eww.*` options onto
-  `programs.eww-bar`, so profiles keep setting the options they always have
+  `programs.eww-bar`, so profiles keep setting the options they always have, and
+  passes in what only this repo has: its palette, the overlay's `openusage-cli`
+  and its `ccusage` wrapper. Outside this repo the module defaults to Catppuccin
+  Mocha, nixpkgs' `ccusage` and no openusage-cli. Hyprland's blur rules read the
+  bar's glass layers from `programs.eww-bar.blurNamespaces`
+- The flake exports the bar as `packages.<system>.eww-bar` and
+  `homeManagerModules.eww-bar`. `checks.eww-bar-standalone` evaluates the module
+  in a bare Home Manager configuration on plain nixpkgs, and
+  `checks.eww-bar-self-contained` fails if a `.nix` file under `packages/eww-bar/`
+  reaches outside it
 
 **Hyprlock** (`hyprlock.nix`):
 - Screen locking utility

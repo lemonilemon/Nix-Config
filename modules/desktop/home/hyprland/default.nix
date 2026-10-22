@@ -218,26 +218,10 @@
               }
             ]
             ++ lib.optionals config.home.desktop.hyprland.eww.enable (
-              map
-                (ns: {
-                  match.namespace = ns;
-                  blur = true;
-                })
-                [
-                  "eww-bar"
-                  "eww-volume"
-                  "eww-display-mode"
-                  "eww-bluetooth"
-                  "eww-network"
-                  "eww-battery"
-                  "eww-ai-usage"
-                  "eww-notifications"
-                  "eww-wallpaper"
-                  "eww-settings"
-                  "eww-calendar"
-                  "eww-bar-modules"
-                  "eww-storage"
-                ]
+              map (ns: {
+                match.namespace = ns;
+                blur = true;
+              }) config.programs.eww-bar.blurNamespaces
             )
             ++ lib.optionals config.home.desktop.hyprland.dunst.enable [
               {

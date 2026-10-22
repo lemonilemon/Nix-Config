@@ -53,11 +53,11 @@ let
       systemd
       wireplumber
       wlogout
-      llm-agents.ccusage
-      # Codex/Antigravity quota collection (see internal/collect/aifetch.go);
-      # Claude stays on the native read-only collector.
-      openusage-cli
     ])
+    ++ lib.optional (cfg.ai.ccusage.package != null) cfg.ai.ccusage.package
+    # Codex/Antigravity quota collection (see internal/collect/aifetch.go);
+    # Claude stays on the native read-only collector.
+    ++ lib.optional (cfg.ai.openusage.package != null) cfg.ai.openusage.package
     ++ [
       ewwBar
     ];
@@ -148,6 +148,8 @@ in
 
     colors = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
+      default = import ./palette.nix;
+      defaultText = lib.literalMD "Catppuccin Mocha, from `palette.nix`";
       description = "Colours the stylesheet reads, written to _palette.scss as one SCSS variable each";
     };
 
@@ -161,6 +163,49 @@ in
       type = lib.types.listOf (lib.types.enum (import ./bar-modules.nix));
       default = [ ];
       description = "Bar modules hidden until shown from Settings > Bar modules";
+    };
+
+    ai = {
+      ccusage.package = lib.mkOption {
+        type = lib.types.nullOr lib.types.package;
+        default = pkgs.ccusage;
+        defaultText = lib.literalExpression "pkgs.ccusage";
+        description = "ccusage, for the AI usage module's token and cost totals; null leaves them out";
+      };
+
+      openusage.package = lib.mkOption {
+        type = lib.types.nullOr lib.types.package;
+        default = null;
+        description = "openusage-cli, for the Codex and Antigravity quota cards; null leaves them out";
+      };
+
+      codexHome = lib.mkOption {
+        type = lib.types.str;
+        default = "${config.home.homeDirectory}/.codex";
+        defaultText = lib.literalExpression ''"''${config.home.homeDirectory}/.codex"'';
+        description = "CODEX_HOME for the openusage-cli probes";
+      };
+    };
+
+    blurNamespaces = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      readOnly = true;
+      default = [
+        "eww-bar"
+        "eww-volume"
+        "eww-display-mode"
+        "eww-bluetooth"
+        "eww-network"
+        "eww-battery"
+        "eww-ai-usage"
+        "eww-notifications"
+        "eww-wallpaper"
+        "eww-settings"
+        "eww-calendar"
+        "eww-bar-modules"
+        "eww-storage"
+      ];
+      description = "Layer-shell namespaces of the bar's glass surfaces, for the compositor's blur rules. The popup backdrop, a full-screen transparent click catcher, is not one of them.";
     };
   };
 
@@ -203,7 +248,7 @@ in
             "PATH=${runtimePath}"
             "EWW_BAR_BATTERY=${if cfg.battery.enable then "1" else "0"}"
             "EWW_BAR_DEFAULT_HIDDEN=${lib.concatStringsSep "," cfg.defaultHidden}"
-            "CODEX_HOME=${config.home.homeDirectory}/.codex"
+            "CODEX_HOME=${cfg.ai.codexHome}"
           ];
           ExecStart = "${pkgs.eww}/bin/eww --force-wayland daemon --no-daemonize";
           ExecStartPost = openBar;

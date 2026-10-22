@@ -112,10 +112,10 @@
       );
 
       packages = eachSystem (system: {
-        eww-bar = self.legacyPackages.${system}.callPackage ./packages/eww-bar/package.nix {
-          colors = import ./modules/desktop/home/hyprland/theme/palette.nix;
-        };
+        eww-bar = self.legacyPackages.${system}.callPackage ./packages/eww-bar/package.nix { };
       });
+
+      homeManagerModules.eww-bar = ./packages/eww-bar/module.nix;
 
       formatter = eachSystem (
         system:
@@ -144,6 +144,34 @@
           pkgs = nixpkgs.legacyPackages.${system};
           inherit (self) nixosConfigurations;
         };
+
+        eww-bar-standalone =
+          let
+            pkgs = nixpkgs.legacyPackages.${system};
+            home = inputs.home-manager.lib.homeManagerConfiguration {
+              inherit pkgs;
+              modules = [
+                self.homeManagerModules.eww-bar
+                {
+                  home.username = "check";
+                  home.homeDirectory = "/home/check";
+                  home.stateVersion = "25.11";
+                  programs.eww-bar.enable = true;
+                }
+              ];
+            };
+          in
+          pkgs.writeText "eww-bar-standalone" (
+            builtins.unsafeDiscardStringContext home.activationPackage.drvPath
+          );
+
+        eww-bar-self-contained = nixpkgs.legacyPackages.${system}.runCommand "eww-bar-self-contained" { } ''
+          if grep -rn --include='*.nix' -F '../' ${./packages/eww-bar}; then
+            echo "packages/eww-bar refers to files outside itself" >&2
+            exit 1
+          fi
+          touch $out
+        '';
 
         eww-backend =
           let

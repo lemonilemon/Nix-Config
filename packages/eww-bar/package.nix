@@ -4,7 +4,7 @@
   replaceVars,
   writeText,
   runCommand,
-  colors,
+  colors ? import ./palette.nix,
   enableLaptopControls ? false,
   enableBattery ? false,
   enableWifi ? false,

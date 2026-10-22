@@ -12,17 +12,37 @@ jobs:
       issues: write
       pull-requests: write
     runs-on: ubuntu-latest
+    outputs:
+      pr: ${{ steps.update.outputs.pull-request-number }}
+      operation: ${{ steps.update.outputs.pull-request-operation }}
+      sha: ${{ steps.head.outputs.sha }}
     steps:
       # Scheduled workflows are loaded from main, but updates belong in the
       # active integration branch.
       - uses: actions/checkout@v6
         with:
           ref: dev
+      - name: Check the open update PR for commits pushed by hand
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          hand_commits=$(gh pr list --repo "$GITHUB_REPOSITORY" --head automation/flake-updates --state open \
+            --json commits --jq '[.[].commits[].authors[].login | select(. != "github-actions[bot]")] | length')
+          if [ "$hand_commits" -gt 0 ]; then
+            echo "::notice::automation/flake-updates has commits pushed by hand; leaving it for a manual merge"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: DeterminateSystems/determinate-nix-action@v3
+        if: steps.guard.outputs.skip == 'false'
       # Pinned rather than tracking main: this job holds contents: write,
       # pull-requests: write and a PAT, so it should not run whatever happens to
       # be on someone else's default branch. Dependabot bumps the pin.
       - uses: DeterminateSystems/update-flake-lock@v28
+        id: update
+        if: steps.guard.outputs.skip == 'false'
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
           base: dev
@@ -32,3 +52,49 @@ jobs:
           pr-labels: |
             dependencies
             automated
+      - name: Record the PR head commit
+        id: head
+        if: steps.update.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.update.outputs.pull-request-number }}
+        run: |
+          echo "sha=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: nix-flake-update
+    if: needs.nix-flake-update.outputs.pr != '' && needs.nix-flake-update.outputs.operation != 'closed'
+    uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ needs.nix-flake-update.outputs.sha }}
+    secrets: inherit
+
+  merge:
+    needs: [nix-flake-update, build]
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the PR that was built
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ needs.nix-flake-update.outputs.pr }}
+          SHA: ${{ needs.nix-flake-update.outputs.sha }}
+        run: gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --merge --match-head-commit "$SHA"
+
+  report-failure:
+    needs: [nix-flake-update, build]
+    if: failure() && needs.build.result == 'failure'
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say on the PR why it was left open
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ needs.nix-flake-update.outputs.pr }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" \
+            --body "The full build failed, so this PR was left open for a manual fix: $RUN_URL"

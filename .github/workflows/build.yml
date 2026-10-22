@@ -8,12 +8,19 @@ on:
   # flake from 6daf741 until the next push to main three weeks later. Manual
   # dispatch makes it runnable against any branch before it lands.
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
       
       # Same installer as ci.yml, for the same reason: install-nix-action pins
       # Nix 2.19.1, which rejects store path names beginning with a dot and so

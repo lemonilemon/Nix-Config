@@ -16,7 +16,7 @@ let
   # Shared by awww-init and awww-monitor-watch: they are the only two paths that
   # draw outside the picker, and all three should reveal identically. These are
   # calibration values matching awwwTransition in
-  # eww/go/internal/collect/wallpaperctl.go -- grow-from-top-right is where the
+  # packages/eww-bar/go/internal/collect/wallpaperctl.go -- grow-from-top-right is where the
   # picker popup sits.
   transitionArgs = "--transition-type grow --transition-pos top-right --transition-duration 0.8 --transition-fps 60";
 
@@ -24,7 +24,7 @@ let
   # and the state-file path cannot drift apart.
   awwwCommon = pkgs.writeText "awww-common.sh" ''
     # Sets $current to the wallpaper that should be on screen. The state file is
-    # written by PersistCurrentWallpaper in eww/go/internal/collect/wallpaperctl.go;
+    # written by PersistCurrentWallpaper in packages/eww-bar/go/internal/collect/wallpaperctl.go;
     # it is the only thing carrying a pick across logins, since the daemon runs
     # --no-cache. Missing or stale means nothing has been picked yet: use the seed.
     resolve_current() {

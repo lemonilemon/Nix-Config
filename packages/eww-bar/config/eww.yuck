@@ -43,7 +43,7 @@
 ; Keep this literal in step with collect.AiHistoryDefault(). A key missing here
 ; reads as `null` in simplexpr rather than as absent, so `warning != ""` was
 ; true before the first push and the panel rendered the literal text "null" in
-; the warning's yellow. The line-1 check in tests/nix/check_yuck_initial.py does
+; the warning's yellow. The line-1 check in packages/eww-bar/tests/check_yuck_initial.py does
 ; not see this defvar, so nothing but the eye catches drift:
 ;
 ;   go run ./internal/collect/diffgen <<< '{"fn":"AiHistoryDefault","args":[]}'
@@ -61,7 +61,7 @@
 ; just a wasteful one.
 ;
 ; Keep this literal in step with collect.NetRateDefault(). The line-1 check in
-; tests/nix/check_yuck_initial.py does not see this defvar, so nothing but the
+; packages/eww-bar/tests/check_yuck_initial.py does not see this defvar, so nothing but the
 ; eye catches drift:
 ;
 ;   go run ./internal/collect/diffgen <<< '{"fn":"NetRateDefault","args":[]}'

@@ -7,8 +7,10 @@
 let
   cfg = config.home.desktop.hyprland.eww;
 
+  barDir = ../../../../../packages/eww-bar;
+
   palette = import ../theme/palette.nix;
-  barModules = import ./bar-modules.nix;
+  barModules = import (barDir + "/bar-modules.nix");
   paletteScss = pkgs.writeText "_palette.scss" (
     lib.concatStringsSep "\n" (
       lib.mapAttrsToList (name: value: "\$" + name + ": " + value + ";") palette
@@ -29,7 +31,7 @@ let
     pname = "eww-bar";
     version = "0";
 
-    src = ./go;
+    src = barDir + "/go";
 
     # Every import is stdlib, so there is nothing to vendor. vendorHash = null
     # creates no fetch derivation at all, which is the point: no hash to keep in
@@ -97,7 +99,7 @@ let
 
   runtimePath = lib.makeBinPath runtimePackages;
 
-  ewwYuck = pkgs.replaceVars ./eww.yuck {
+  ewwYuck = pkgs.replaceVars (barDir + "/config/eww.yuck") {
     laptopControls = if cfg.laptopControls.enable then "true" else "false";
     batteryModule = if cfg.battery.enable then "true" else "false";
     wifiControls = if cfg.wifi.enable then "true" else "false";
@@ -218,10 +220,10 @@ in
     ];
 
     xdg.configFile."eww/eww.yuck".source = ewwYuck;
-    xdg.configFile."eww/eww.scss".source = ./eww.scss;
+    xdg.configFile."eww/eww.scss".source = barDir + "/config/eww.scss";
     xdg.configFile."eww/_palette.scss".source = paletteScss;
     xdg.configFile."eww/assets" = {
-      source = ./assets;
+      source = barDir + "/config/assets";
       recursive = true;
     };
 

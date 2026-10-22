@@ -168,6 +168,7 @@ For using Home Manager on non-NixOS distributions:
 │   ├── laptop/       # Laptop profile
 │   └── desktop/      # Desktop profile
 ├── overlays/         # Package overlays (Firefox, Spotify, 1Password, Thunderbird, Commissioner font)
+├── packages/         # Self-contained packages with their own sources and checks (eww-bar)
 ├── nixpkgs/          # Nixpkgs instantiation with overlays applied
 ├── secrets/          # sops-encrypted files (age recipients in .sops.yaml)
 └── .claude/          # Claude Code integration (skills, permissions)

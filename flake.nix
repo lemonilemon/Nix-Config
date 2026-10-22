@@ -164,14 +164,14 @@
             # indented-string stripping and Python's indentation rules do not
             # agree, and a checker worth having is worth being able to read as
             # Python.
-            checkYuckInitial = ./tests/nix/check_yuck_initial.py;
+            checkYuckInitial = ./packages/eww-bar/tests/check_yuck_initial.py;
 
             # And the stylesheet's pseudo-classes, for the same reason: GTK
             # parses eww.scss, nothing in the build does, and GTK abandons the
             # rest of the file at the first rule it cannot read -- so one bad
             # selector strips the bar's appearance from that line down. It cost
             # a broken desktop once already.
-            checkGtkCss = ./tests/nix/check_gtk_css.py;
+            checkGtkCss = ./packages/eww-bar/tests/check_gtk_css.py;
           in
           pkgs.runCommand "eww-backend-tests"
             {
@@ -183,7 +183,7 @@
             ''
               # Not "go": that name collides with $GOPATH in the sandbox and the
               # toolchain then ignores the module's go.mod.
-              cp -R ${./modules/desktop/home/hyprland/eww/go} src
+              cp -R ${./packages/eww-bar/go} src
               chmod -R u+w src
 
               # The sandbox has no HOME and no network; `go run` needs a
@@ -202,10 +202,10 @@
                 | go run ./internal/collect/diffgen > $TMPDIR/answer.json
 
               python3 ${checkYuckInitial} $TMPDIR/answer.json \
-                ${./modules/desktop/home/hyprland/eww/eww.yuck}
+                ${./packages/eww-bar/config/eww.yuck}
 
               python3 ${checkGtkCss} \
-                ${./modules/desktop/home/hyprland/eww/eww.scss}
+                ${./packages/eww-bar/config/eww.scss}
 
               touch $out
             '';

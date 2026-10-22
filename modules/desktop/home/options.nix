@@ -53,7 +53,7 @@
       hyprland.eww.defaultHiddenModules = helpers.mkHomeOpt {
         inherit osConfig;
         path = "home.desktop.hyprland.eww.defaultHiddenModules";
-        type = lib.types.listOf (lib.types.enum (import ./hyprland/eww/bar-modules.nix));
+        type = lib.types.listOf (lib.types.enum (import ../../../packages/eww-bar/bar-modules.nix));
         default = [ ];
         description = "Eww bar modules hidden until shown from Settings > Bar modules";
       };

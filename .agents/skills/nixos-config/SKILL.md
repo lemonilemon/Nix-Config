@@ -79,6 +79,7 @@ a module's `config` block.
 | New service | new or existing `modules/general/` module |
 | New flake input | `flake.nix` → `inputs` block (patterns below) |
 | New overlay | `overlays/`, then wire into `nixpkgs/overlays.nix` |
+| Self-contained package with its own sources and checks | `packages/<name>/` (e.g. `packages/eww-bar/`) |
 | New profile | `profiles/<name>/` + entry in `flake.nix` `nixosConfigurations` |
 | Neovim plugin | `modules/cli/home/nvim/plugins/<category>/` |
 | New feature flag | declare in the relevant `options.nix`, implement in the module |

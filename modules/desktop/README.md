@@ -24,7 +24,7 @@ desktop/
 │   └── hyprland/       # Hyprland configuration
 │       ├── default.nix        # Hyprland entry point
 │       ├── waybar.nix         # Status bar (fallback when Eww is off)
-│       ├── eww/               # Eww bar and popups
+│       ├── eww/               # Eww bar module; the bar itself is in packages/eww-bar/
 │       ├── dunst.nix          # Notification daemon
 │       ├── hyprlock.nix       # Screen locker
 │       ├── hyprpaper/         # Static wallpaper engine (fallback)
@@ -110,7 +110,11 @@ A dynamic tiling Wayland compositor with modern features.
   `~/.config/hypr/monitors.lua`, as overrides on top of the host's
   `defaultHiddenModules`; "Reset to defaults" empties it. Hand edits take effect
   on the next `systemctl --user restart eww-bar`. The module names are listed
-  once in `eww/bar-modules.nix` and once in the Go backend's `barmodules.go`
+  once in `packages/eww-bar/bar-modules.nix` and once in the Go backend's
+  `barmodules.go`
+- The bar's sources live in `packages/eww-bar/`: the Go backend in `go/`, the
+  widgets and styles in `config/`, and the two checks the `eww-backend` flake
+  check runs in `tests/`
 
 **Hyprlock** (`hyprlock.nix`):
 - Screen locking utility

@@ -43,7 +43,7 @@
       };
 
       hyprland.eww.defaultHiddenModules = lib.mkOption {
-        type = lib.types.listOf (lib.types.enum (import ./home/hyprland/eww/bar-modules.nix));
+        type = lib.types.listOf (lib.types.enum (import ../../packages/eww-bar/bar-modules.nix));
         default = lib.optional (config.formFactor == "laptop") "storage";
         description = "Eww bar modules hidden until shown from Settings > Bar modules";
       };

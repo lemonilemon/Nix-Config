@@ -28,7 +28,7 @@ func TestToggleClosedOpensBackdropThenPopup(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	want := [][]string{
-		closeCall(),
+		closeCall(nil),
 		{"--no-daemonize", "open", "popup_backdrop", "--screen", "eDP-1"},
 		{"--no-daemonize", "open", "volume_popup", "--screen", "eDP-1"},
 	}
@@ -42,23 +42,44 @@ func TestToggleAlreadyOpenOnlyCloses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !reflect.DeepEqual(calls, [][]string{closeCall()}) {
-		t.Errorf("calls = %v, want a lone close", calls)
+	want := [][]string{{"close", "volume_popup"}}
+	if !reflect.DeepEqual(calls, want) {
+		t.Errorf("calls = %v, want %v", calls, want)
 	}
 }
 
-func TestCloseClosesEverything(t *testing.T) {
+// Without an active-windows reading the close call must name every popup plus
+// the backdrop, or a popup opened on another screen survives the toggle and two
+// end up visible.
+func TestCloseWithoutAReadingClosesEverything(t *testing.T) {
 	calls, err := popupEwwCalls("close", nil, map[string]bool{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !reflect.DeepEqual(calls, [][]string{closeCall()}) {
-		t.Errorf("calls = %v", calls)
+	if len(calls) != 1 || len(calls[0]) != len(popupWindows)+2 {
+		t.Errorf("calls = %v, want one close naming all popups and the backdrop", calls)
 	}
-	// The close call must name every popup plus the backdrop, or a popup opened
-	// on another screen survives the toggle and two end up visible.
-	if len(closeCall()) != len(popupWindows)+2 {
-		t.Errorf("close call = %v, want close + all popups + the backdrop", closeCall())
+}
+
+func TestCloseNamesOnlyOpenWindows(t *testing.T) {
+	open := map[string]bool{"bar-eDP-1": true, "network_popup": true, "popup_backdrop": true}
+	calls, err := popupEwwCalls("close", nil, open)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := [][]string{{"close", "network_popup", "popup_backdrop"}}
+	if !reflect.DeepEqual(calls, want) {
+		t.Errorf("calls = %v, want %v", calls, want)
+	}
+}
+
+func TestCloseWithNothingOpenCallsNothing(t *testing.T) {
+	calls, err := popupEwwCalls("close", nil, map[string]bool{"bar-eDP-1": true})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(calls) != 0 {
+		t.Errorf("calls = %v, want none", calls)
 	}
 }
 
@@ -97,7 +118,6 @@ func TestRunPopupToggleInvokesEwwInOrder(t *testing.T) {
 		t.Errorf("exit code = %d, want 0", code)
 	}
 	want := [][]string{
-		closeCall(),
 		{"--no-daemonize", "open", "popup_backdrop", "--screen", "HDMI-A-1"},
 		{"--no-daemonize", "open", "volume_popup", "--screen", "HDMI-A-1"},
 	}

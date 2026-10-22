@@ -12,8 +12,7 @@ import (
 	"ewwbar/internal/run"
 )
 
-// popupWindows is every popup window the helper manages. `eww close` ignores its
-// exit status, so naming a window that is already closed is safe.
+// popupWindows is every popup window the helper manages.
 var popupWindows = []string{
 	"volume_popup",
 	"bluetooth_popup",
@@ -66,8 +65,24 @@ func focusedMonitorFromJSON(monitorsJSON string) string {
 	return "0"
 }
 
-func closeCall() []string {
-	return append(append([]string{"close"}, popupWindows...), backdropWindow)
+// closeCall names the popups and backdrop that are open, or nil when none is.
+// An empty openIDs means `eww active-windows` gave no reading -- it always lists
+// the bar -- and then every one is named.
+func closeCall(openIDs map[string]bool) []string {
+	windows := append(append([]string{}, popupWindows...), backdropWindow)
+	if len(openIDs) > 0 {
+		var open []string
+		for _, window := range windows {
+			if openIDs[window] {
+				open = append(open, window)
+			}
+		}
+		windows = open
+	}
+	if len(windows) == 0 {
+		return nil
+	}
+	return append([]string{"close"}, windows...)
 }
 
 func isPopupWindow(name string) bool {
@@ -82,7 +97,10 @@ func isPopupWindow(name string) bool {
 func popupEwwCalls(command string, args []string, openIDs map[string]bool) ([][]string, error) {
 	switch command {
 	case "close":
-		return [][]string{closeCall()}, nil
+		if call := closeCall(openIDs); call != nil {
+			return [][]string{call}, nil
+		}
+		return nil, nil
 	case "toggle":
 		if len(args) != 2 {
 			return nil, errPopupUsage
@@ -91,7 +109,10 @@ func popupEwwCalls(command string, args []string, openIDs map[string]bool) ([][]
 		if !isPopupWindow(name) {
 			return nil, fmt.Errorf("unknown popup window: %s", name)
 		}
-		calls := [][]string{closeCall()}
+		var calls [][]string
+		if call := closeCall(openIDs); call != nil {
+			calls = append(calls, call)
+		}
 		if !openIDs[name] {
 			// --no-daemonize pairs with the open-bars script in eww/default.nix: without it
 			// an `eww open` the daemon cannot answer within ~100 ms makes the client fork a
@@ -121,10 +142,7 @@ func runPopupWith(argv []string, deps popupDeps) int {
 		args = []string{args[0], deps.focusedMon()}
 	}
 
-	openIDs := map[string]bool{}
-	if command == "toggle" {
-		openIDs = parseOpenWindows(deps.activeWindows())
-	}
+	openIDs := parseOpenWindows(deps.activeWindows())
 
 	calls, err := popupEwwCalls(command, args, openIDs)
 	if err != nil {

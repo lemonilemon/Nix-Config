@@ -229,6 +229,30 @@
       });
     })
 
+    (final: _prev: {
+      commissioner = final.stdenvNoCC.mkDerivation {
+        pname = "commissioner";
+        version = "0-unstable-2026-03-13";
+        src = final.fetchurl {
+          name = "Commissioner.ttf";
+          url = "https://raw.githubusercontent.com/google/fonts/5174b3333331c966c38f4355d50b03ca1c1df2f9/ofl/commissioner/Commissioner%5BFLAR,VOLM,slnt,wght%5D.ttf";
+          hash = "sha256-2wEnmm64Z27mJnWk1+Xtv+Xwj7wQk1ji9JdgtwwER9M=";
+        };
+        dontUnpack = true;
+        installPhase = ''
+          runHook preInstall
+          install -Dm444 $src $out/share/fonts/truetype/Commissioner.ttf
+          runHook postInstall
+        '';
+        meta = with final.lib; {
+          description = "Commissioner variable font";
+          homepage = "https://github.com/kosbarts/Commissioner";
+          license = licenses.ofl;
+          platforms = platforms.all;
+        };
+      };
+    })
+
     # Use no-remote as default (firefox)
     (final: prev: {
       firefox = prev.firefox.overrideAttrs (oldAttrs: {

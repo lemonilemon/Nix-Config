@@ -42,6 +42,12 @@
         description = "Show the Wi-Fi toggle in the Eww network popup";
       };
 
+      hyprland.eww.modules = lib.mkOption {
+        type = lib.types.listOf (lib.types.enum (import ../../packages/eww-bar/bar-modules.nix));
+        default = import ../../packages/eww-bar/bar-modules.nix;
+        description = "Eww bar modules this host's bar has at all; the ones left out are not drawn or collected";
+      };
+
       hyprland.eww.defaultHiddenModules = lib.mkOption {
         type = lib.types.listOf (lib.types.enum (import ../../packages/eww-bar/bar-modules.nix));
         default = lib.optional (config.formFactor == "laptop") "storage";

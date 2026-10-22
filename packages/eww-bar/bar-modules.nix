@@ -1,16 +1,3 @@
-# Bar modules Settings > Bar modules can hide, in bar order. Keep in step with
-# barModuleNames in go/internal/collect/barmodules.go.
-[
-  "media"
-  "window"
-  "notifications"
-  "network"
-  "bluetooth"
-  "ai_usage"
-  "temperature"
-  "cpu"
-  "memory"
-  "storage"
-  "volume"
-  "battery"
-]
+# Bar modules in bar order. go/internal/collect/modules.json is the one list:
+# the Go backend embeds it and Nix reads it here.
+builtins.fromJSON (builtins.readFile ./go/internal/collect/modules.json)

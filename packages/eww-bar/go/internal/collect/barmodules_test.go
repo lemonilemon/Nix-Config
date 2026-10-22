@@ -76,6 +76,40 @@ func TestToggleBarModuleOverrideRejectsUnknownModules(t *testing.T) {
 	}
 }
 
+func TestEnabledBarModulesDefaultsToEveryModule(t *testing.T) {
+	for _, env := range []string{"", " , "} {
+		enabled := EnabledBarModules(env)
+		for _, name := range barModuleNames {
+			if !enabled[name] {
+				t.Errorf("EnabledBarModules(%q) leaves out %s", env, name)
+			}
+		}
+	}
+}
+
+func TestALeftOutModuleIsHiddenAndCannotBeToggled(t *testing.T) {
+	previous := barModulesEnabled
+	t.Cleanup(func() { barModulesEnabled = previous })
+	barModulesEnabled = EnabledBarModules("media, window")
+
+	modules := ResolveBarModules(nil, map[string]bool{"cpu": true})
+	for _, name := range barModuleNames {
+		want := "false"
+		if name == "media" || name == "window" {
+			want = "true"
+		}
+		if got := resolvedValue(t, modules, name); got != want {
+			t.Errorf("%s = %s, want %s", name, got, want)
+		}
+	}
+	if _, err := ToggleBarModuleOverride(nil, nil, "cpu"); err != ErrUnknownBarModule {
+		t.Errorf("toggling a left-out module: got %v, want ErrUnknownBarModule", err)
+	}
+	if hidden := DefaultHiddenBarModules("cpu,media"); hidden["cpu"] || !hidden["media"] {
+		t.Errorf("DefaultHiddenBarModules kept a left-out module or dropped an enabled one: %v", hidden)
+	}
+}
+
 func TestBarModuleOverridesRoundTrip(t *testing.T) {
 	text, err := EncodeBarModuleOverrides(map[string]bool{"storage": true, "cpu": false})
 	if err != nil {

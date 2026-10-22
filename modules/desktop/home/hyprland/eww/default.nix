@@ -17,6 +17,7 @@ in
       laptopControls.enable = cfg.laptopControls.enable;
       battery.enable = cfg.battery.enable;
       wifi.enable = cfg.wifi.enable;
+      inherit (cfg) modules;
       defaultHidden = cfg.defaultHiddenModules;
       ai.ccusage.package = pkgs.llm-agents.ccusage;
       ai.openusage.package = pkgs.openusage-cli;

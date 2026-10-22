@@ -8,7 +8,7 @@ let
   cfg = config.programs.eww-bar;
 
   bar = pkgs.callPackage ./package.nix {
-    inherit (cfg) colors defaultHidden;
+    inherit (cfg) colors modules defaultHidden;
     enableLaptopControls = cfg.laptopControls.enable;
     enableBattery = cfg.battery.enable;
     enableWifi = cfg.wifi.enable;
@@ -159,6 +159,13 @@ in
 
     wifi.enable = lib.mkEnableOption "the Wi-Fi toggle in the network popup";
 
+    modules = lib.mkOption {
+      type = lib.types.listOf (lib.types.enum (import ./bar-modules.nix));
+      default = import ./bar-modules.nix;
+      defaultText = lib.literalMD "every module, from `bar-modules.nix`";
+      description = "Bar modules this bar has at all. A module left out has no widget, no row in Settings > Bar modules and no collectors; the bar keeps its own order whatever the order here";
+    };
+
     defaultHidden = lib.mkOption {
       type = lib.types.listOf (lib.types.enum (import ./bar-modules.nix));
       default = [ ];
@@ -247,6 +254,7 @@ in
           Environment = [
             "PATH=${runtimePath}"
             "EWW_BAR_BATTERY=${if cfg.battery.enable then "1" else "0"}"
+            "EWW_BAR_MODULES=${lib.concatStringsSep "," cfg.modules}"
             "EWW_BAR_DEFAULT_HIDDEN=${lib.concatStringsSep "," cfg.defaultHidden}"
             "CODEX_HOME=${cfg.ai.codexHome}"
           ];

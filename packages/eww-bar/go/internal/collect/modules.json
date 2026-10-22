@@ -1,0 +1,14 @@
+[
+  "media",
+  "window",
+  "notifications",
+  "network",
+  "bluetooth",
+  "ai_usage",
+  "temperature",
+  "cpu",
+  "memory",
+  "storage",
+  "volume",
+  "battery"
+]

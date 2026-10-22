@@ -7,6 +7,7 @@
 ; Which bar modules are shown, pushed by the daemon with `eww update` after each
 ; Settings > Bar modules toggle. The default is this host's, written by default.nix.
 (defvar bar_modules '@barModulesDefault@')
+(defvar bar_modules_available '@barModulesAvailable@')
 
 ; Which monitor owns each workspace, and which monitor is displaying it.
 ;
@@ -788,18 +789,18 @@
   (box :class "popup accent-settings" :orientation "v" :space-evenly false
     (popup_header :icon "󱥇" :title "Bar modules" :subtitle "Show or hide parts of the bar")
     (box :class "popup-body bar-modules-body" :orientation "v" :space-evenly false
-      (bar_module_row :name "media" :icon "" :label "Media" :on {bar_modules.media} :available true)
-      (bar_module_row :name "window" :icon "󱂬" :label "Window title" :on {bar_modules.window} :available true)
-      (bar_module_row :name "notifications" :icon "󰂜" :label "Notifications" :on {bar_modules.notifications} :available true)
-      (bar_module_row :name "network" :icon "󰖟" :label "Network" :on {bar_modules.network} :available true)
-      (bar_module_row :name "bluetooth" :icon "󰂯" :label "Bluetooth" :on {bar_modules.bluetooth} :available true)
-      (bar_module_row :name "ai_usage" :icon "󰙴" :label "AI usage" :on {bar_modules.ai_usage} :available true)
-      (bar_module_row :name "temperature" :icon "" :label "Temperature" :on {bar_modules.temperature} :available true)
-      (bar_module_row :name "cpu" :icon "" :label "CPU" :on {bar_modules.cpu} :available true)
-      (bar_module_row :name "memory" :icon "" :label "Memory" :on {bar_modules.memory} :available true)
-      (bar_module_row :name "storage" :icon "󰋊" :label "Storage" :on {bar_modules.storage} :available true)
-      (bar_module_row :name "volume" :icon "" :label "Volume" :on {bar_modules.volume} :available true)
-      (bar_module_row :name "battery" :icon "󰁹" :label "Battery" :on {bar_modules.battery} :available {battery_module == "true"})
+      (bar_module_row :name "media" :icon "" :label "Media" :on {bar_modules.media} :available {bar_modules_available.media == "true"})
+      (bar_module_row :name "window" :icon "󱂬" :label "Window title" :on {bar_modules.window} :available {bar_modules_available.window == "true"})
+      (bar_module_row :name "notifications" :icon "󰂜" :label "Notifications" :on {bar_modules.notifications} :available {bar_modules_available.notifications == "true"})
+      (bar_module_row :name "network" :icon "󰖟" :label "Network" :on {bar_modules.network} :available {bar_modules_available.network == "true"})
+      (bar_module_row :name "bluetooth" :icon "󰂯" :label "Bluetooth" :on {bar_modules.bluetooth} :available {bar_modules_available.bluetooth == "true"})
+      (bar_module_row :name "ai_usage" :icon "󰙴" :label "AI usage" :on {bar_modules.ai_usage} :available {bar_modules_available.ai_usage == "true"})
+      (bar_module_row :name "temperature" :icon "" :label "Temperature" :on {bar_modules.temperature} :available {bar_modules_available.temperature == "true"})
+      (bar_module_row :name "cpu" :icon "" :label "CPU" :on {bar_modules.cpu} :available {bar_modules_available.cpu == "true"})
+      (bar_module_row :name "memory" :icon "" :label "Memory" :on {bar_modules.memory} :available {bar_modules_available.memory == "true"})
+      (bar_module_row :name "storage" :icon "󰋊" :label "Storage" :on {bar_modules.storage} :available {bar_modules_available.storage == "true"})
+      (bar_module_row :name "volume" :icon "" :label "Volume" :on {bar_modules.volume} :available {bar_modules_available.volume == "true"})
+      (bar_module_row :name "battery" :icon "󰁹" :label "Battery" :on {bar_modules.battery} :available {battery_module == "true" && bar_modules_available.battery == "true"})
       (button :class "popup-footer-action" :timeout "5s"
         :onclick "eww-barctl --quiet modules reset"
         (label :text "Reset to defaults")))))

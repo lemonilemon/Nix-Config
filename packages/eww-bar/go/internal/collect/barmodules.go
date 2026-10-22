@@ -1,6 +1,7 @@
 package collect
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"os"
@@ -10,21 +11,59 @@ import (
 	"ewwbar/internal/pyjson"
 )
 
-// barModuleNames is every bar module the Settings popup can hide, in bar order.
-// Keep in step with bar-modules.nix and the bar_module_row calls in eww.yuck.
-var barModuleNames = []string{
-	"media", "window", "notifications", "network", "bluetooth",
-	"ai_usage", "temperature", "cpu", "memory", "storage",
-	"volume", "battery",
+// modules.json is also what bar-modules.nix reads, so the list exists once.
+//
+//go:embed modules.json
+var barModulesJSON []byte
+
+// barModuleNames is every bar module the bar knows, in bar order. The
+// bar_module_row calls in eww.yuck still name each one.
+var barModuleNames = parseBarModuleNames(barModulesJSON)
+
+func parseBarModuleNames(data []byte) []string {
+	var names []string
+	if err := json.Unmarshal(data, &names); err != nil || len(names) == 0 {
+		panic("collect: modules.json is not a non-empty JSON list of names")
+	}
+	return names
+}
+
+// EnabledBarModules parses EWW_BAR_MODULES, the comma-separated modules this
+// host builds the bar with. Unset or empty means every module.
+func EnabledBarModules(env string) map[string]bool {
+	enabled := map[string]bool{}
+	for _, name := range strings.Split(env, ",") {
+		if name = strings.TrimSpace(name); name != "" {
+			enabled[name] = true
+		}
+	}
+	if len(enabled) == 0 {
+		for _, name := range barModuleNames {
+			enabled[name] = true
+		}
+	}
+	return enabled
+}
+
+var barModulesEnabled = EnabledBarModules(os.Getenv("EWW_BAR_MODULES"))
+
+// BarModuleEnabled reports whether this host's bar has the module at all. A
+// module left out has no widget, no Settings row and no collectors.
+func BarModuleEnabled(name string) bool {
+	return barModulesEnabled[name]
 }
 
 // barModulesVersion is the on-disk version of the overrides file.
 const barModulesVersion = 1
 
-// ErrUnknownBarModule is a toggle naming a module the bar does not have.
+// ErrUnknownBarModule is a toggle naming a module the bar does not have,
+// either one it never knew or one this host leaves out.
 var ErrUnknownBarModule = errors.New("unknown bar module")
 
 func isBarModule(name string) bool {
+	if !barModulesEnabled[name] {
+		return false
+	}
 	for _, known := range barModuleNames {
 		if known == name {
 			return true
@@ -52,6 +91,9 @@ func ResolveBarModules(defaultHidden, overrides map[string]bool) pyjson.Ordered 
 		shown := !defaultHidden[name]
 		if override, set := overrides[name]; set {
 			shown = override
+		}
+		if !barModulesEnabled[name] {
+			shown = false
 		}
 		resolved = append(resolved, pyjson.Pair{Key: name, Value: boolText(shown)})
 	}

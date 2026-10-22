@@ -65,6 +65,7 @@ home.desktop.enable              # Enable desktop home configuration (default: t
 home.desktop.hyprland.enable     # Enable Hyprland user config (default: follows desktop.enable)
 home.desktop.hyprland.eww.enable                    # Enable Eww bar for Hyprland
 home.desktop.hyprland.eww.laptopControls.enable     # Enable laptop clamshell/headless controls
+home.desktop.hyprland.eww.modules                   # Modules the bar has at all (default: every module)
 home.desktop.hyprland.eww.defaultHiddenModules      # Modules hidden until shown in Settings (laptop: [ "storage" ])
 home.desktop.hyprland.waybar.enable                 # Enable Waybar when Eww is disabled
 ```
@@ -110,8 +111,13 @@ A dynamic tiling Wayland compositor with modern features.
   `~/.config/hypr/monitors.lua`, as overrides on top of the host's
   `defaultHiddenModules`; "Reset to defaults" empties it. Hand edits take effect
   on the next `systemctl --user restart eww-bar`. The module names are listed
-  once in `packages/eww-bar/bar-modules.nix` and once in the Go backend's
-  `barmodules.go`
+  once, in `packages/eww-bar/go/internal/collect/modules.json`: the Go backend
+  embeds it and `bar-modules.nix` reads it
+- `home.desktop.hyprland.eww.modules` sets which modules a host's bar has at all.
+  A module left out has no widget, no row in Settings > Bar modules and no
+  collectors: the backend starts neither its watcher process (`nmcli`, `pactl`,
+  `playerctl`, `dbus-monitor`, `bluetoothctl`) nor its polls and probes. Hiding a
+  module in Settings only hides it
 - The bar is a self-contained package in `packages/eww-bar/`: `package.nix`
   builds the Go backend (`go/`) and renders the widgets and styles (`config/`),
   `module.nix` is its Home Manager module (`programs.eww-bar`: services, config

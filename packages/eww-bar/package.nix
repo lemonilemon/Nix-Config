@@ -8,10 +8,12 @@
   enableLaptopControls ? false,
   enableBattery ? false,
   enableWifi ? false,
+  modules ? import ./bar-modules.nix,
   defaultHidden ? [ ],
 }:
 let
   barModules = import ./bar-modules.nix;
+  flag = value: if value then "true" else "false";
 
   # The daemon, eww-barctl and eww-popup, one Go module.
   #
@@ -78,7 +80,10 @@ let
     # card as one sentence gave 41px back and removed the legend nobody had.
     networkPopupHeight = if enableWifi then "314px" else "274px";
     barModulesDefault = builtins.toJSON (
-      lib.genAttrs barModules (name: if lib.elem name defaultHidden then "false" else "true")
+      lib.genAttrs barModules (name: flag (lib.elem name modules && !lib.elem name defaultHidden))
+    );
+    barModulesAvailable = builtins.toJSON (
+      lib.genAttrs barModules (name: flag (lib.elem name modules))
     );
   };
 in

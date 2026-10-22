@@ -42,9 +42,7 @@ in
       }
 
       (lib.mkIf (config.nixos.desktop.sddmTheme == "orrery") {
-        services.displayManager.sddm.theme = "orrery";
-        environment.systemPackages = [ orrery ];
-        fonts.packages = [ orrery.fonts ];
+        services.displayManager.sddm.theme = "${orrery}/share/sddm/themes/orrery";
       })
 
       (lib.mkIf (config.nixos.desktop.sddmTheme == "astronaut") {

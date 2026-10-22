@@ -249,9 +249,10 @@ Two things are deliberate and easy to undo by accident:
   `<folder>/.stversions`, which would put a copy of every past revision inside
   an auto-committing repo.
 
-**Sync is LAN-only.** `globalAnnounceEnabled` and `relaysEnabled` are off, so
-the hosts announce their addresses to no external server and Syncthing contacts
-nothing outside the local network (the nixpkgs build is tagged `noupgrade`, and
+**Sync is LAN-only.** `globalAnnounceEnabled`, `relaysEnabled` and `natEnabled`
+are off, so the hosts announce their addresses to no external server, ask the
+router to forward no port, and Syncthing contacts nothing outside the local
+network (the nixpkgs build is tagged `noupgrade`, and
 `urAccepted = -1` declines usage reporting). Local discovery, a UDP broadcast on
 21027 that never leaves the network segment, is what finds peers.
 

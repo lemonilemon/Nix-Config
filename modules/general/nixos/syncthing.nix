@@ -156,6 +156,7 @@ in
           # resolved per-entry, so the two compose).
           globalAnnounceEnabled = false;
           relaysEnabled = false;
+          natEnabled = false;
         };
 
         devices = lib.mapAttrs (name: id: { inherit id; }) peers;

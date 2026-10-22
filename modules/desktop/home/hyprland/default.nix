@@ -485,9 +485,5 @@
         pcall(dofile, os.getenv("HOME") .. "/.config/hypr/monitors.lua")
       '';
     };
-
-    home.sessionVariables = {
-      WLR_NO_HARDWARE_CURSORS = "1";
-    };
   };
 }

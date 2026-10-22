@@ -342,7 +342,7 @@ git commit
 nix fmt
 ```
 
-### Automated Flake Updates
+### Automated Updates
 
 Every Sunday, `.github/workflows/flake_update.yml` updates `flake.lock` on `dev`, opens a PR from
 `automation/flake-updates`, and builds the WSL, laptop and desktop configurations, pushing them to
@@ -351,6 +351,9 @@ with the failed run and leaves it open: push the fix to that branch and merge it
 branch has a commit not made by the bot, later runs skip the update until the PR is merged or
 closed. To run it outside the schedule, use Actions → Flake.lock: update Nix dependencies → Run
 workflow.
+
+Dependabot (`.github/dependabot.yml`) separately opens one weekly PR into `dev` that bumps the
+GitHub Actions the workflows use. Those PRs are not merged automatically.
 
 ## Included Software
 

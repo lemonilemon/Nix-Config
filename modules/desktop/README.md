@@ -24,7 +24,7 @@ desktop/
 │   └── hyprland/       # Hyprland configuration
 │       ├── default.nix        # Hyprland entry point
 │       ├── waybar.nix         # Status bar (fallback when Eww is off)
-│       ├── eww/               # Eww bar module; the bar itself is in packages/eww-bar/
+│       ├── eww/               # Maps the eww options onto programs.eww-bar (packages/eww-bar/)
 │       ├── dunst.nix          # Notification daemon
 │       ├── hyprlock.nix       # Screen locker
 │       ├── hyprpaper/         # Static wallpaper engine (fallback)
@@ -112,9 +112,12 @@ A dynamic tiling Wayland compositor with modern features.
   on the next `systemctl --user restart eww-bar`. The module names are listed
   once in `packages/eww-bar/bar-modules.nix` and once in the Go backend's
   `barmodules.go`
-- The bar's sources live in `packages/eww-bar/`: the Go backend in `go/`, the
-  widgets and styles in `config/`, and the two checks the `eww-backend` flake
-  check runs in `tests/`
+- The bar is a self-contained package in `packages/eww-bar/`: `package.nix`
+  builds the Go backend (`go/`) and renders the widgets and styles (`config/`),
+  `module.nix` is its Home Manager module (`programs.eww-bar`: services, config
+  files, options), and `tests/` holds the two checks the `eww-backend` flake check
+  runs. `eww/default.nix` only maps the `home.desktop.hyprland.eww.*` options onto
+  `programs.eww-bar`, so profiles keep setting the options they always have
 
 **Hyprlock** (`hyprlock.nix`):
 - Screen locking utility

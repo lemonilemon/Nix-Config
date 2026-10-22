@@ -194,6 +194,7 @@ Audio system configuration:
 - PipeWire audio server
 - ALSA compatibility
 - PulseAudio compatibility
+- RTKit realtime scheduling for the audio threads
 - Low-latency settings
 
 ### `i18n.nix`

@@ -5,7 +5,7 @@
 {
   # Sound
   services.pulseaudio.enable = false; # Use pipewire instead
-  security.rtkit.enable = false;
+  security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
     alsa.enable = true;

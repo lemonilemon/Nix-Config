@@ -26,7 +26,8 @@ def main(answer_path, yuck_path):
     match = re.search(r":initial '(.*?)' \"eww-bar-backend bar\"\)", first_line)
     if not match:
         sys.exit("could not find the deflisten :initial literal in eww.yuck")
-    literal = json.loads(match.group(1))
+    # eww's ESCAPE_REPLACE_REGEX, applied before the JSON is ever parsed.
+    literal = json.loads(re.sub(r"\\(.)", r"\1", match.group(1)))
 
     if literal == produced:
         return 0

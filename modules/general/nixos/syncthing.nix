@@ -52,6 +52,18 @@ let
   # entirely, so git never has an opinion about them.
   versionsDir = "/home/${username}/.local/state/syncthing/versions/obsidian-notes";
 
+  parentsBelowHome =
+    path:
+    let
+      home = "/home/${username}";
+      parts = lib.splitString "/" (lib.removePrefix "${home}/" path);
+    in
+    lib.optionals (lib.hasPrefix "${home}/" path) (
+      lib.genList (n: lib.concatStringsSep "/" ([ home ] ++ lib.take (n + 1) parts)) (
+        lib.length parts - 1
+      )
+    );
+
   # Syncthing and git share one working tree here, so this list may only name
   # paths the vault's ignore rules already cover. An ignore over a *tracked*
   # file would arrive on the other machine as a deletion, and the vault's
@@ -186,9 +198,13 @@ in
     # Syncthing creates the folder itself on a receiving host, but not the
     # parents of an out-of-tree versions path. Both are declared here so the
     # first sync on a fresh machine has somewhere to land.
-    systemd.tmpfiles.rules = [
-      "d ${vault.vaultPath} 0755 ${username} ${username} -"
-      "d ${versionsDir} 0755 ${username} ${username} -"
-    ];
+    systemd.tmpfiles.rules =
+      map (dir: "d ${dir} - ${username} ${username} -") (
+        lib.unique (parentsBelowHome vault.vaultPath ++ parentsBelowHome versionsDir)
+      )
+      ++ [
+        "d ${vault.vaultPath} 0755 ${username} ${username} -"
+        "d ${versionsDir} 0755 ${username} ${username} -"
+      ];
   };
 }

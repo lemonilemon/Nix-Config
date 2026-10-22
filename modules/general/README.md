@@ -247,7 +247,10 @@ Two things are deliberate and easy to undo by accident:
 - **Version snapshots are stored outside the vault** via `versioning.fsPath`
   (`~/.local/state/syncthing/versions/`). Syncthing's default location is
   `<folder>/.stversions`, which would put a copy of every past revision inside
-  an auto-committing repo.
+  an auto-committing repo. Every directory between the home directory and that
+  path (and the vault) is declared through tmpfiles with the user's ownership:
+  tmpfiles creates a missing parent as root, then refuses to create anything
+  beneath it.
 
 **Sync is LAN-only.** `globalAnnounceEnabled`, `relaysEnabled` and `natEnabled`
 are off, so the hosts announce their addresses to no external server, ask the

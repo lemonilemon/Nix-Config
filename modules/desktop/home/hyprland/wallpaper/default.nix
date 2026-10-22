@@ -163,9 +163,10 @@ in
         Description = "Draw the current wallpaper onto hotplugged monitors";
         # After the daemon, whose ExecStartPost is awww-init: systemd holds the
         # daemon "starting" until that finishes, so the catch-up pass cannot
-        # race the login reveal. PartOf drags this down with the daemon, so a
-        # daemon restart re-runs the catch-up against a blank-slate compositor.
-        Requires = [ "awww-daemon.service" ];
+        # race the login reveal. BindsTo and PartOf drag this down with the
+        # daemon, so a daemon restart re-runs the catch-up against a blank-slate
+        # compositor.
+        BindsTo = [ "awww-daemon.service" ];
         After = [ "awww-daemon.service" ];
         PartOf = [ "awww-daemon.service" ];
       };

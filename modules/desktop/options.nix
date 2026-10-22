@@ -128,6 +128,14 @@
         default = "sddm";
         description = "The display manager to use for the desktop environment";
       };
+      sddmTheme = lib.mkOption {
+        type = lib.types.enum [
+          "orrery"
+          "astronaut"
+        ];
+        default = "orrery";
+        description = "SDDM greeter theme, when displayManager is sddm";
+      };
     };
   };
 }

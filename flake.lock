@@ -928,6 +928,7 @@
         "openusage-community": "openusage-community",
         "pre-commit-hooks": "pre-commit-hooks_2",
         "rose-pine-hyprcursor": "rose-pine-hyprcursor",
+        "sddm-orrery": "sddm-orrery",
         "sops-nix": "sops-nix",
         "systems": "systems_5",
         "template-nvim": "template-nvim",
@@ -956,6 +957,26 @@
       "original": {
         "owner": "ndom91",
         "repo": "rose-pine-hyprcursor",
+        "type": "github"
+      }
+    },
+    "sddm-orrery": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792638521,
+        "narHash": "sha256-NPC5Oa07uSEURxP9Zjx+OmKEkYNaArvN7zmFjDaYJ5M=",
+        "owner": "lemonilemon",
+        "repo": "sddm-orrery",
+        "rev": "2d52f8d0803cd70f9db9dd57f971c96e1c247380",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lemonilemon",
+        "repo": "sddm-orrery",
         "type": "github"
       }
     },

@@ -56,6 +56,7 @@ nixos.desktop.enable              # Enable desktop environment (default: true if
 nixos.desktop.hyprland.enable     # Enable Hyprland (default: follows desktop.enable)
 nixos.desktop.gnome.enable        # Enable GNOME (default: follows desktop.enable)
 nixos.desktop.displayManager      # Display manager choice: "sddm" or "gdm" (default: "sddm")
+nixos.desktop.sddmTheme           # SDDM greeter: "orrery" or "astronaut" (default: "orrery")
 ```
 
 ### Home Manager Options
@@ -237,7 +238,13 @@ Display managers handle the login screen and session management.
 **Configuration** (`nixos/display-manager/sddm.nix`):
 - Modern Qt-based display manager
 - Wayland support
-- Theme customization
+- Theme: Orrery by default, from the `sddm-orrery` flake input
+  ([lemonilemon/sddm-orrery](https://github.com/lemonilemon/sddm-orrery)): the
+  blog's night sky and the inner planets at their real positions, in
+  astronaut's layout. Its IBM Plex fonts go into `fonts.packages`, because the
+  greeter only sees system fonts. `nixos.desktop.sddmTheme = "astronaut"`
+  switches back to stock sddm-astronaut
+- Preview the theme before a rebuild with `nix run github:lemonilemon/sddm-orrery#preview`
 - Auto-login options
 - Session selection (Hyprland's UWSM session entry is hidden)
 
@@ -457,6 +464,7 @@ Desktop environment services are automatically managed:
 External flake inputs:
 - `hyprland`: Hyprland compositor
 - `catppuccin`: Theming
+- `sddm-orrery`: SDDM greeter theme
 - System packages from nixpkgs for desktop applications
 
 ## Notes

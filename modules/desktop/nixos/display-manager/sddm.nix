@@ -24,7 +24,7 @@ in
           enable = true;
           wayland = {
             enable = true;
-            compositor = "weston";
+            compositor = "kwin";
           };
           autoNumlock = true;
           package = pkgs.kdePackages.sddm;

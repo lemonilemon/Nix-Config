@@ -37,14 +37,13 @@ jobs:
           fi
       - uses: DeterminateSystems/determinate-nix-action@v3
         if: steps.guard.outputs.skip == 'false'
-      # Pinned rather than tracking main: this job holds contents: write,
-      # pull-requests: write and a PAT, so it should not run whatever happens to
-      # be on someone else's default branch. Dependabot bumps the pin.
+      # Pinned rather than tracking main: this job holds contents: write and
+      # pull-requests: write, so it should not run whatever happens to be on
+      # someone else's default branch. Dependabot bumps the pin.
       - uses: DeterminateSystems/update-flake-lock@v28
         id: update
         if: steps.guard.outputs.skip == 'false'
         with:
-          token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
           base: dev
           branch: automation/flake-updates
           commit-msg: "chore: update flake inputs"

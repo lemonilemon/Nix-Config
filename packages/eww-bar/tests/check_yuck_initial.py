@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 """Assert eww.yuck's :initial literal equals the daemon's default snapshot.
 
-buildGoModule already runs `go test ./...` over the module, so this covers the
-one assertion that cannot live inside it: eww.yuck is not part of the Go source,
-and the literal in it is what the bar renders for the instant before the first
-line arrives on the daemon's stdout.
-
-Drift shows up as a flicker at startup, or as a widget that renders empty until
-the first update, and nothing else in the build would notice.
-
 Usage: check_yuck_initial.py <diffgen-answer.json> <eww.yuck>
 """
 import json

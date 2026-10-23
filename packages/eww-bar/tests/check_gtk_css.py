@@ -1,32 +1,12 @@
 #!/usr/bin/env python3
 """Assert every pseudo-class in eww.scss is one GTK actually implements.
 
-This exists because of a specific outage. `calendar:week` was added to the
-stylesheet on the strength of the string appearing in libgtk's symbol table.
-It is not a pseudo-class: :week and :day were GTK3 *regions*, deprecated in
-3.14 and since removed. GTK does not skip a rule it cannot parse -- it
-abandons the rest of the stylesheet -- so one bad selector discarded every
-rule after it and the whole bar lost its appearance.
-
-Nothing caught it. dart-sass compiles `calendar:week` happily, because it is
-valid CSS syntax; only GTK knows which pseudo-classes exist. The first place
-the error could surface was the running bar, after a rebuild.
-
-Running the stylesheet through GTK's own parser would be the faithful check,
-and it is not worth what it costs: it needs a GTK typelib environment inside
-the sandbox, and nixpkgs' pygobject wrapper fights over GI_TYPELIB_PATH. An
-allowlist catches the entire class of bug for twenty lines and no dependency.
-
 Usage: check_gtk_css.py <eww.scss>
 """
 import re
 import sys
 
-# GTK 3 CSS pseudo-classes. From the GTK CSS documentation, not from grepping
-# the library -- that is the mistake this script exists to prevent.
-#
-# Add to this list only with evidence from GTK's documentation, and say where
-# the evidence came from in the commit message.
+# From GTK 3's CSS documentation. libgtk's symbol table is not evidence.
 KNOWN = {
     # state
     "active", "hover", "selected", "disabled", "indeterminate",

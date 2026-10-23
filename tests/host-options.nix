@@ -1,17 +1,6 @@
 { pkgs, nixosConfigurations }:
-# Assertions live here only when the failure they catch would be SILENT --
-# something that still evaluates, still builds, still boots, and is simply
-# wrong. Anything a wrong value would announce by itself (an eval error, a
-# build failure, a missing widget, a machine that suspends when it should not)
-# is left to announce itself.
-#
-# This file used to also restate derived option values back at the config:
-# `powerManagement.cpuFreqGovernor == "performance"`, port lists, per-host
-# eww toggles. Those can only fail when you deliberately change the config,
-# at which point you update the expectation to match -- so they reported
-# nothing the diff had not already shown, and cost an edit on every change.
-# They were removed rather than maintained. Do not add more of that shape:
-# an expectation copied out of `nix eval` output is testing itself.
+# Assert only failures that stay silent (still evaluate, build and boot), never
+# a value copied out of `nix eval`.
 let
   inherit (pkgs) lib;
 

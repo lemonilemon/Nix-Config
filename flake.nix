@@ -181,35 +181,7 @@
         eww-backend =
           let
             pkgs = nixpkgs.legacyPackages.${system};
-
-            # This check runs the Go test suite AND the one assertion that
-            # cannot live inside it: eww.yuck's :initial literal has to equal
-            # the daemon's starting snapshot, and eww.yuck is not part of the Go
-            # source.
-            #
-            # `go test` is here rather than left to buildGoModule's checkPhase
-            # because `nix flake check` evaluates the NixOS configurations
-            # without building them, so that checkPhase never ran in CI -- it
-            # would first execute during a user's rebuild, which is the worst
-            # place to discover a failing test. A timezone-dependent golden file
-            # passed locally and failed in the sandbox for exactly that reason.
-            #
-            # It matters because that literal is what the bar renders for the
-            # instant before the first line arrives on stdout. Drift shows up as
-            # a flicker at startup or a missing widget, and nothing else in the
-            # build would notice.
-            #
-            # A committed file rather than an inline string: Nix's
-            # indented-string stripping and Python's indentation rules do not
-            # agree, and a checker worth having is worth being able to read as
-            # Python.
             checkYuckInitial = ./packages/eww-bar/tests/check_yuck_initial.py;
-
-            # And the stylesheet's pseudo-classes, for the same reason: GTK
-            # parses eww.scss, nothing in the build does, and GTK abandons the
-            # rest of the file at the first rule it cannot read -- so one bad
-            # selector strips the bar's appearance from that line down. It cost
-            # a broken desktop once already.
             checkGtkCss = ./packages/eww-bar/tests/check_gtk_css.py;
           in
           pkgs.runCommand "eww-backend-tests"

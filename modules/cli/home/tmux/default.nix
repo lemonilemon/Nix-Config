@@ -5,7 +5,10 @@
   ...
 }:
 {
-  imports = [ ./sesh.nix ];
+  imports = [
+    ./sesh.nix
+    ./herdr.nix
+  ];
 
   config = lib.mkIf config.home.cli.multiplexer.tmux.enable {
     programs.tmux = {
@@ -123,7 +126,7 @@
     programs.zsh = {
       enable = true;
       initContent = lib.mkOrder 545 ''
-        [[ -t 0 && -t 1 ]] && ZSH_TMUX_AUTOSTART=true
+        [[ -t 0 && -t 1 && ''${HERDR_ENV:-} != 1 ]] && ZSH_TMUX_AUTOSTART=true
       '';
       localVariables = {
         ZSH_TMUX_AUTOCONNECT = true; # Connects to an existing session if one exists

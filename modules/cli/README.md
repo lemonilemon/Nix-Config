@@ -27,6 +27,7 @@ cli/
 │   ├── programs/    # CLI utilities
 │   │   └── ai/      # AI coding agents (claude-code, codex, opencode, ...) + AGENTS.md
 │   ├── shells/      # Shell configurations (zsh, starship, zoxide)
+│   ├── tmux/        # tmux, the sesh picker, and a herdr session per tmux session
 │   └── zellij/      # Terminal multiplexer config
 └── nixos/           # NixOS system-level CLI settings
 ```
@@ -215,13 +216,21 @@ CLI utility configurations:
 
 - **ai/**: AI tools — `claude-code`, `codex`, `antigravity-cli` (`agy`), `pi`, `skills`, `ccusage`, and `opencode` with a custom multi-agent setup (team-lead, product-manager, developer, code-reviewer). Also installs `socat` and `bubblewrap` for sandboxing.
 - **ai/ claude-hud**: Claude Code's statusline, packaged in the overlay as `pkgs.claude-hud` from the pinned `claude-hud` flake input rather than installed from its plugin marketplace. Claude Code is enabled through Home Manager's `programs.claude-code` with `mutableSettings`, so activation merges only `statusLine` into `~/.claude/settings.json` and Claude Code keeps writing the rest. `~/.claude/plugins/claude-hud/config.json` is merged the same way, as a real file rather than a link, because claude-hud ignores a symlinked config: keys declared in `ai/default.nix` win on every activation, and `/claude-hud:configure` can still set the rest. It sets `display.externalUsageWritePath`, so every session writes its subscription `rate_limits` to `~/.claude/plugins/claude-hud/usage-snapshot.json` (mode 0600). The path is the read-only option `home.cli.programs.claudeHud.usageSnapshot`, which the eww bar reads for its Claude quota card.
-- **ai/ herdr**: A terminal multiplexer that runs several agents side by side and shows each pane's state. `~/.config/herdr/config.toml` is generated here so herdr nests cleanly inside tmux: prefix `ctrl+g` (tmux keeps `ctrl+b`, nvim's cmp keeps `ctrl+space`), and the tab row is hidden while a workspace has a single tab so tmux keeps the top row and herdr's chrome stays on the left edge. Only the file is symlinked, not the directory, since herdr writes its log and session state alongside it. Its zsh completion is generated at build time too, since herdr prints the script instead of shipping one.
+- **ai/ herdr**: A terminal multiplexer that runs several agents side by side and shows each pane's state. `~/.config/herdr/config.toml` is generated here so herdr nests cleanly inside tmux: prefix `ctrl+g` (tmux keeps `ctrl+b`, nvim's cmp keeps `ctrl+space`), and the tab row is hidden while a workspace has a single tab so tmux keeps the top row and herdr's chrome stays on the left edge. Notifications go to the desktop (`ui.toast.delivery = "system"`), because a herdr client in a hidden tmux session cannot show its own toasts. herdr still skips them for the agent in a client's active tab, so the tmux status module from `tmux/herdr.nix` is the main signal. Only the file is symlinked, not the directory, since herdr writes its log and session state alongside it. Its zsh completion is generated at build time too, since herdr prints the script instead of shipping one.
 - **ai/AGENTS.md**: The single global agent instruction file, symlinked to `~/AGENTS.md`, `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, and `~/.config/opencode/AGENTS.md`, so every agent reads identical content and cannot drift. The link targets the Nix store, so it is read-only — agents cannot append to it in place.
 - **ai/skills/my-voice/**: Personal writing-voice skill (tone rules, zh-TW conventions, AI-tell ban list, sample excerpts) for text published under lemonilemon's name. Versioned in the repo rather than installed by the `skills` CLI, and symlinked into both `~/.agents/skills/my-voice` (pi's native skill root, shared home of CLI-installed skills) and `~/.claude/skills/my-voice` (claude-code). Repo-managed skills are declared in the `nixManagedSkills` attrset in `ai/default.nix`; one line per skill generates both links. Its `references/samples.md` grows over time: agents propose excerpt additions as repo edits and a rebuild installs them.
 - **atuin.nix**: Shell history sync and search (alternative to ctrl+r)
 - **fastfetch.nix**: System information display
 - **yazi.nix**: Terminal file manager
 - **utils.nix**: General CLI utilities
+
+### Tmux (`home/tmux/`)
+
+The default multiplexer (`home.cli.multiplexer.program = "tmux"`). zsh attaches to it from every interactive terminal, except inside herdr panes (`HERDR_ENV=1`), where herdr would see `tmux` instead of the agent running in the pane.
+
+- **default.nix**: tmux settings, plugins (catppuccin, vim-tmux-navigator, resurrect + continuum, yank, which-key) and the zsh autostart.
+- **sesh.nix**: `prefix+T` opens sesh's picker over tmux sessions, sesh configs and zoxide directories. One tmux session per task.
+- **herdr.nix**: gives each tmux session its own named herdr session. `prefix+a` opens a `herdr` window running `herdr --session <tmux session>`, with the name reduced to the characters herdr accepts (`A-Z a-z 0-9 . _ -`). Pressed from that window, it returns to the previous one; if tmux-resurrect brought the window back as a plain shell, it restarts herdr in it. Each named session is its own herdr server, so herdr's sidebar only shows the current task. A catppuccin status module covers the rest: it lists every herdr session with blocked agents (red dot) or finished agents you have not looked at yet (green dot), and disappears when there are none. Active when both tmux and `home.cli.programs` are enabled.
 
 ### Zellij (`home/zellij/`)
 

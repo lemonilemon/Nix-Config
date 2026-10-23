@@ -52,6 +52,7 @@ let
       # herdr's whole interface down the left edge. prefix+c still makes tabs,
       # and the row reappears once a second one exists.
       hide_tab_bar_when_single_tab = true;
+      toast.delivery = "system";
     };
 
     update = {

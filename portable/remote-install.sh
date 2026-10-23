@@ -46,10 +46,6 @@ link_agents "$HOME/.claude/CLAUDE.md"
 link_agents "$HOME/.codex/AGENTS.md"
 link_agents "$HOME/.pi/agent/AGENTS.md"
 link_agents "$HOME/.config/opencode/AGENTS.md"
-# Inferred path, mirroring the Nix module: only bother if kiro-cli has run.
-if [ -d "$HOME/.kiro" ]; then
-  link_agents "$HOME/.kiro/steering/00-global.md"
-fi
 
 if command -v starship >/dev/null 2>&1 || [ -x "$HOME/.local/bin/starship" ]; then
   echo "starship: already present"

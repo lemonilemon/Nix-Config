@@ -247,7 +247,6 @@ in
         llm-agents.pi
         llm-agents.skills
         llm-agents.ccusage
-        kiro-cli
 
         # Runs several of the agents above side by side in one terminal, with
         # per-pane state (working / blocked / done) inferred from the process.
@@ -392,10 +391,6 @@ in
       # One of pi's native global theme directories, matched by the `name` field
       # in the file rather than by filename.
       ".pi/agent/themes/catppuccin-mocha.json".source = piTheme;
-      # Inferred path: kiro-cli has never run here, so ~/.kiro does not exist.
-      # Its binary documents "global/workspace steering" as a default resource
-      # and its global home is ~/.kiro. Re-verify after the first kiro-cli run.
-      ".kiro/steering/00-global.md".source = agentInstructions;
     }
     // skillLinks;
 

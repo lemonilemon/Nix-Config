@@ -68,12 +68,11 @@ let
 
   # Every agent instruction target must resolve to one store object, so the
   # tools cannot drift apart. Paths were confirmed against the installed
-  # binaries; the kiro one is inferred and needs rechecking after its first run.
+  # binaries.
   agentInstructionSources = [
     desktopHome.home.file."AGENTS.md".source
     desktopHome.home.file.".claude/CLAUDE.md".source
     desktopHome.home.file.".codex/AGENTS.md".source
-    desktopHome.home.file.".kiro/steering/00-global.md".source
     desktopHome.xdg.configFile."opencode/AGENTS.md".source
   ];
 
@@ -264,7 +263,7 @@ let
 
     # --- global agent instructions ---
     {
-      name = "agent instructions/all five targets share one store path";
+      name = "agent instructions/all four targets share one store path";
       actual = builtins.all (
         s: builtins.toString s == builtins.toString (builtins.head agentInstructionSources)
       ) agentInstructionSources;

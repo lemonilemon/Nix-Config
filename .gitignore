@@ -22,8 +22,3 @@ __pycache__/
 # /nix/store path, so it goes stale on the next rebuild. Same src = ./.
 # argument as above.
 .ccls-cache/
-
-# superpowers brainstorm session state: PIDs, ports, a session token and the
-# HTML the local preview server rendered. Per-machine scratch with no meaning
-# outside the session that produced it.
-.superpowers/

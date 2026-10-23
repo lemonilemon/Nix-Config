@@ -149,6 +149,18 @@ key-fetch:
     op document get "{{ op_key_id }}" > "$key"
     echo "age key restored to $key"
 
+# Clone the private my-voice skill to the path ai/default.nix links agents to
+[group('ai')]
+voice-clone:
+    #!/usr/bin/env zsh
+    set -euo pipefail
+    dest="$HOME/.local/share/my-voice"
+    if [[ -e "$dest" ]]; then
+        echo "$dest already exists." >&2
+        exit 1
+    fi
+    git clone git@github.com:lemonilemon/my-voice.git "$dest"
+
 # Build current host's toplevel and push its closure to <username>.cachix.org.
 # Requires `cachix authtoken <token>` to have been run once.
 [group('NixOS')]

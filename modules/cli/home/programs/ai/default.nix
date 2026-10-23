@@ -11,18 +11,17 @@ let
   # else that resolves AGENTS.md by walking up from the workspace.
   agentInstructions = ./AGENTS.md;
 
-  # Skills versioned in the repo instead of installed by the `skills` CLI, so
-  # their rules and sample excerpts evolve through the repo the way AGENTS.md
-  # does. One attrset line per skill; skillLinks expands each entry into every
-  # agent's skill root.
+  # Skills checked out outside the store, one attrset line per skill; skillLinks
+  # expands each entry into every agent's skill root. The my-voice path must
+  # match `just voice-clone`.
   nixManagedSkills = {
-    my-voice = ./skills/my-voice;
+    my-voice = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.local/share/my-voice";
   };
 
   # ~/.agents/skills is pi's native global skill directory and the shared home
   # of the `skills` CLI's installs; ~/.claude/skills is claude-code's. Links
   # are per-name (the CLI's own layout), so CLI-installed skills keep living
-  # alongside, and both names resolve to the same store path, so a skill
+  # alongside, and both names resolve to the same checkout, so a skill
   # cannot drift between agents.
   skillLinks = lib.concatMapAttrs (name: src: {
     ".agents/skills/${name}".source = src;

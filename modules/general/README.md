@@ -353,7 +353,7 @@ its own right.
 | `cli/home/nvim/plugins/code/markdown.nix` | `vaultPath` as obsidian.nvim's workspace, `enable` as the plugin flag |
 | `gui/home/apps/default.nix` | `enable`, to decide whether to install the Obsidian package |
 
-`tests/nix/host-options.nix` asserts that the first two resolve to the same
+`tests/host-options.nix` asserts that the first two resolve to the same
 path. That is not ceremony: obsidian.nvim previously pointed at
 `~/obsidian/school`, a directory that did not exist, and nothing reported it.
 

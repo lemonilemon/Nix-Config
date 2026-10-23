@@ -63,8 +63,8 @@ Two conventions to preserve when adding options:
    never `formFactor` itself. Only `options.nix` files mention it. It is deliberately absent
    from the Home Manager tree, so HM values arrive by mirroring their NixOS twin rather than
    by re-deriving from a copy that would always read `"desktop"`.
-   `tests/nix/host-options.nix` asserts the derived values for all three hosts and runs
-   under `just check`; add a case there when adding a capability.
+   `tests/host-options.nix` runs under `just check` but does not restate derived values:
+   add a case there only when a wrong value would still evaluate, build and boot unnoticed.
 
 **Adding options that don't exist yet**: declare them explicitly with
 `lib.mkOption` / `helpers.mkHomeOpt` in the relevant `options.nix`. Never hardcode values in
@@ -136,8 +136,8 @@ just key-fetch   # restore the sops age key from 1Password (new machine)
 `just test`, then `just dry-build`. All four must pass before presenting the change.
 
 `just check` is the one that catches regressions the others miss: it evaluates every host
-(not just `$NIXHOST`), asserts the form-factor-derived option values, and runs the Eww
-backend's Python suite. Note `just dry-build` uses sudo, so in a non-interactive session
+(not just `$NIXHOST`), runs the host option assertions, and runs the eww-bar backend's Go
+tests and checks. Note `just dry-build` uses sudo, so in a non-interactive session
 substitute `nix build --dry-run .#nixosConfigurations.<host>.config.system.build.toplevel`.
 
 Do not run `just build` yourself — it uses sudo and switches the live system; leave that

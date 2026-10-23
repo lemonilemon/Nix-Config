@@ -307,7 +307,7 @@ Capabilities derived from `formFactor`, each overridable on its own:
 | `home.desktop.hyprland.eww.defaultHiddenModules` | `[ "storage" ]` | `[ ]` | - |
 | `home.desktop.hyprland.idle.suspend.enable` | true | false | - |
 
-This table is documentation, not an enforced contract. `tests/nix/host-options.nix`
+This table is documentation, not an enforced contract. `tests/host-options.nix`
 used to restate it and no longer does: an expectation copied out of `nix eval`
 can only fail when you change a default on purpose, so it reported nothing the
 diff had not already shown and cost an edit on every change. That file now

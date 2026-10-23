@@ -145,7 +145,7 @@
           };
         };
 
-        host-options = import ./tests/nix/host-options.nix {
+        host-options = import ./tests/host-options.nix {
           pkgs = nixpkgs.legacyPackages.${system};
           inherit (self) nixosConfigurations;
         };

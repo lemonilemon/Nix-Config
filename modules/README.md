@@ -49,8 +49,7 @@ Capability options across the categories take their **defaults** from it:
 
 **Invariant:** module `config` blocks never read `formFactor` — they read the
 capability options it seeds. Only `options.nix` files (and `nixos.nix`, which
-declares it) mention it. `tests/nix/host-options.nix` asserts the resulting
-values for all three hosts under `nix flake check`.
+declares it) mention it.
 
 ## Adding a New Module
 

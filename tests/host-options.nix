@@ -237,8 +237,8 @@ let
     }
     {
       # bubblewrap, not socat: the eww module puts socat in home.packages of
-      # its own accord (eww/default.nix:127), so it survives the programs flag
-      # being off and cannot witness anything about ai.nix.
+      # its own accord (packages/eww-bar/module.nix), so it survives the
+      # programs flag being off and cannot witness anything about ai.nix.
       name = "programs off/bubblewrap in home.packages";
       actual = builtins.any (n: n == "bubblewrap") programsOffPackageNames;
       expected = false;

@@ -73,6 +73,7 @@ let
     desktopHome.home.file."AGENTS.md".source
     desktopHome.home.file.".claude/CLAUDE.md".source
     desktopHome.home.file.".codex/AGENTS.md".source
+    desktopHome.home.file.".pi/agent/AGENTS.md".source
     desktopHome.xdg.configFile."opencode/AGENTS.md".source
   ];
 
@@ -263,7 +264,7 @@ let
 
     # --- global agent instructions ---
     {
-      name = "agent instructions/all four targets share one store path";
+      name = "agent instructions/all five targets share one store path";
       actual = builtins.all (
         s: builtins.toString s == builtins.toString (builtins.head agentInstructionSources)
       ) agentInstructionSources;

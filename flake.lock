@@ -108,6 +108,23 @@
         "type": "github"
       }
     },
+    "claude-hud": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792583845,
+        "narHash": "sha256-09NJs/gL6TdDZ3ccrrwULPpRw/Ly7oD24HAiW/6402Q=",
+        "owner": "jarrodwatts",
+        "repo": "claude-hud",
+        "rev": "3e4e6b4a26e4a4263c6e0b8d60b5f124de4d84f0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jarrodwatts",
+        "repo": "claude-hud",
+        "rev": "3e4e6b4a26e4a4263c6e0b8d60b5f124de4d84f0",
+        "type": "github"
+      }
+    },
     "coderunner-nvim": {
       "flake": false,
       "locked": {
@@ -913,6 +930,7 @@
       "inputs": {
         "catppuccin": "catppuccin",
         "claude-desktop": "claude-desktop",
+        "claude-hud": "claude-hud",
         "coderunner-nvim": "coderunner-nvim",
         "copilot-lualine-nvim": "copilot-lualine-nvim",
         "flake-utils": "flake-utils",

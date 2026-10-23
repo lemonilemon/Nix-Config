@@ -198,6 +198,47 @@
       };
     })
 
+    # Claude Code statusline. The launcher is upstream's scripts/statusline.mjs
+    # without its plugin-cache search.
+    (final: prev: {
+      claude-hud = final.stdenvNoCC.mkDerivation {
+        pname = "claude-hud";
+        version = "0.12.1";
+
+        src = inputs.claude-hud;
+
+        nativeBuildInputs = [ final.makeWrapper ];
+
+        dontBuild = true;
+
+        installPhase = ''
+          runHook preInstall
+
+          mkdir -p $out/lib/claude-hud
+          cp -r dist package.json $out/lib/claude-hud/
+          cat > $out/lib/claude-hud/statusline.mjs <<'EOF'
+          // Claude Code pads the status line by 2 columns on each side.
+          const columns = Number.parseInt(process.env.COLUMNS ?? "", 10);
+          if (columns > 0) process.env.COLUMNS = String(Math.max(1, columns - 4));
+          const hud = await import("./dist/index.js");
+          await hud.main();
+          EOF
+
+          makeWrapper ${prev.lib.getExe final.nodejs} $out/bin/claude-hud \
+            --add-flags $out/lib/claude-hud/statusline.mjs
+
+          runHook postInstall
+        '';
+
+        meta = with prev.lib; {
+          description = "Statusline HUD for Claude Code";
+          homepage = "https://github.com/jarrodwatts/claude-hud";
+          license = licenses.mit;
+          mainProgram = "claude-hud";
+        };
+      };
+    })
+
     # libmamba 2.6.2 does not build against fmt 12.2: that release made
     # <fmt/core.h> include only <fmt/base.h>, so every `fmt::format` call
     # reached through it stops compiling. Upstream fixed the includes in mamba

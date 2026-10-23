@@ -87,6 +87,11 @@
       url = "github:openusage-community/openusage/eadcfe50dec5960dfff6afc0d32c8fa739c79376";
       flake = false;
     };
+    claude-hud = {
+      # v0.12.1
+      url = "github:jarrodwatts/claude-hud/3e4e6b4a26e4a4263c6e0b8d60b5f124de4d84f0";
+      flake = false;
+    };
   };
   outputs =
     inputs@{

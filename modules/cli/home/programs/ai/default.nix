@@ -211,6 +211,15 @@ let
     ];
   };
 
+  claudeHudConfig = (pkgs.formats.json { }).generate "claude-hud-config.json" {
+    display = {
+      showTools = true;
+      showAgents = true;
+      showTodos = true;
+      externalUsageWritePath = "${config.home.homeDirectory}/.claude/plugins/claude-hud/usage-snapshot.json";
+    };
+  };
+
   # herdr prints its completion script rather than shipping one, so generate the
   # file at build time. zsh finds it through the fpath loop over $NIX_PROFILES
   # that home-manager writes into ~/.zshrc, which runs before zsh-autocomplete
@@ -230,7 +239,6 @@ in
   config = lib.mkIf config.home.cli.programs.enable {
     home.packages = (
       (with pkgs; [
-        llm-agents.claude-code
         llm-agents.codex
         llm-agents.antigravity-cli
         llm-agents.pi
@@ -248,6 +256,16 @@ in
       ])
       ++ lib.optional config.home.cli.shells.zsh.enable herdrZshCompletions
     );
+
+    programs.claude-code = {
+      enable = true;
+      package = pkgs.llm-agents.claude-code;
+      mutableSettings = true;
+      settings.statusLine = {
+        type = "command";
+        command = lib.getExe pkgs.claude-hud;
+      };
+    };
 
     # Nix owns pi's version, and `enableInstallTelemetry` does not cover this
     # check, so it would only ever point at an update that cannot be applied.
@@ -363,6 +381,7 @@ in
       # Its binary documents "global/workspace steering" as a default resource
       # and its global home is ~/.kiro. Re-verify after the first kiro-cli run.
       ".kiro/steering/00-global.md".source = agentInstructions;
+      ".claude/plugins/claude-hud/config.json".source = claudeHudConfig;
     }
     // skillLinks;
 

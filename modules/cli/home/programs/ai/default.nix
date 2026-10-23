@@ -211,14 +211,15 @@ let
     ];
   };
 
-  claudeHudDir = "${config.home.homeDirectory}/.claude/plugins/claude-hud";
+  claudeHudSnapshot = config.home.cli.programs.claudeHud.usageSnapshot;
+  claudeHudDir = dirOf claudeHudSnapshot;
 
   claudeHudConfig = (pkgs.formats.json { }).generate "claude-hud-config.json" {
     display = {
       showTools = true;
       showAgents = true;
       showTodos = true;
-      externalUsageWritePath = "${claudeHudDir}/usage-snapshot.json";
+      externalUsageWritePath = claudeHudSnapshot;
     };
   };
 

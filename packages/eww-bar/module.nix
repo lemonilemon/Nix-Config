@@ -192,6 +192,12 @@ in
         defaultText = lib.literalExpression ''"''${config.home.homeDirectory}/.codex"'';
         description = "CODEX_HOME for the openusage-cli probes";
       };
+
+      claude.usageSnapshot = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "claude-hud's display.externalUsageWritePath, read for the Claude quota card before asking the usage API; null asks the API only";
+      };
     };
 
     blurNamespaces = lib.mkOption {
@@ -257,7 +263,10 @@ in
             "EWW_BAR_MODULES=${lib.concatStringsSep "," cfg.modules}"
             "EWW_BAR_DEFAULT_HIDDEN=${lib.concatStringsSep "," cfg.defaultHidden}"
             "CODEX_HOME=${cfg.ai.codexHome}"
-          ];
+          ]
+          ++ lib.optional (
+            cfg.ai.claude.usageSnapshot != null
+          ) "EWW_BAR_CLAUDE_USAGE_SNAPSHOT=${cfg.ai.claude.usageSnapshot}";
           ExecStart = "${pkgs.eww}/bin/eww --force-wayland daemon --no-daemonize";
           ExecStartPost = openBar;
           MemoryAccounting = true;

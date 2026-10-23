@@ -21,6 +21,7 @@ in
       defaultHidden = cfg.defaultHiddenModules;
       ai.ccusage.package = pkgs.llm-agents.ccusage;
       ai.openusage.package = pkgs.openusage-cli;
+      ai.claude.usageSnapshot = lib.mkIf config.home.cli.programs.enable config.home.cli.programs.claudeHud.usageSnapshot;
     };
   };
 }

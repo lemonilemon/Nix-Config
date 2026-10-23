@@ -101,6 +101,11 @@ A dynamic tiling Wayland compositor with modern features.
 - Top status bar replacement for Waybar
 - Workspace, media, system, AI usage, and session controls
 - Codex quota details include available manual resets and their earliest expiry
+- The Claude quota card reads claude-hud's usage snapshot
+  (`home.cli.programs.claudeHud.usageSnapshot`) and calls the usage API only when
+  the snapshot and its last API answer are both over 5 minutes old, so a running
+  Claude Code session keeps the card current. An older reading is labelled
+  "as of" rather than dropped when the OAuth token has expired
 - Hypridle pause backed by a systemd user inhibitor
 - Optional laptop controls for external-only and headless/server display modes
 - Storage module: free space on the filesystem holding `/nix/store`. Its popup

@@ -40,6 +40,13 @@
           default = config.home.cli.enable;
           description = "Enable my CLI programs settings";
         };
+
+        claudeHud.usageSnapshot = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          default = "${config.home.homeDirectory}/.claude/plugins/claude-hud/usage-snapshot.json";
+          description = "Where claude-hud writes Claude's subscription rate limits, for the bar to read";
+        };
       };
 
       shells = {

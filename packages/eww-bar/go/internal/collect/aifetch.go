@@ -116,9 +116,19 @@ func ClaudeLoadOAuth() (map[string]any, bool) {
 }
 
 func ClaudeQuotaState() Quota {
+	body, plan, failure, ok := claudeFetchUsage()
+	if !ok {
+		return failure
+	}
+	return ClaudeQuotaStateFromJSON(body, plan, 0)
+}
+
+// claudeFetchUsage is ClaudeQuotaState's request: the usage body and plan, or with
+// ok=false the card to show instead.
+func claudeFetchUsage() (body string, plan any, failure Quota, ok bool) {
 	oauth, ok := ClaudeLoadOAuth()
 	if !ok {
-		return ClaudeQuotaDefault("not logged in")
+		return "", nil, ClaudeQuotaDefault("not logged in"), false
 	}
 
 	// Some versions of the credentials file store milliseconds. The threshold
@@ -128,7 +138,7 @@ func ClaudeQuotaState() Quota {
 		expiresAt /= 1000
 	}
 	if expiresAt > 0 && expiresAt < nowOr(0) {
-		return ClaudeQuotaDefault(statusTokenExpired)
+		return "", nil, ClaudeQuotaDefault(statusTokenExpired), false
 	}
 
 	accessToken, _ := oauth["accessToken"].(string)
@@ -141,19 +151,22 @@ func ClaudeQuotaState() Quota {
 
 	switch {
 	case err != nil:
-		return ClaudeQuotaDefault("unavailable")
+		return "", nil, ClaudeQuotaDefault("unavailable"), false
 	case status == http.StatusUnauthorized || status == http.StatusForbidden:
-		return ClaudeQuotaDefault(statusUnauthorized)
+		return "", nil, ClaudeQuotaDefault(statusUnauthorized), false
 	case status >= 400:
 		// Everything but 401/403 maps to the generic status.
-		return ClaudeQuotaDefault("unavailable")
+		return "", nil, ClaudeQuotaDefault("unavailable"), false
 	}
 
-	plan, _ := oauth["subscriptionType"]
-	if plan == nil {
-		plan = "--"
+	return body, claudePlan(oauth), Quota{}, true
+}
+
+func claudePlan(oauth map[string]any) any {
+	if plan := oauth["subscriptionType"]; plan != nil {
+		return plan
 	}
-	return ClaudeQuotaStateFromJSON(body, plan, 0)
+	return "--"
 }
 
 func OpenusageQuotaStates(nowEpoch float64) []Quota {
@@ -197,8 +210,12 @@ var (
 // ResetQuotaCache drops the cached provider cards. For tests.
 func ResetQuotaCache() {
 	quotaCacheLock.Lock()
-	defer quotaCacheLock.Unlock()
 	cachedQuotas = nil
+	quotaCacheLock.Unlock()
+
+	claudeReadingLock.Lock()
+	lastClaudeAPIReading = nil
+	claudeReadingLock.Unlock()
 }
 
 // QuotaStates is the per-provider cards the AI popup renders: cached, and
@@ -209,6 +226,9 @@ func ResetQuotaCache() {
 // refresh` when it opens, so the probe runs when someone is looking. A cold cache
 // always probes, so startup does not leave the popup blank until the backstop.
 func QuotaStates(refresh bool) []Quota {
+	if path := claudeUsageSnapshotPath(); path != "" {
+		return quotaStatesWithSnapshot(path, refresh)
+	}
 	if !refresh {
 		quotaCacheLock.Lock()
 		if cachedQuotas != nil {

@@ -45,6 +45,7 @@ All under `programs.eww-bar`.
 | `ai.ccusage.package` | `pkgs.ccusage` | Token and cost totals for the AI usage module; `null` leaves them out |
 | `ai.openusage.package` | `null` | `openusage-cli`, for the Codex and Antigravity quota cards; `null` leaves them out |
 | `ai.codexHome` | `~/.codex` | `CODEX_HOME` for the openusage-cli probes |
+| `ai.claude.usageSnapshot` | `null` | claude-hud's `display.externalUsageWritePath`. The Claude card then shows the newest of that file and the last usage API answer, asks the API only when both are over 5 minutes old, and labels a reading over 35 minutes old "as of" |
 | `blurNamespaces` | read-only | The bar's glass layer-shell namespaces, for the compositor's blur rules |
 
 The module names are listed in `go/internal/collect/modules.json`, in bar order.

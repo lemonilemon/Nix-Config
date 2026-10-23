@@ -80,16 +80,23 @@ let
     set -g @catppuccin_herdr_icon "󰚩 "
     set -gF @catppuccin_herdr_color "#{E:@thm_mauve}"
     set -g @catppuccin_herdr_text " ${attention}"
-    source "${pkgs.tmuxPlugins.catppuccin}/share/tmux-plugins/catppuccin/utils/status_module.conf"
+    source "${config.catppuccin.sources.tmux}/share/tmux-plugins/catppuccin/utils/status_module.conf"
   '';
 in
 {
-  config = lib.mkIf (config.home.cli.multiplexer.tmux.enable && config.home.cli.programs.enable) {
-    programs.tmux.extraConfig = ''
-      bind a run-shell "${tmuxHerdr}/bin/tmux-herdr #{q:session_name} #{q:session_path}"
-
-      source ${statusModule}
-      set -ag status-right "#{?${attention},#{E:@catppuccin_status_herdr},}"
-    '';
-  };
+  config = lib.mkIf (config.home.cli.multiplexer.tmux.enable && config.home.cli.programs.enable) (
+    lib.mkMerge [
+      {
+        programs.tmux.extraConfig = ''
+          bind a run-shell "${tmuxHerdr}/bin/tmux-herdr #{q:session_name} #{q:session_path}"
+        '';
+      }
+      (lib.mkIf (config.catppuccin.enable && config.catppuccin.tmux.enable) {
+        programs.tmux.extraConfig = ''
+          source ${statusModule}
+          set -ag status-right "#{?${attention},#{E:@catppuccin_status_herdr},}"
+        '';
+      })
+    ]
+  );
 }

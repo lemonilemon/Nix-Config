@@ -211,12 +211,14 @@ let
     ];
   };
 
+  claudeHudDir = "${config.home.homeDirectory}/.claude/plugins/claude-hud";
+
   claudeHudConfig = (pkgs.formats.json { }).generate "claude-hud-config.json" {
     display = {
       showTools = true;
       showAgents = true;
       showTodos = true;
-      externalUsageWritePath = "${config.home.homeDirectory}/.claude/plugins/claude-hud/usage-snapshot.json";
+      externalUsageWritePath = "${claudeHudDir}/usage-snapshot.json";
     };
   };
 
@@ -266,6 +268,18 @@ in
         command = lib.getExe pkgs.claude-hud;
       };
     };
+
+    home.activation.claudeHudConfig = lib.hm.dag.entryAfter [ "linkGeneration" ] (
+      lib.hm.generators.mkImpureConfigMerger {
+        inherit pkgs;
+        format = "json";
+        empty = "{}";
+        jqOperation = "$dynamic * $static";
+        path = "${claudeHudDir}/config.json";
+        staticSettings = claudeHudConfig;
+        mode = "600";
+      }
+    );
 
     # Nix owns pi's version, and `enableInstallTelemetry` does not cover this
     # check, so it would only ever point at an update that cannot be applied.
@@ -381,7 +395,6 @@ in
       # Its binary documents "global/workspace steering" as a default resource
       # and its global home is ~/.kiro. Re-verify after the first kiro-cli run.
       ".kiro/steering/00-global.md".source = agentInstructions;
-      ".claude/plugins/claude-hud/config.json".source = claudeHudConfig;
     }
     // skillLinks;
 

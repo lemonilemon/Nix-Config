@@ -289,7 +289,9 @@ func AiHistoryState(path string) AiHistory {
 	history := HeatmapFromDays(merged, 0)
 	// From the fresh report, not the merged store: the question worth answering
 	// is whether the CURRENT binary can price what is being run today.
-	history.Warning = WarnUnpriced(UnpricedModels(report))
+	marked := CcusageMarksUnpriced(RunText(ccusageTimeout, "ccusage", "--version"))
+	recent := localTime(nowOr(0) - ccusageSinceDays*86400).Format("2006-01-02")
+	history.Warning = WarnUnpriced(UnpricedModels(report, marked, recent))
 	return history
 }
 

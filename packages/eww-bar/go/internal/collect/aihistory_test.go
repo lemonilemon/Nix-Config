@@ -68,7 +68,7 @@ func TestUnpricedModelsNamesModelsThatSpentTokensForFree(t *testing.T) {
 	  ]}
 	]}`
 
-	models := UnpricedModels(report)
+	models := UnpricedModels(report, false, "")
 
 	if len(models) != 1 || models[0] != "claude-opus-5" {
 		t.Fatalf("models = %v, want [claude-opus-5]", models)
@@ -83,7 +83,7 @@ func TestUnpricedModelsIgnoresModelsThatSpentNothing(t *testing.T) {
 	  {"modelName":"claude-haiku-4-5","cost":0,"inputTokens":0,"outputTokens":0}
 	]}]}`
 
-	if models := UnpricedModels(report); len(models) != 0 {
+	if models := UnpricedModels(report, false, ""); len(models) != 0 {
 		t.Errorf("models = %v, want none", models)
 	}
 }
@@ -93,11 +93,58 @@ func TestUnpricedModelsIsSilentWhenEverythingIsPriced(t *testing.T) {
 	  {"modelName":"claude-opus-5","cost":43.32,"inputTokens":1644,"outputTokens":11628}
 	]}]}`
 
-	if models := UnpricedModels(report); len(models) != 0 {
+	if models := UnpricedModels(report, false, ""); len(models) != 0 {
 		t.Errorf("models = %v, want none", models)
 	}
 	if got := WarnUnpriced(nil); got != "" {
 		t.Errorf("warning = %q, want empty", got)
+	}
+}
+
+func TestUnpricedModelsTrustsMissingPricingWhenMarked(t *testing.T) {
+	report := `{"daily":[{"period":"2026-10-20","modelBreakdowns":[
+	  {"modelName":"[pi] stealth/ox-alpha","cost":0,"storedCost":0,"inputTokens":3690,"outputTokens":499},
+	  {"modelName":"big-pickle","cost":0,"missingPricing":true,"inputTokens":385,"outputTokens":180}
+	]}]}`
+
+	if models := UnpricedModels(report, true, ""); len(models) != 1 || models[0] != "big-pickle" {
+		t.Fatalf("models = %v, want [big-pickle]: a model priced at zero is free, not unknown", models)
+	}
+	if models := UnpricedModels(report, false, ""); len(models) != 2 {
+		t.Fatalf("models = %v, want both from the zero-cost check", models)
+	}
+}
+
+func TestUnpricedModelsIgnoresDaysBeforeTheWindow(t *testing.T) {
+	report := `{"daily":[
+	  {"period":"2026-03-15","modelBreakdowns":[
+	    {"modelName":"big-pickle","cost":0,"missingPricing":true,"inputTokens":385,"outputTokens":180}]},
+	  {"period":"2026-10-20","modelBreakdowns":[
+	    {"modelName":"claude-opus-6","cost":0,"missingPricing":true,"inputTokens":10,"outputTokens":10}]}
+	]}`
+
+	models := UnpricedModels(report, true, "2026-09-08")
+	if len(models) != 1 || models[0] != "claude-opus-6" {
+		t.Fatalf("models = %v, want [claude-opus-6] alone", models)
+	}
+}
+
+func TestCcusageMarksUnpricedFromItsVersion(t *testing.T) {
+	for text, want := range map[string]bool{
+		"ccusage 20.0.40\n": true,
+		"ccusage 20.0.21":   true,
+		"ccusage v20.1.0":   true,
+		"ccusage 21.0.0":    true,
+		"ccusage 20.0.20":   false,
+		"ccusage 20.0.17":   false,
+		"ccusage 19.9.99":   false,
+		"":                  false,
+		"command not found": false,
+		"ccusage 20.0":      false,
+	} {
+		if got := CcusageMarksUnpriced(text); got != want {
+			t.Errorf("CcusageMarksUnpriced(%q) = %v, want %v", text, got, want)
+		}
 	}
 }
 

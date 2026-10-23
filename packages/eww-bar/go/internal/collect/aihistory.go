@@ -2,7 +2,9 @@ package collect
 
 import (
 	"encoding/json"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -81,15 +83,14 @@ func HistoryDaysFromJSON(report string) []HistoryDay {
 	return days
 }
 
-// UnpricedModels names every model that burned tokens and cost nothing: the
-// backstop for the pricing overrides in overlays/default.nix.
+// UnpricedModels names the models ccusage could not price on days from sinceDate
+// (YYYY-MM-DD) on: the backstop for the pricing overrides in overlays/default.nix.
+// Names come from modelBreakdowns because the name is the key to add to the override.
 //
-// ccusage prices a model its table does not know at exactly zero, and says nothing
-// about it in --json mode, which is how claude-opus-5 reported $616 of spend as
-// free for weeks. The condition is checked rather than a model list, because tokens
-// spent at zero cost is not a state any priced model can reach. Names come from
-// modelBreakdowns because the name is the key to add to the override.
-func UnpricedModels(report string) []string {
+// marked says the report flags those entries itself with missingPricing, as ccusage
+// v20.0.21 and later do. Older releases price an unknown model at exactly zero and
+// say nothing, so there a model that spent tokens at zero cost is the sign.
+func UnpricedModels(report string, marked bool, sinceDate string) []string {
 	var body struct {
 		Daily []map[string]any `json:"daily"`
 	}
@@ -101,6 +102,9 @@ func UnpricedModels(report string) []string {
 
 	seen := map[string]bool{}
 	for _, row := range body.Daily {
+		if period, _ := row["period"].(string); period < sinceDate {
+			continue
+		}
 		for _, raw := range ListValue(row, "modelBreakdowns") {
 			breakdown, isMap := raw.(map[string]any)
 			if !isMap {
@@ -108,6 +112,12 @@ func UnpricedModels(report string) []string {
 			}
 			name, isText := breakdown["modelName"].(string)
 			if !isText || name == "" {
+				continue
+			}
+			if marked {
+				if breakdown["missingPricing"] == true {
+					seen[name] = true
+				}
 				continue
 			}
 			if NumberValue(breakdown, "cost") > 0 {
@@ -125,6 +135,28 @@ func UnpricedModels(report string) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// CcusageMarksUnpriced reports whether `ccusage --version` output names v20.0.21 or
+// later, the first release whose --json output carries missingPricing.
+func CcusageMarksUnpriced(versionText string) bool {
+	fields := strings.Fields(versionText)
+	if len(fields) == 0 {
+		return false
+	}
+	parts := strings.Split(strings.TrimPrefix(fields[len(fields)-1], "v"), ".")
+	if len(parts) != 3 {
+		return false
+	}
+	version := make([]int, 3)
+	for i, part := range parts {
+		number, err := strconv.Atoi(part)
+		if err != nil {
+			return false
+		}
+		version[i] = number
+	}
+	return slices.Compare(version, []int{20, 0, 21}) >= 0
 }
 
 // isCalendarDate reports whether text is exactly YYYY-MM-DD and names a real day.

@@ -66,8 +66,8 @@
     #        <(ccusage daily --json --since 20260701)
     #
     # The runtime backstop for the next model launch is in the Go collector,
-    # which flags any model that burned tokens and priced at zero -- see
-    # UnpricedModels in internal/collect/period.go.
+    # which flags any recently used model ccusage could not price -- see
+    # UnpricedModels in packages/eww-bar/go/internal/collect/aihistory.go.
     (final: prev: {
       llm-agents = prev.llm-agents // {
         ccusage = final.symlinkJoin {

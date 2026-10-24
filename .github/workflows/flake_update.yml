@@ -19,7 +19,7 @@ jobs:
     steps:
       # Scheduled workflows are loaded from main, but updates belong in the
       # active integration branch.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: dev
       - name: Check the open update PR for commits pushed by hand
@@ -40,7 +40,7 @@ jobs:
       # Pinned rather than tracking main: this job holds contents: write and
       # pull-requests: write, so it should not run whatever happens to be on
       # someone else's default branch. Dependabot bumps the pin.
-      - uses: DeterminateSystems/update-flake-lock@v28
+      - uses: DeterminateSystems/update-flake-lock@v29
         id: update
         if: steps.guard.outputs.skip == 'false'
         with:

@@ -10,7 +10,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Installs current Nix rather than a version frozen at the action's
       # release date. install-nix-action pinned Nix 2.19.1, which rejects store
       # path names beginning with a dot and so could not evaluate this flake.

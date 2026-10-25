@@ -37,14 +37,12 @@
       "rd.systemd.show_status=auto"
     ];
     consoleLogLevel = 3;
-    initrd.verbose = false;
     # Reduce initrd size and improve loading speed
     initrd.compressor = "zstd";
     initrd.compressorArgs = [
       "-19"
       "-T0"
     ];
-    initrd.systemd.enable = true;
     loader = {
       timeout = 10; # Timeout for the bootloader menu
       efi = {

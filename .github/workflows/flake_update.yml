@@ -7,15 +7,10 @@ on:
 jobs:
   nix-flake-update:
     permissions:
-      contents: write
+      contents: read
       id-token: write
-      issues: write
-      pull-requests: write
+      pull-requests: read
     runs-on: ubuntu-latest
-    outputs:
-      pr: ${{ steps.update.outputs.pull-request-number }}
-      operation: ${{ steps.update.outputs.pull-request-operation }}
-      sha: ${{ steps.head.outputs.sha }}
     steps:
       # Scheduled workflows are loaded from main, but updates belong in the
       # active integration branch.
@@ -35,6 +30,12 @@ jobs:
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        if: steps.guard.outputs.skip == 'false'
+        with:
+          client-id: ${{ vars.FLAKE_UPDATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.FLAKE_UPDATE_APP_PRIVATE_KEY }}
       - uses: DeterminateSystems/determinate-nix-action@v3
         if: steps.guard.outputs.skip == 'false'
       # Pinned rather than tracking main: this job holds contents: write and
@@ -44,56 +45,23 @@ jobs:
         id: update
         if: steps.guard.outputs.skip == 'false'
         with:
+          token: ${{ steps.app-token.outputs.token }}
           base: dev
           branch: automation/flake-updates
           commit-msg: "chore: update flake inputs"
           pr-title: "chore: update flake inputs"
+          pr-body: |
+            Automated changes by the [update-flake-lock](https://github.com/DeterminateSystems/update-flake-lock) GitHub Action.
+
+            ```
+            {{ env.GIT_COMMIT_MESSAGE }}
+            ```
           pr-labels: |
             dependencies
             automated
-      - name: Record the PR head commit
-        id: head
-        if: steps.update.outputs.pull-request-number != ''
+      - name: Merge the PR once its build check passes
+        if: steps.update.outputs.pull-request-number != '' && steps.update.outputs.pull-request-operation != 'closed'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR: ${{ steps.update.outputs.pull-request-number }}
-        run: |
-          echo "sha=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)" >> "$GITHUB_OUTPUT"
-
-  build:
-    needs: nix-flake-update
-    if: needs.nix-flake-update.outputs.pr != '' && needs.nix-flake-update.outputs.operation != 'closed'
-    uses: ./.github/workflows/build.yml
-    with:
-      ref: ${{ needs.nix-flake-update.outputs.sha }}
-    secrets: inherit
-
-  merge:
-    needs: [nix-flake-update, build]
-    permissions:
-      contents: write
-      pull-requests: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: Merge the PR that was built
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ needs.nix-flake-update.outputs.pr }}
-          SHA: ${{ needs.nix-flake-update.outputs.sha }}
-        run: gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --merge --match-head-commit "$SHA"
-
-  report-failure:
-    needs: [nix-flake-update, build]
-    if: failure() && needs.build.result == 'failure'
-    permissions:
-      pull-requests: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: Say on the PR why it was left open
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ needs.nix-flake-update.outputs.pr }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" \
-            --body "The full build failed, so this PR was left open for a manual fix: $RUN_URL"
+        run: gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --auto --merge

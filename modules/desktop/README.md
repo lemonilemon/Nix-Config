@@ -273,7 +273,7 @@ Display managers handle the login screen and session management.
   switches back to stock sddm-astronaut
 - Preview the theme before a rebuild with `nix run github:lemonilemon/sddm-orrery#preview`
 - Auto-login options
-- Session selection (Hyprland's UWSM session entry is hidden)
+- Session selection
 
 **Best for**: Hyprland and KDE Plasma setups
 

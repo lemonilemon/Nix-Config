@@ -6,12 +6,6 @@
   ...
 }:
 let
-  waylandSessions = pkgs.runCommandLocal "sddm-wayland-sessions" { } ''
-    mkdir $out
-    ${pkgs.lndir}/bin/lndir -silent ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions $out
-    rm -f $out/hyprland-uwsm.desktop
-  '';
-
   orrery = inputs.sddm-orrery.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
     osLabel = "NixOS ${config.system.nixos.release} ${config.system.nixos.codeName}";
   };
@@ -34,7 +28,6 @@ in
               CursorTheme = "BreezeX-RosePine-Linux";
               CursorSize = 24;
             };
-            Wayland.SessionDir = "${waylandSessions}";
           };
         };
         environment.systemPackages = [ pkgs.rose-pine-cursor ];

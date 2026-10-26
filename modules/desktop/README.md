@@ -57,6 +57,7 @@ nixos.desktop.hyprland.enable     # Enable Hyprland (default: follows desktop.en
 nixos.desktop.gnome.enable        # Enable GNOME (default: follows desktop.enable)
 nixos.desktop.displayManager      # Display manager choice: "sddm" or "gdm" (default: "sddm")
 nixos.desktop.sddmTheme           # SDDM greeter: "orrery" or "astronaut" (default: "orrery")
+nixos.desktop.orrery.introStart   # ISO 8601 date-time the Orrery intro starts from; null for five years back (default: Unix epoch)
 ```
 
 ### Home Manager Options
@@ -270,6 +271,8 @@ Display managers handle the login screen and session management.
   blog's night sky and the inner planets at their real positions, in
   astronaut's layout. `nixos.desktop.sddmTheme = "astronaut"`
   switches back to stock sddm-astronaut
+- Orrery's intro runs from `nixos.desktop.orrery.introStart`, the Unix epoch
+  by default, up to today: about half a minute at two years a second
 - Preview the theme before a rebuild with `nix run github:lemonilemon/sddm-orrery#preview`
 - Auto-login options
 - Session selection

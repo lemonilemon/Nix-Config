@@ -142,6 +142,11 @@
         default = "orrery";
         description = "SDDM greeter theme, when displayManager is sddm";
       };
+      orrery.introStart = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = "1970-01-01T00:00:00Z";
+        description = "ISO 8601 date-time the Orrery greeter's intro starts from; null starts it five years before today";
+      };
     };
   };
 }

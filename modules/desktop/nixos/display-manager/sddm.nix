@@ -8,6 +8,7 @@
 let
   orrery = inputs.sddm-orrery.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
     osLabel = "NixOS ${config.system.nixos.release} ${config.system.nixos.codeName}";
+    inherit (config.nixos.desktop.orrery) introStart;
   };
 in
 {

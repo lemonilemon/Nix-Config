@@ -268,8 +268,7 @@ Display managers handle the login screen and session management.
 - Theme: Orrery by default, from the `sddm-orrery` flake input
   ([lemonilemon/sddm-orrery](https://github.com/lemonilemon/sddm-orrery)): the
   blog's night sky and the inner planets at their real positions, in
-  astronaut's layout. Its IBM Plex fonts go into `fonts.packages`, because the
-  greeter only sees system fonts. `nixos.desktop.sddmTheme = "astronaut"`
+  astronaut's layout. `nixos.desktop.sddmTheme = "astronaut"`
   switches back to stock sddm-astronaut
 - Preview the theme before a rebuild with `nix run github:lemonilemon/sddm-orrery#preview`
 - Auto-login options

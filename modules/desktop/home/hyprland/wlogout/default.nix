@@ -5,7 +5,6 @@
   ...
 }:
 let
-  hyprctl = "${pkgs.hyprland}/bin/hyprctl";
   hyprlock = "${pkgs.hyprlock}/bin/hyprlock";
   hyprshutdown = "${pkgs.hyprshutdown}/bin/hyprshutdown";
   systemctl = "${pkgs.systemd}/bin/systemctl";
@@ -79,18 +78,7 @@ let
       accent = palette.yellow;
       label = "Logout";
       key = "e";
-      # The trailing hyprctl is a BACKSTOP, not the mechanism: hyprshutdown
-      # exits Hyprland itself once the apps are closed, and only stops doing so
-      # when passed --no-exit, which this does not. So the session normally ends
-      # before that second command is reached, and this button kept working
-      # through the 0.56 migration even though its old `dispatch exit` form was
-      # by then a syntax error.
-      #
-      # Migrated anyway, because a backstop that cannot fire is not one. The
-      # signature is from the shipped API stub, share/hypr/stubs/hl.meta.lua:
-      # `exit fun(...)`, so no argument. Not exercised in testing, for the
-      # obvious reason.
-      action = "${hyprshutdown} && ${hyprctl} dispatch 'hl.dsp.exit()'";
+      action = "${hyprshutdown} --top-label 'Logging out...'";
     }
     {
       name = "reboot";

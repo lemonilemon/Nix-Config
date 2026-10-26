@@ -31,7 +31,7 @@ desktop/
 │       ├── wallpaper/         # awww wallpaper engine and picker backend
 │       ├── rofi.nix           # App launcher / window switcher
 │       ├── wlogout/           # Logout menu
-│       ├── theme/             # GTK/Qt theming
+│       ├── theme/             # GTK/Qt/hyprtoolkit theming
 │       ├── network/           # Network manager applet
 │       ├── bluetooth/         # Bluetooth manager
 │       ├── nemo.nix           # File manager (GUI)
@@ -201,6 +201,10 @@ A dynamic tiling Wayland compositor with modern features.
 **Theming** (`theme/`):
 - GTK theme configuration
 - Qt theme integration
+- hyprtoolkit (`hyprshutdown`, `hyprpolkitagent`) themed through
+  `programs.hyprtoolkit` from `theme/palette.nix`, in the hyprlock/wlogout
+  overlay style. One file themes both, so `background` stays opaque: the polkit
+  dialog fills its whole window with it
 - Icon themes
 - Cursor themes
 - Catppuccin theming across applications

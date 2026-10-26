@@ -67,5 +67,31 @@
       enable = true;
       platformTheme.name = "gtk3";
     };
+
+    programs.hyprtoolkit = {
+      enable = true;
+      package = null;
+      settings =
+        let
+          palette = import ./palette.nix;
+          rgb = hex: "rgb(${lib.removePrefix "#" hex})";
+        in
+        {
+          background = rgb palette.base;
+          base = rgb palette.surface0;
+          alternate_base = rgb palette.surface1;
+          text = rgb palette.text;
+          bright_text = rgb palette.rosewater;
+          link_text = rgb palette.blue;
+          accent = rgb palette.blue;
+          accent_secondary = rgb palette.lavender;
+          # = hyprlock's input-field rounding
+          rounding_large = 12;
+          rounding_small = 12;
+          font_family = "JetBrains Mono Nerd Font";
+          font_family_monospace = "JetBrains Mono Nerd Font";
+          icon_theme = config.gtk.iconTheme.name;
+        };
+    };
   };
 }

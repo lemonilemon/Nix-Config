@@ -248,6 +248,11 @@
                 match.namespace = "rofi";
                 blur = true;
               }
+              # hyprtoolkit names a layer surface after its appClass
+              {
+                match.namespace = "hyprshutdown";
+                blur = true;
+              }
             ];
 
           workspace_rule = [

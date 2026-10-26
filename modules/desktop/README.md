@@ -162,6 +162,10 @@ A dynamic tiling Wayland compositor with modern features.
 **wlogout** (`wlogout/`):
 - Logout/power menu
 - Shutdown, reboot, suspend options
+- Logout, Reboot and Shutdown go through `hyprshutdown`: it asks every app to
+  close and waits (with Cancel and Force quit) before exiting Hyprland, then
+  Reboot and Shutdown run `systemctl` via `--post-cmd`. `SUPER + M` runs the
+  same logout. Its overlay is blurred by the `hyprshutdown` layerrule
 - Visual confirmation dialog
 - Keyboard shortcuts, shown on the buttons
 - Styled as hyprlock's sibling rather than as an eww bar island: fullscreen

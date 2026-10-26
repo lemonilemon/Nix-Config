@@ -73,7 +73,7 @@
         in
         {
           bind = [
-            (bind "${MOD1} + M" (dsp "exit()"))
+            (bind "${MOD1} + M" (exec "hyprshutdown --top-label 'Logging out...'"))
             (bind "${MOD1} + X" (dsp "window.close()"))
             (bind "${MOD1} + F" (dsp "window.fullscreen()"))
             (bind "${MOD1} + T" (dsp ''window.float({ action = "toggle" })''))

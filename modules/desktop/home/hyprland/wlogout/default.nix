@@ -86,7 +86,7 @@ let
       accent = palette.peach;
       label = "Reboot";
       key = "r";
-      action = "${systemctl} reboot";
+      action = "${hyprshutdown} --top-label 'Restarting...' --post-cmd '${systemctl} reboot'";
     }
     {
       name = "suspend";
@@ -102,7 +102,7 @@ let
       accent = palette.red;
       label = "Shutdown";
       key = "s";
-      action = "${systemctl} poweroff";
+      action = "${hyprshutdown} --top-label 'Shutting down...' --post-cmd '${systemctl} poweroff'";
     }
   ];
 

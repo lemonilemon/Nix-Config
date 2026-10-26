@@ -260,6 +260,19 @@
       );
     })
 
+    # Drop once a hyprshutdown release after 0.1.1 includes this commit.
+    (final: prev: {
+      hyprshutdown = prev.hyprshutdown.overrideAttrs (oldAttrs: {
+        patches = (oldAttrs.patches or [ ]) ++ [
+          (final.fetchpatch {
+            name = "hyprshutdown-fix-missized-buttons.patch";
+            url = "https://github.com/hyprwm/hyprshutdown/commit/867e53ae11100b2ae3788734bfb11761aef00920.patch";
+            hash = "sha256-cGQta/nq56Xcm6Iqn0/Cu9cSWpwQ2yC13/vpBHdnU5Y=";
+          })
+        ];
+      });
+    })
+
     (final: prev: {
       sesh = prev.sesh.override { buildGo127Module = final.buildGo126Module; };
     })

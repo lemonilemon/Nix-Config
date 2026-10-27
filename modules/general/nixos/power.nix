@@ -22,6 +22,7 @@ in
       # otherwise collide with ours and fail to evaluate.
       thermald.enable = lib.mkDefault cfg.thermald.enable;
       upower.enable = lib.mkDefault cfg.upower.enable;
+      upower.criticalPowerAction = cfg.upower.criticalPowerAction;
       # Normal priority on purpose, unlike the two above: desktop environments
       # set this to mkDefault true, and two mkDefaults would conflict. A plain
       # false beats theirs, which is what we want -- it fights both auto-cpufreq

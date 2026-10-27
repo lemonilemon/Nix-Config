@@ -233,6 +233,16 @@ in
           default = config.formFactor == "laptop";
           description = "Enable UPower battery reporting";
         };
+
+        upower.criticalPowerAction = lib.mkOption {
+          type = lib.types.enum [
+            "PowerOff"
+            "Hibernate"
+            "HybridSleep"
+          ];
+          default = "HybridSleep";
+          description = "What UPower does when the battery reaches critical level";
+        };
       };
 
       network = {

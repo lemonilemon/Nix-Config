@@ -86,6 +86,7 @@ nixos.general.power.autoCpufreq.settings
 nixos.general.power.powertop.enable     # laptop only
 nixos.general.power.thermald.enable     # laptop only; intended for Intel mobile platforms
 nixos.general.power.upower.enable       # laptop only
+nixos.general.power.upower.criticalPowerAction  # "HybridSleep" (upstream default); laptop profile: "PowerOff"
 
 nixos.general.network.enable            # off on wsl
 nixos.general.network.manager.enable    # NetworkManager plus the VPN plugins

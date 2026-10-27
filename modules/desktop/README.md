@@ -32,7 +32,7 @@ desktop/
 │       ├── rofi.nix           # App launcher / window switcher
 │       ├── wlogout/           # Logout menu
 │       ├── theme/             # GTK/Qt/hyprtoolkit theming
-│       ├── network/           # Network manager applet
+│       ├── network/           # Network manager applet, Tailscale tray
 │       ├── bluetooth/         # Bluetooth manager
 │       ├── nemo.nix           # File manager (GUI)
 │       └── imv.nix            # Image viewer
@@ -69,6 +69,7 @@ home.desktop.hyprland.eww.laptopControls.enable     # Enable laptop clamshell/he
 home.desktop.hyprland.eww.modules                   # Modules the bar has at all (default: every module)
 home.desktop.hyprland.eww.defaultHiddenModules      # Modules hidden until shown in Settings (laptop: [ "storage" ])
 home.desktop.hyprland.waybar.enable                 # Enable Waybar when Eww is disabled
+home.desktop.hyprland.tailscale.enable              # Tailscale tray icon (default: follows nixos.general.tailscale.enable)
 home.desktop.hyprland.wlogout.hibernate.enable      # Working Hibernate in wlogout; false dims it (laptop: false)
 ```
 
@@ -203,6 +204,7 @@ A dynamic tiling Wayland compositor with modern features.
 - VPN integration
 - Connection status in system tray
 - `nm-connection-editor` on PATH, opened by the Eww network popup's "Edit connections…"
+- Tailscale's official tray icon, on hosts with `nixos.general.tailscale.enable`
 
 **Bluetooth** (`bluetooth/`):
 - Bluetooth manager applet

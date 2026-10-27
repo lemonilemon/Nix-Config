@@ -80,6 +80,13 @@
         description = "Enable Dunst notifications for Hyprland";
       };
 
+      hyprland.tailscale.enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.tailscale.enable";
+        default = false;
+        description = "Run the Tailscale tray icon in the Hyprland session";
+      };
+
       hyprland.awww.enable = helpers.mkHomeOpt {
         inherit osConfig;
         path = "home.desktop.hyprland.awww.enable";

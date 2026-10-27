@@ -66,6 +66,12 @@
         description = "Enable Dunst notifications for Hyprland";
       };
 
+      hyprland.tailscale.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = config.home.desktop.hyprland.enable && config.nixos.general.tailscale.enable;
+        description = "Run the Tailscale tray icon in the Hyprland session";
+      };
+
       hyprland.awww.enable = lib.mkOption {
         type = lib.types.bool;
         default = false;

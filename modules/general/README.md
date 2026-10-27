@@ -39,6 +39,7 @@ general/
     ├── printing.nix     # CUPS and Avahi printer discovery
     ├── secrets.nix      # System-level sops-nix key source
     ├── syncthing.nix    # Obsidian vault sync mesh
+    ├── tailscale.nix    # Tailscale daemon, with this user as operator
     └── power.nix        # Governor, auto-cpufreq, powertop, thermald, UPower
 ```
 
@@ -73,6 +74,7 @@ nixos.general.nh.clean.enable   # Weekly `nh clean all` (default: follows nh.ena
 nixos.general.nh.clean.keep     # Generations kept per profile regardless of age (default: 5)
 nixos.general.nh.clean.keepSince # Generations and gcroots newer than this are kept (default: "14d")
 nixos.general.printing.enable   # Enable CUPS printing (default: false; a profile opts in)
+nixos.general.tailscale.enable  # Join the tailnet (default: false; a profile opts in)
 ```
 
 Form-factor-derived options. Each defaults from `formFactor` (see
@@ -216,6 +218,15 @@ Points sops-nix at the age key for **system** secrets
 has no feature flag of its own on purpose: it is the key source for the whole
 category rather than a feature, and sops-nix's config block is gated on
 `sops.secrets != {}`, so it is free on a host that declares no secrets.
+
+#### `tailscale.nix`
+Tailscale, driven by `nixos.general.tailscale.enable`: runs `tailscaled`, opens
+its UDP port (41641) so peers can connect directly instead of through a relay,
+and makes the flake's user the operator, so `tailscale up`/`down` and the tray
+icon (`home.desktop.hyprland.tailscale.enable`) work without sudo. The first
+login is still manual: `sudo tailscale up --operator=$USER`, then open the
+printed URL. Off by default: the laptop opts in from its profile's
+`config.nix`.
 
 #### `syncthing.nix`
 Syncs the Obsidian vault between hosts, driven by `nixos.general.syncthing.*`.

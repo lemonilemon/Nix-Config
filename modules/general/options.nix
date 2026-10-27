@@ -315,6 +315,14 @@ in
         };
       };
 
+      tailscale = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Join this host to the Tailscale tailnet";
+        };
+      };
+
       syncthing = {
         enable = lib.mkOption {
           type = lib.types.bool;

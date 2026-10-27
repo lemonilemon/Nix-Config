@@ -10,5 +10,6 @@
     ./printing.nix
     ./secrets.nix
     ./syncthing.nix
+    ./tailscale.nix
   ];
 }

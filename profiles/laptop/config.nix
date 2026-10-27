@@ -9,6 +9,7 @@
   nixos.desktop.gnome.enable = false;
 
   nixos.general.printing.enable = true;
+  nixos.general.tailscale.enable = true;
   nixos.general.power.upower.criticalPowerAction = "PowerOff";
 
   nixos.desktop.bootloader = "limine";

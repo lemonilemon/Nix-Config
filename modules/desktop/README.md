@@ -142,7 +142,9 @@ A dynamic tiling Wayland compositor with modern features.
 
 **Hyprlock** (`hyprlock.nix`):
 - Screen locking utility
-- Authentication integration
+- Authentication integration: its `hyprlock` PAM service is declared in
+  `nixos/hyprland.nix`, since Home Manager cannot write `/etc/pam.d`
+- 200 ms fade-out on unlock; the session stays locked until it finishes
 - Customizable lock screen
 - Automatic locking after idle timeout
 

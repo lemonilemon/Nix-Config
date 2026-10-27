@@ -31,5 +31,7 @@
       };
     };
 
+    # hyprlock itself is installed by Home Manager's programs.hyprlock
+    security.pam.services.hyprlock = { };
   };
 }

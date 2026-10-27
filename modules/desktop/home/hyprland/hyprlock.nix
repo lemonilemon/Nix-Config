@@ -33,9 +33,9 @@ in
       enable = true;
       settings = {
         general = {
-          disable_loading_bar = true;
           hide_cursor = true;
         };
+        animations.animation = [ "fadeOut, 1, 2, default" ]; # speed is in 100 ms units
         background = [
           {
             monitor = "";

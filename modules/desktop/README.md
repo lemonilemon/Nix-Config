@@ -84,6 +84,8 @@ A dynamic tiling Wayland compositor with modern features.
 - XWayland support
 - Portal integration (file picker, screen sharing)
 - Graphics driver integration
+- Polkit agent: soteria (`security.soteria`), a GTK prompt that follows the
+  GTK theme; it starts with `graphical-session.target`
 
 **User Configuration** (`home/hyprland/`):
 
@@ -211,10 +213,8 @@ A dynamic tiling Wayland compositor with modern features.
 **Theming** (`theme/`):
 - GTK theme configuration
 - Qt theme integration
-- hyprtoolkit (`hyprshutdown`, `hyprpolkitagent`) themed through
-  `programs.hyprtoolkit` from `theme/palette.nix`, in the hyprlock/wlogout
-  overlay style. One file themes both, so `background` stays opaque: the polkit
-  dialog fills its whole window with it
+- hyprtoolkit (`hyprshutdown`) themed through `programs.hyprtoolkit` from
+  `theme/palette.nix`, in the hyprlock/wlogout overlay style
 - Icon themes
 - Cursor themes
 - Catppuccin theming across applications

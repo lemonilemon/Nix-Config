@@ -23,7 +23,6 @@
   config = lib.mkIf config.home.desktop.hyprland.enable {
     # Packages required by hyprland
     home.packages = with pkgs; [
-      hyprpolkitagent # Polkit agent
       grim # Grab images
       slurp # Select region
       wl-clipboard # Clipboard manager
@@ -329,8 +328,6 @@
                 (mkLuaInline ''
                   function()
                     hl.exec_cmd("fcitx5 -d --replace")
-                    -- polkit
-                    hl.exec_cmd("systemctl --user start hyprpolkitagent")
                     -- discord
                     hl.exec_cmd("webcord --start-minimized")
                     -- 1password

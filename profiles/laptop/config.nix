@@ -4,6 +4,7 @@
 {
   home.desktop.hyprland.eww.enable = true;
   home.desktop.hyprland.awww.enable = true;
+  home.desktop.hyprland.wlogout.hibernate.enable = false;
 
   nixos.desktop.gnome.enable = false;
 

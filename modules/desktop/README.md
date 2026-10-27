@@ -69,6 +69,7 @@ home.desktop.hyprland.eww.laptopControls.enable     # Enable laptop clamshell/he
 home.desktop.hyprland.eww.modules                   # Modules the bar has at all (default: every module)
 home.desktop.hyprland.eww.defaultHiddenModules      # Modules hidden until shown in Settings (laptop: [ "storage" ])
 home.desktop.hyprland.waybar.enable                 # Enable Waybar when Eww is disabled
+home.desktop.hyprland.wlogout.hibernate.enable      # Working Hibernate in wlogout; false dims it (laptop: false)
 ```
 
 ## Desktop Environments
@@ -164,6 +165,9 @@ A dynamic tiling Wayland compositor with modern features.
 **wlogout** (`wlogout/`):
 - Logout/power menu
 - Shutdown, reboot, suspend options
+- `wlogout.hibernate.enable = false` keeps Hibernate in the grid, dimmed and
+  with no action. wlogout has no disabled state, so clicking it (or `h`) only
+  closes the menu
 - Logout, Reboot and Shutdown go through `hyprshutdown`: it asks every app to
   close and waits (with Cancel and Force quit) before exiting Hyprland, then
   Reboot and Shutdown run `systemctl` via `--post-cmd`. `SUPER + M` runs the

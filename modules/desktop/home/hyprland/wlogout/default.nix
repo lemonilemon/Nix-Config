@@ -11,6 +11,8 @@ let
 
   palette = import ../theme/palette.nix;
 
+  hibernate = config.home.desktop.hyprland.wlogout.hibernate.enable;
+
   # "#89b4fa" -> "137, 180, 250", so an accent can be emitted with an alpha.
   # Plain rgba() rather than GTK's alpha() helper: eww.scss records that a single
   # value GTK cannot parse makes it discard the rest of the stylesheet, and
@@ -70,7 +72,8 @@ let
       accent = palette.mauve;
       label = "Hibernate";
       key = "h";
-      action = "${systemctl} hibernate";
+      disabled = !hibernate;
+      action = if hibernate then "${systemctl} hibernate" else "";
     }
     {
       name = "logout";
@@ -158,7 +161,13 @@ let
       border-color: ${a.accent};
       color: ${a.accent};
     }
-  '') actions;
+  '') (lib.filter (a: !(a.disabled or false)) actions);
+
+  disabledRules = lib.concatMapStringsSep "\n" (a: ''
+    #${a.name} {
+      opacity: 0.35;
+    }
+  '') (lib.filter (a: a.disabled or false) actions);
 in
 {
   imports = [
@@ -225,13 +234,14 @@ in
 
         ${restRules}
         ${hoverRules}
+        ${disabledRules}
       '';
       layout = map (a: {
         label = a.name;
         inherit (a) action;
         # The keybind is otherwise invisible. Baked in rather than using
         # wlogout's --show-binds, which strcats a bare "[l]" with no separator.
-        text = "${a.label} · ${a.key}";
+        text = if a.disabled or false then a.label else "${a.label} · ${a.key}";
         keybind = a.key;
         # Pins gtk_label_set_yalign to 1.0 (bottom). wlogout allocates its button
         # array with malloc, never initialises yalign, and only ever assigns it

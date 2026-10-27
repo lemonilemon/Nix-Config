@@ -84,6 +84,12 @@
         description = "Enable wlogout power menu for Hyprland";
       };
 
+      hyprland.wlogout.hibernate.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = config.home.desktop.hyprland.wlogout.enable;
+        description = "Make wlogout's Hibernate button work; when false it stays in the grid, dimmed, and clicking it only closes the menu";
+      };
+
       hyprland.idle = {
         lockTimeout = lib.mkOption {
           type = lib.types.int;

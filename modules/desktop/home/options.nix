@@ -101,6 +101,13 @@
         description = "Enable wlogout power menu for Hyprland";
       };
 
+      hyprland.wlogout.hibernate.enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.wlogout.hibernate.enable";
+        default = config.home.desktop.hyprland.wlogout.enable;
+        description = "Make wlogout's Hibernate button work; when false it stays in the grid, dimmed, and clicking it only closes the menu";
+      };
+
       hyprland.idle.lockTimeout = helpers.mkHomeOpt {
         inherit osConfig;
         path = "home.desktop.hyprland.idle.lockTimeout";

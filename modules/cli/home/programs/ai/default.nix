@@ -179,13 +179,7 @@ let
     # a Claude Pro/Max login through a third-party harness draws from extra
     # usage and is billed per token rather than against the plan.
     defaultProvider = "openai-codex";
-    # Newest top-tier model in the openai-codex catalog pi 0.82.0 ships.
-    # gpt-5.6-terra and gpt-5.6-luna are the cheaper rungs, worth dropping to if
-    # this burns through the plan's limits too quickly. Which ids the account is
-    # actually entitled to depends on the ChatGPT tier, and pi refreshes the
-    # catalog into ~/.pi/agent/models-store.json, so confirm with
-    # `pi --list-models` after the first login.
-    defaultModel = "gpt-5.6-sol";
+    defaultModel = "gpt-6.1-sol";
     # Ctrl+P cycles everything the subscription exposes.
     enabledModels = [ "openai-codex/*" ];
 

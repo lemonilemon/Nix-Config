@@ -88,7 +88,6 @@
           # = hyprlock's input-field rounding
           rounding_large = 12;
           rounding_small = 12;
-          font_family = "JetBrains Mono Nerd Font";
           font_family_monospace = "JetBrains Mono Nerd Font";
           icon_theme = config.gtk.iconTheme.name;
         };

@@ -214,7 +214,8 @@ A dynamic tiling Wayland compositor with modern features.
 - GTK theme configuration
 - Qt theme integration
 - hyprtoolkit (`hyprshutdown`) themed through `programs.hyprtoolkit` from
-  `theme/palette.nix`, in the hyprlock/wlogout overlay style
+  `theme/palette.nix`, in the hyprlock/wlogout overlay style. Body text uses
+  the default sans like GTK apps; JetBrains Mono only where monospace is asked
 - Icon themes
 - Cursor themes
 - Catppuccin theming across applications

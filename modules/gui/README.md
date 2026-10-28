@@ -227,6 +227,8 @@ General GUI applications and utilities.
   Obsidian (notes; installed only when
   `home.general.obsidian.enable` is set, which also drives its Syncthing folder
   and nvim workspace), Trading View
+- **Documents**: PdfCraft (PDF reader and editor; zathura stays the default
+  PDF viewer)
 - **Download**: Gopeed
 - **Containers**: Podman Desktop
 - **Utilities**: Antigravity

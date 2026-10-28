@@ -17,6 +17,7 @@
         tradingview
         gopeed
         podman-desktop
+        pdfcraft
       ]
       # Gated on the vault flag rather than listed unconditionally, so one option
       # governs the app, nvim's workspace and the Syncthing folder together.

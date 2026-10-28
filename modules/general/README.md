@@ -225,8 +225,8 @@ its UDP port (41641) so peers can connect directly instead of through a relay,
 and makes the flake's user the operator, so `tailscale up`/`down` and the tray
 icon (`home.desktop.hyprland.tailscale.enable`) work without sudo. The first
 login is still manual: `sudo tailscale up --operator=$USER`, then open the
-printed URL. Off by default: the laptop opts in from its profile's
-`config.nix`.
+printed URL. Off by default: the laptop and desktop opt in from their
+profiles' `config.nix`.
 
 #### `syncthing.nix`
 Syncs the Obsidian vault between hosts, driven by `nixos.general.syncthing.*`.

@@ -155,12 +155,25 @@ func CollectMedia() MediaState {
 	)
 }
 
+// CollectTrayCount counts the tray items the bar shows: one `busctl` for the
+// registered items, then one per item for its Status.
 func CollectTrayCount() int {
-	return TrayCountFromText(RunText(defaultTimeout,
+	items := TrayItemsFromText(RunText(defaultTimeout,
 		"busctl", "--user", "get-property",
 		"org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher",
 		"org.kde.StatusNotifierWatcher", "RegisteredStatusNotifierItems",
 	))
+	count := 0
+	for _, item := range items {
+		name, path := TrayItemAddress(item)
+		if TrayItemShownFromText(RunText(defaultTimeout,
+			"busctl", "--user", "get-property", name, path,
+			"org.kde.StatusNotifierItem", "Status",
+		)) {
+			count++
+		}
+	}
+	return count
 }
 
 // CollectBluetooth runs one `bluetoothctl info` per connected device, so the number

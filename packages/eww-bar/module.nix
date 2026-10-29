@@ -222,6 +222,7 @@ in
         "eww-calendar"
         "eww-bar-modules"
         "eww-storage"
+        "eww-tray"
       ];
       description = "Layer-shell namespaces of the bar's glass surfaces, for the compositor's blur rules. The popup backdrop, a full-screen transparent click catcher, is not one of them.";
     };

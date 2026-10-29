@@ -3,7 +3,9 @@
 A status bar for Hyprland built on [eww](https://github.com/elkowar/eww): workspaces,
 window title, media, notifications, network, Bluetooth, AI usage, temperature, CPU,
 memory, storage, volume and battery, each with its own popup, plus a Settings popup
-that shows or hides modules while the bar runs. A Go backend collects the state and
+that shows or hides modules while the bar runs. The system tray sits inline up to six
+visible icons; past that it folds to `⋯`, which opens the whole tray in a popup that
+grows with it. A Go backend collects the state and
 streams it to eww; `eww-barctl` and `eww-popup` are the commands the widgets call.
 
 Everything it needs is in this directory. The rest of the repository uses it through

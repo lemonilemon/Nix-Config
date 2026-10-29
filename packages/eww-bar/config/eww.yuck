@@ -81,7 +81,6 @@
 (defvar ai_usage_tab "total")
 (defvar ai_usage_period "today")
 
-(defvar tray_force_expanded false)
 (defvar tray_fold_threshold 6)
 
 (defwindow bar [output]
@@ -131,10 +130,12 @@
         (box :class "bar-island tray-island" :orientation "h" :space-evenly false
           (button :class "tray-toggle"
             :visible {bar_state.tray_count > tray_fold_threshold}
-            :onclick "eww update tray_force_expanded=${tray_force_expanded ? false : true}"
-            (label :text {(bar_state.tray_count <= tray_fold_threshold || tray_force_expanded) ? "‹" : "⋯"}))
+            :timeout "5s"
+            :onclick "eww-popup toggle tray_popup ${output}"
+            :tooltip "${bar_state.tray_count} tray icons"
+            (label :text "⋯"))
           (revealer :transition "slideright" :duration "250ms"
-            :reveal {bar_state.tray_count <= tray_fold_threshold || tray_force_expanded}
+            :reveal {bar_state.tray_count <= tray_fold_threshold}
             (systray :class "tray" :icon-size 14 :spacing 8))
           (button :class "module-button notif-bell ${bar_state.notifications.paused == 'true' ? 'dnd' : (bar_state.notifications.new > 0 ? 'has-new' : '')}"
             :visible {bar_modules.notifications == "true"}
@@ -614,6 +615,19 @@
         ;; ISO week numbers: the one thing a desktop calendar can tell a
         ;; developer that a wall calendar cannot.
         :show-week-numbers true))))
+
+(defwindow tray_popup
+  :monitor 0
+  :geometry (geometry :x "12px" :y "50px" :anchor "top right")
+  :stacking "fg"
+  :exclusive false
+  :focusable false
+  :namespace "eww-tray"
+  (tray_panel))
+
+(defwidget tray_panel []
+  (box :class "popup tray-popup" :orientation "h" :space-evenly false
+    (systray :class "tray" :icon-size 16 :spacing 12)))
 
 (defwindow battery_popup
   :monitor 0

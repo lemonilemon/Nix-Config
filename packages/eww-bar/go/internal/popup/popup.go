@@ -26,6 +26,7 @@ var popupWindows = []string{
 	"bar_modules_popup",
 	"storage_popup",
 	"calendar_popup",
+	"tray_popup",
 }
 
 const backdropWindow = "popup_backdrop"

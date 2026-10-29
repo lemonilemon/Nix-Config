@@ -236,7 +236,6 @@ in
   config = lib.mkIf config.home.cli.programs.enable {
     home.packages = (
       (with pkgs; [
-        llm-agents.codex
         llm-agents.antigravity-cli
         llm-agents.pi
         llm-agents.skills
@@ -257,11 +256,21 @@ in
       enable = true;
       package = pkgs.llm-agents.claude-code;
       mutableSettings = true;
+      enableMcpIntegration = true;
       settings.statusLine = {
         type = "command";
         command = lib.getExe pkgs.claude-hud;
       };
     };
+
+    programs.codex = {
+      enable = true;
+      package = pkgs.llm-agents.codex;
+      mutableSettings = true;
+      enableMcpIntegration = true;
+    };
+
+    programs.mcp.enable = true;
 
     home.activation.claudeHudConfig = lib.hm.dag.entryAfter [ "linkGeneration" ] (
       lib.hm.generators.mkImpureConfigMerger {
@@ -385,6 +394,9 @@ in
       # One of pi's native global theme directories, matched by the `name` field
       # in the file rather than by filename.
       ".pi/agent/themes/catppuccin-mocha.json".source = piTheme;
+      ".pi/agent/mcp.json" = lib.mkIf (config.programs.mcp.servers != { }) {
+        inherit (config.xdg.configFile."mcp/mcp.json") source;
+      };
     }
     // skillLinks;
 

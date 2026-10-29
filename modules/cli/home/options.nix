@@ -48,6 +48,13 @@
           description = "Capture AI coding agents' sessions as Atuin threads, synced like shell history";
         };
 
+        atuin.mcp.enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.programs.atuin.mcp.enable";
+          default = config.home.cli.programs.atuin.threads.enable;
+          description = "Give Claude Code, Codex and pi Atuin's MCP server, to search shell history and past threads";
+        };
+
         claudeHud.usageSnapshot = lib.mkOption {
           type = lib.types.str;
           readOnly = true;

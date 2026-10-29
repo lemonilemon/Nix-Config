@@ -22,5 +22,10 @@
         };
       };
     };
+
+    programs.mcp.servers.atuin = lib.mkIf config.home.cli.programs.atuin.mcp.enable {
+      command = lib.getExe config.programs.atuin.package;
+      args = [ "mcp" ];
+    };
   };
 }

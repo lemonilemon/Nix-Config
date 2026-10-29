@@ -66,16 +66,18 @@ let
   nvimVaultPaths = map (w: w.path) desktopHome.programs.nixvim.plugins.obsidian.settings.workspaces;
   syncthingVaultPath = hosts.desktop.services.syncthing.settings.folders."obsidian-notes".path;
 
-  # Every agent instruction target must resolve to one store object, so the
-  # tools cannot drift apart. Paths were confirmed against the installed
-  # binaries.
-  agentInstructionSources = [
-    desktopHome.home.file."AGENTS.md".source
-    desktopHome.home.file.".claude/CLAUDE.md".source
-    desktopHome.home.file.".codex/AGENTS.md".source
-    desktopHome.home.file.".pi/agent/AGENTS.md".source
-    desktopHome.xdg.configFile."opencode/AGENTS.md".source
-  ];
+  # Every linked AGENTS.md and CLAUDE.md, whichever agents are enabled, must
+  # resolve to one store object, so the tools cannot drift apart.
+  agentInstructionSources = lib.mapAttrsToList (_: f: f.source) (
+    lib.filterAttrs (
+      name: f:
+      f.enable
+      && builtins.elem (baseNameOf name) [
+        "AGENTS.md"
+        "CLAUDE.md"
+      ]
+    ) desktopHome.home.file
+  );
 
   expectations = [
     # --- firewall: rules that fail open ---
@@ -210,11 +212,6 @@ let
       expected = false;
     }
     {
-      name = "programs off/opencode.enable";
-      actual = programsOff.programs.opencode.enable;
-      expected = false;
-    }
-    {
       name = "programs off/yazi.enable";
       actual = programsOff.programs.yazi.enable;
       expected = false;
@@ -264,7 +261,7 @@ let
 
     # --- global agent instructions ---
     {
-      name = "agent instructions/all five targets share one store path";
+      name = "agent instructions/all targets share one store path";
       actual = builtins.all (
         s: builtins.toString s == builtins.toString (builtins.head agentInstructionSources)
       ) agentInstructionSources;

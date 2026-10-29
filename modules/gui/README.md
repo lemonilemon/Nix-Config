@@ -62,6 +62,7 @@ home.gui.browsers.zen.enable       # Enable Zen Browser (default: follows browse
 home.gui.development.enable        # Enable dev tools (default: follows gui.enable)
 home.gui.development.zed.enable    # Enable Zed editor (default: follows development.enable)
 home.gui.development.vscode.enable # Enable VS Code editor (default: false)
+home.gui.development.opencode.enable # Enable the opencode desktop app (default: false)
 home.gui.development.web.enable    # Enable web dev tools (default: follows development.enable)
 
 # Applications

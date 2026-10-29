@@ -37,6 +37,14 @@
             description = "Enable VS Code editor";
           };
         };
+        opencode = {
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.gui.development.opencode.enable";
+            default = false;
+            description = "Enable the opencode desktop app";
+          };
+        };
         web = {
           enable = helpers.mkHomeOpt {
             inherit osConfig;

@@ -55,6 +55,13 @@
           description = "Give Claude Code, Codex and pi Atuin's MCP server, to search shell history and past threads";
         };
 
+        opencode.enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.programs.opencode.enable";
+          default = false;
+          description = "Enable opencode and its multi-agent setup";
+        };
+
         claudeHud.usageSnapshot = lib.mkOption {
           type = lib.types.str;
           readOnly = true;

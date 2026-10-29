@@ -46,6 +46,12 @@
           default = config.home.cli.programs.atuin.threads.enable;
           description = "Give Claude Code, Codex and pi Atuin's MCP server, to search shell history and past threads";
         };
+
+        opencode.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Enable opencode and its multi-agent setup";
+        };
       };
 
       shells = {

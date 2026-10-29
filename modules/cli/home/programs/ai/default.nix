@@ -5,10 +5,11 @@
   ...
 }:
 let
-  # One file, six symlinks, all resolving to the same store object. Paths were
-  # confirmed against each installed binary. antigravity-cli has no global
-  # instruction path of its own, so ~/AGENTS.md covers it, along with anything
-  # else that resolves AGENTS.md by walking up from the workspace.
+  # One file, linked into each enabled agent's path, all resolving to the same
+  # store object. Paths were confirmed against each installed binary.
+  # antigravity-cli has no global instruction path of its own, so ~/AGENTS.md
+  # covers it, along with anything else that resolves AGENTS.md by walking up
+  # from the workspace.
   agentInstructions = ./AGENTS.md;
 
   # Skills checked out outside the store, one attrset line per skill; skillLinks
@@ -287,7 +288,7 @@ in
     # Nix owns pi's version, and `enableInstallTelemetry` does not cover this
     # check, so it would only ever point at an update that cannot be applied.
     home.sessionVariables.PI_SKIP_VERSION_CHECK = "1";
-    programs.opencode = {
+    programs.opencode = lib.mkIf config.home.cli.programs.opencode.enable {
       enable = true;
       package = pkgs.llm-agents.opencode;
       tui = {
@@ -401,7 +402,9 @@ in
     // skillLinks;
 
     xdg.configFile = {
-      "opencode/AGENTS.md".source = agentInstructions;
+      "opencode/AGENTS.md" = lib.mkIf config.home.cli.programs.opencode.enable {
+        source = agentInstructions;
+      };
       # Only the file, not the directory: herdr writes herdr.log and its session
       # state next to it and needs the directory itself to stay writable.
       "herdr/config.toml".source = herdrConfig;

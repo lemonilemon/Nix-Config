@@ -1,9 +1,13 @@
 {
+  lib,
+  config,
   pkgs,
   ...
 }:
 {
-  home.packages = with pkgs; [
-    opencode-desktop
-  ];
+  config = lib.mkIf config.home.gui.development.opencode.enable {
+    home.packages = with pkgs; [
+      opencode-desktop
+    ];
+  };
 }

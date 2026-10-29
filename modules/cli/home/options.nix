@@ -62,6 +62,13 @@
           description = "Enable opencode and its multi-agent setup";
         };
 
+        aerc.enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.programs.aerc.enable";
+          default = false;
+          description = "Enable the aerc mail client";
+        };
+
         claudeHud.usageSnapshot = lib.mkOption {
           type = lib.types.str;
           readOnly = true;

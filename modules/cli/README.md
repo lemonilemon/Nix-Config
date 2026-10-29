@@ -51,6 +51,7 @@ home.cli.programs.enable # Enable CLI utilities (default: follows cli.enable)
 home.cli.programs.atuin.threads.enable # Capture coding-agent sessions as Atuin threads (default: false)
 home.cli.programs.atuin.mcp.enable     # Atuin's MCP server for Claude Code, Codex and pi (default: follows atuin.threads.enable)
 home.cli.programs.opencode.enable      # Enable opencode (default: false)
+home.cli.programs.aerc.enable          # Enable the aerc mail client (default: false)
 
 # Shells
 home.cli.shells.enable   # Enable shell configuration (default: follows cli.enable)

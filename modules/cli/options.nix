@@ -52,6 +52,12 @@
           default = false;
           description = "Enable opencode and its multi-agent setup";
         };
+
+        aerc.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Enable the aerc mail client";
+        };
       };
 
       shells = {

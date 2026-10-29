@@ -226,7 +226,8 @@ General GUI applications and utilities.
 - **Communication**: Webcord (Discord client); Aerion, the default mail client
   (gated on `home.gui.apps.aerion.enable`), built with `withOAuth` so Gmail and
   Outlook sign in through its verified OAuth clients. Thunderbird when
-  `home.gui.apps.thunderbird.enable` is set; aerc is installed by the CLI module
+  `home.gui.apps.thunderbird.enable` is set; aerc, in the CLI module, when
+  `home.cli.programs.aerc.enable` is set
 - **Media**: Spotify (Wayland IME), VLC
 - **Productivity**: LibreOffice (gated on `home.gui.apps.libreoffice.enable`,
   which also gates its MIME defaults; default handler for the Office and

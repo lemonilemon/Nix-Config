@@ -13,26 +13,26 @@
     ./yazi.nix
   ];
   config = lib.mkIf config.home.cli.programs.enable {
-    home.packages = with pkgs; [
-      # package manager
-      yarn
+    home.packages =
+      with pkgs;
+      [
+        # package manager
+        yarn
 
-      # finder / viewer
-      fzf
-      tree
+        # finder / viewer
+        fzf
+        tree
 
-      # pdf reader
-      zathura
+        # pdf reader
+        zathura
 
-      # mail client
-      aerc
+        _1password-cli
 
-      _1password-cli
-
-      # secrets editing (secrets/ in the config repo)
-      sops
-      age
-    ];
+        # secrets editing (secrets/ in the config repo)
+        sops
+        age
+      ]
+      ++ lib.optional config.home.cli.programs.aerc.enable pkgs.aerc;
     programs = {
       direnv = {
         enable = true;

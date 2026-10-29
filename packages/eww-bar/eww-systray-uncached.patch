@@ -1,0 +1,16 @@
+--- a/crates/notifier_host/src/item.rs
++++ b/crates/notifier_host/src/item.rs
+@@ -74,7 +74,12 @@
+             }
+         };
+
+-        let sni = proxy::StatusNotifierItemProxy::builder(con).destination(addr)?.path(path)?.build().await?;
++        let sni = proxy::StatusNotifierItemProxy::builder(con)
++            .destination(addr)?
++            .path(path)?
++            .cache_properties(zbus::CacheProperties::No)
++            .build()
++            .await?;
+
+         Ok(Self { sni, gtk_menu: None })
+     }

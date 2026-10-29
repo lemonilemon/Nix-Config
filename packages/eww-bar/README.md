@@ -65,6 +65,7 @@ The flake exports it with its defaults as `packages.<system>.eww-bar`.
 | Path | Contents |
 | --- | --- |
 | `module.nix` | The Home Manager module: options, user services, config files |
+| `eww-systray-uncached.patch` | Applied to the eww the module runs: tray items are read without zbus's property cache, so an item that registers Passive and turns Active later, as libayatana-appindicator apps such as Spotify do, still shows, and icons follow `NewIcon` |
 | `package.nix` | The package: Go backend plus rendered config |
 | `bar-modules.nix` | The module list for Nix, read from `go/internal/collect/modules.json` |
 | `palette.nix` | The default colours |

@@ -17,6 +17,11 @@ let
   ewwYuck = bar.yuck;
   inherit (bar) paletteScss;
 
+  # Drop once elkowar/eww reads StatusNotifierItem properties uncached.
+  ewwPackage = pkgs.eww.overrideAttrs (oldAttrs: {
+    patches = (oldAttrs.patches or [ ]) ++ [ ./eww-systray-uncached.patch ];
+  });
+
   runtimePackages =
     (with pkgs; [
       awww
@@ -33,7 +38,7 @@ let
       coreutils
       dbus
       dunst
-      eww
+      ewwPackage
       gawk
       gnugrep
       gnused
@@ -226,7 +231,7 @@ in
     home.packages = with pkgs; [
       baobab
       bleachbit
-      eww
+      ewwPackage
       ewwBar
       htop
       libappindicator
@@ -267,7 +272,7 @@ in
           ++ lib.optional (
             cfg.ai.claude.usageSnapshot != null
           ) "EWW_BAR_CLAUDE_USAGE_SNAPSHOT=${cfg.ai.claude.usageSnapshot}";
-          ExecStart = "${pkgs.eww}/bin/eww --force-wayland daemon --no-daemonize";
+          ExecStart = "${ewwPackage}/bin/eww --force-wayland daemon --no-daemonize";
           ExecStartPost = openBar;
           MemoryAccounting = true;
           Restart = "on-failure";

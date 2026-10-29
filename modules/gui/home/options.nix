@@ -106,6 +106,14 @@
             description = "Enable the LibreOffice office suite";
           };
         };
+        thunderbird = {
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.gui.apps.thunderbird.enable";
+            default = false;
+            description = "Enable the Thunderbird mail client";
+          };
+        };
       };
 
       kitty = {

@@ -70,6 +70,13 @@
             description = "Enable the LibreOffice office suite";
           };
         };
+        thunderbird = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Enable the Thunderbird mail client";
+          };
+        };
       };
 
       kitty = {

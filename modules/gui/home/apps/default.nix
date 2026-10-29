@@ -6,12 +6,13 @@
   ...
 }:
 {
+  imports = [ ./thunderbird.nix ];
+
   config = lib.mkIf config.home.gui.apps.enable {
     home.packages =
       with pkgs;
       [
         webcord
-        thunderbird
         spotify
         vlc
         tradingview

@@ -32,7 +32,8 @@ gui/
 │   │   ├── zed.nix            # Zed editor
 │   │   └── web.nix            # Web development tools
 │   ├── apps/           # General GUI applications
-│   │   └── default.nix        # Apps module entry
+│   │   ├── default.nix        # Apps module entry
+│   │   └── thunderbird.nix    # Thunderbird (off by default)
 │   └── kitty.nix       # Kitty terminal emulator
 └── nixos/              # NixOS system-level GUI settings
     ├── default.nix     # NixOS module entry
@@ -68,6 +69,7 @@ home.gui.development.web.enable    # Enable web dev tools (default: follows deve
 # Applications
 home.gui.apps.enable               # Enable general apps (default: follows gui.enable)
 home.gui.apps.libreoffice.enable   # Enable LibreOffice (default: follows apps.enable)
+home.gui.apps.thunderbird.enable   # Enable Thunderbird (default: false)
 
 # Terminal
 home.gui.kitty.enable              # Enable Kitty terminal (default: follows gui.enable)
@@ -220,7 +222,9 @@ programs.kitty = {
 General GUI applications and utilities.
 
 **Home Manager Apps** (`home/apps/default.nix`):
-- **Communication**: Webcord (Discord client), Thunderbird (email)
+- **Communication**: Webcord (Discord client); Thunderbird when
+  `home.gui.apps.thunderbird.enable` is set. The default mail client is aerc,
+  in the CLI module
 - **Media**: Spotify (Wayland IME), VLC
 - **Productivity**: LibreOffice (gated on `home.gui.apps.libreoffice.enable`,
   which also gates its MIME defaults; default handler for the Office and

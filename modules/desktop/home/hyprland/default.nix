@@ -9,6 +9,7 @@
     ./eww
     ./waybar.nix
     ./dunst.nix
+    ./playerctld.nix
     ./hyprlock.nix
     ./nemo.nix
     ./imv.nix

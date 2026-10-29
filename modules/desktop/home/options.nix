@@ -80,6 +80,13 @@
         description = "Enable Dunst notifications for Hyprland";
       };
 
+      hyprland.playerctld.enable = helpers.mkHomeOpt {
+        inherit osConfig;
+        path = "home.desktop.hyprland.playerctld.enable";
+        default = config.home.desktop.hyprland.enable;
+        description = "Run playerctld so playerctl, the media keys and the Eww media module act on the most recently active player";
+      };
+
       hyprland.tailscale.enable = helpers.mkHomeOpt {
         inherit osConfig;
         path = "home.desktop.hyprland.tailscale.enable";

@@ -26,6 +26,7 @@ desktop/
 │       ├── waybar.nix         # Status bar (fallback when Eww is off)
 │       ├── eww/               # Maps the eww options onto programs.eww-bar (packages/eww-bar/)
 │       ├── dunst.nix          # Notification daemon
+│       ├── playerctld.nix     # Media player tracking for playerctl
 │       ├── hyprlock.nix       # Screen locker
 │       ├── hyprpaper/         # Static wallpaper engine (fallback)
 │       ├── wallpaper/         # awww wallpaper engine and picker backend
@@ -69,6 +70,7 @@ home.desktop.hyprland.eww.laptopControls.enable     # Enable laptop clamshell/he
 home.desktop.hyprland.eww.modules                   # Modules the bar has at all (default: every module)
 home.desktop.hyprland.eww.defaultHiddenModules      # Modules hidden until shown in Settings (laptop: [ "storage" ])
 home.desktop.hyprland.waybar.enable                 # Enable Waybar when Eww is disabled
+home.desktop.hyprland.playerctld.enable             # playerctld, so playerctl acts on the last active player (default: follows hyprland.enable)
 home.desktop.hyprland.tailscale.enable              # Tailscale tray icon (default: follows nixos.general.tailscale.enable)
 home.desktop.hyprland.wlogout.hibernate.enable      # Working Hibernate in wlogout; false dims it (laptop: false)
 ```
@@ -211,6 +213,11 @@ A dynamic tiling Wayland compositor with modern features.
 - Device pairing and connection
 - Audio device management
 - System tray integration
+
+**Media control** (`playerctld.nix`):
+- playerctld tracks which MPRIS player was active last, so `playerctl` without
+  `-p` (the media keys, and the Eww media module's track and clicks) acts on
+  that player rather than the first one on the bus
 
 **Theming** (`theme/`):
 - GTK theme configuration

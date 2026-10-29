@@ -66,6 +66,12 @@
         description = "Enable Dunst notifications for Hyprland";
       };
 
+      hyprland.playerctld.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = config.home.desktop.hyprland.enable;
+        description = "Run playerctld so playerctl, the media keys and the Eww media module act on the most recently active player";
+      };
+
       hyprland.tailscale.enable = lib.mkOption {
         type = lib.types.bool;
         default = config.home.desktop.hyprland.enable && config.nixos.general.tailscale.enable;

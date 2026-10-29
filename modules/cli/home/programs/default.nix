@@ -24,6 +24,9 @@
       # pdf reader
       zathura
 
+      # mail client
+      aerc
+
       _1password-cli
 
       # secrets editing (secrets/ in the config repo)

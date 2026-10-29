@@ -98,6 +98,14 @@
           default = config.home.gui.enable;
           description = "Enable the apps module";
         };
+        aerion = {
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.gui.apps.aerion.enable";
+            default = config.home.gui.apps.enable;
+            description = "Enable the Aerion mail client";
+          };
+        };
         libreoffice = {
           enable = helpers.mkHomeOpt {
             inherit osConfig;

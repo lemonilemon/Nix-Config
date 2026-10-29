@@ -68,6 +68,7 @@ home.gui.development.web.enable    # Enable web dev tools (default: follows deve
 
 # Applications
 home.gui.apps.enable               # Enable general apps (default: follows gui.enable)
+home.gui.apps.aerion.enable        # Enable Aerion (default: follows apps.enable)
 home.gui.apps.libreoffice.enable   # Enable LibreOffice (default: follows apps.enable)
 home.gui.apps.thunderbird.enable   # Enable Thunderbird (default: false)
 
@@ -222,9 +223,10 @@ programs.kitty = {
 General GUI applications and utilities.
 
 **Home Manager Apps** (`home/apps/default.nix`):
-- **Communication**: Webcord (Discord client); Thunderbird when
-  `home.gui.apps.thunderbird.enable` is set. The default mail client is aerc,
-  in the CLI module
+- **Communication**: Webcord (Discord client); Aerion, the default mail client
+  (gated on `home.gui.apps.aerion.enable`), built with `withOAuth` so Gmail and
+  Outlook sign in through its verified OAuth clients. Thunderbird when
+  `home.gui.apps.thunderbird.enable` is set; aerc is installed by the CLI module
 - **Media**: Spotify (Wayland IME), VLC
 - **Productivity**: LibreOffice (gated on `home.gui.apps.libreoffice.enable`,
   which also gates its MIME defaults; default handler for the Office and

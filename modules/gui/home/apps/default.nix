@@ -23,7 +23,8 @@
       # Gated on the vault flag rather than listed unconditionally, so one option
       # governs the app, nvim's workspace and the Syncthing folder together.
       ++ lib.optional config.home.general.obsidian.enable pkgs.obsidian
-      ++ lib.optional config.home.gui.apps.libreoffice.enable pkgs.libreoffice;
+      ++ lib.optional config.home.gui.apps.libreoffice.enable pkgs.libreoffice
+      ++ lib.optional config.home.gui.apps.aerion.enable (pkgs.aerion.override { withOAuth = true; });
 
     xdg.mimeApps = lib.mkIf config.home.gui.apps.libreoffice.enable {
       enable = true;

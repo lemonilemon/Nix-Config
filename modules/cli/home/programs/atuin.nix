@@ -17,6 +17,9 @@
         auto_sync = true;
         sync_frequency = "5m";
         sync_address = "https://api.atuin.sh";
+        threads = lib.mkIf config.home.cli.programs.atuin.threads.enable {
+          capture = true;
+        };
       };
     };
   };

@@ -41,6 +41,13 @@
           description = "Enable my CLI programs settings";
         };
 
+        atuin.threads.enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.programs.atuin.threads.enable";
+          default = false;
+          description = "Capture AI coding agents' sessions as Atuin threads, synced like shell history";
+        };
+
         claudeHud.usageSnapshot = lib.mkOption {
           type = lib.types.str;
           readOnly = true;

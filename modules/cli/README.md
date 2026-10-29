@@ -48,6 +48,7 @@ home.cli.nvim.enable     # Enable Neovim (default: follows cli.enable)
 
 # Programs
 home.cli.programs.enable # Enable CLI utilities (default: follows cli.enable)
+home.cli.programs.atuin.threads.enable # Capture coding-agent sessions as Atuin threads (default: false)
 
 # Shells
 home.cli.shells.enable   # Enable shell configuration (default: follows cli.enable)
@@ -219,7 +220,7 @@ CLI utility configurations:
 - **ai/ herdr**: A terminal multiplexer that runs several agents side by side and shows each pane's state. `~/.config/herdr/config.toml` is generated here so herdr nests cleanly inside tmux: prefix `ctrl+g` (tmux keeps `ctrl+b`, nvim's cmp keeps `ctrl+space`), and the tab row is hidden while a workspace has a single tab so tmux keeps the top row and herdr's chrome stays on the left edge. Notifications go to the desktop (`ui.toast.delivery = "system"`), because a herdr client in a hidden tmux session cannot show its own toasts. herdr still skips them for the agent in a client's active tab, so the tmux status module from `tmux/herdr.nix` is the main signal. Only the file is symlinked, not the directory, since herdr writes its log and session state alongside it. Its zsh completion is generated at build time too, since herdr prints the script instead of shipping one.
 - **ai/AGENTS.md**: The single global agent instruction file, symlinked to `~/AGENTS.md`, `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, and `~/.config/opencode/AGENTS.md`, so every agent reads identical content and cannot drift. The link targets the Nix store, so it is read-only — agents cannot append to it in place.
 - **ai/ my-voice**: Personal writing-voice skill (tone rules, zh-TW conventions, AI-tell ban list, sample excerpts) for text published under lemonilemon's name. Its content lives in the private `lemonilemon/my-voice` repo, not here, because this repo and its Cachix cache are public. Each machine clones it once with `just voice-clone` to `~/.local/share/my-voice`, and `ai/default.nix` links both `~/.agents/skills/my-voice` (pi's native skill root, shared home of CLI-installed skills) and `~/.claude/skills/my-voice` (claude-code) to that checkout with `mkOutOfStoreSymlink`, so the content never enters the Nix store. Edits there apply immediately; commit and push them in that repo. Without the clone the links dangle and agents simply don't see the skill. Linked skills are declared in the `nixManagedSkills` attrset in `ai/default.nix`; one line per skill generates both links.
-- **atuin.nix**: Shell history sync and search (alternative to ctrl+r)
+- **atuin.nix**: Shell history sync and search (alternative to ctrl+r). With `home.cli.programs.atuin.threads.enable` (laptop and desktop), the daemon also captures coding-agent sessions (Claude Code, Codex, opencode, Pi) as threads, synced end-to-end encrypted like history, including each tool call's input and output; `atuin resume` picks one to continue here, on another machine, or in another agent with `--in`. Capture starts when it is turned on; `atuin threads import` backfills older sessions. The config file is a read-only store link, so `atuin config enable threads` cannot write it; set the option instead.
 - **fastfetch.nix**: System information display
 - **yazi.nix**: Terminal file manager
 - **utils.nix**: General CLI utilities

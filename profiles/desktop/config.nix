@@ -5,6 +5,8 @@
   home.desktop.hyprland.eww.enable = true;
   home.desktop.hyprland.awww.enable = true;
 
+  home.cli.programs.atuin.threads.enable = true;
+
   nixos.desktop.gnome.enable = false;
 
   nixos.general.tailscale.enable = true;

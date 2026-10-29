@@ -6,6 +6,8 @@
   home.desktop.hyprland.awww.enable = true;
   home.desktop.hyprland.wlogout.hibernate.enable = false;
 
+  home.cli.programs.atuin.threads.enable = true;
+
   nixos.desktop.gnome.enable = false;
 
   nixos.general.printing.enable = true;

@@ -34,6 +34,12 @@
           default = config.home.cli.enable;
           description = "Enable my CLI programs settings";
         };
+
+        atuin.threads.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Capture AI coding agents' sessions as Atuin threads, synced like shell history";
+        };
       };
 
       shells = {

@@ -626,8 +626,10 @@
   (tray_panel))
 
 (defwidget tray_panel []
+  ;; 28 = :icon-size + :spacing; 24 = .tray-popup padding and border + .tray padding - one :spacing.
   (box :class "popup tray-popup" :orientation "h" :space-evenly false
-    (systray :class "tray" :icon-size 16 :spacing 12)))
+    :width {28 * bar_state.tray_count + 24}
+    (systray :class "tray" :icon-size 16 :spacing 12 :hexpand true :halign "center")))
 
 (defwindow battery_popup
   :monitor 0

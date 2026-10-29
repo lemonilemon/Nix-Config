@@ -17,9 +17,12 @@ let
   ewwYuck = bar.yuck;
   inherit (bar) paletteScss;
 
-  # Drop once elkowar/eww reads StatusNotifierItem properties uncached.
+  # Drop each patch once elkowar/eww makes the same change.
   ewwPackage = pkgs.eww.overrideAttrs (oldAttrs: {
-    patches = (oldAttrs.patches or [ ]) ++ [ ./eww-systray-uncached.patch ];
+    patches = (oldAttrs.patches or [ ]) ++ [
+      ./eww-systray-uncached.patch
+      ./eww-systray-icon-before-menu.patch
+    ];
   });
 
   runtimePackages =

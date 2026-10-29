@@ -1,0 +1,26 @@
+--- a/crates/eww/src/widgets/systray.rs
++++ b/crates/eww/src/widgets/systray.rs
+@@ -173,11 +173,6 @@
+         widget.add(&icon);
+         icon.show();
+ 
+-        // init menu
+-        if let Err(e) = item.set_menu(&widget).await {
+-            log::warn!("failed to set menu: {}", e);
+-        }
+-
+         // TODO this is a lot of code duplication unfortunately, i'm not really sure how to
+         // refactor without making the borrow checker angry
+ 
+@@ -194,6 +189,11 @@
+         let scale = icon.scale_factor();
+         load_icon_for_item(&icon, &item, *icon_size.borrow_and_update(), scale).await;
+ 
++        // init menu
++        if let Err(e) = item.set_menu(&widget).await {
++            log::warn!("failed to set menu: {}", e);
++        }
++
+         let item = Rc::new(item);
+         let window =
+             widget.toplevel().expect("Failed to obtain toplevel window").downcast::<Window>().expect("Failed to downcast window");

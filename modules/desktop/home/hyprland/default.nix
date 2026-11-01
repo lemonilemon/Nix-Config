@@ -90,18 +90,13 @@
             (bind "Print" (exec ''grim -g "$(slurp)" - | wl-copy''))
             (bind "${MOD1} + SHIFT + S" (exec ''grim -g "$(slurp)" - | wl-copy''))
 
-            # Release binds: trigger on key release
-            (bindWith "${MOD2} + F" (exec BROWSER) { release = true; }) # Browser
-            (bindWith "${MOD2} + Q" (dsp ''workspace.toggle_special("mainterm")'') {
-              release = true;
-            }) # Terminal
-            (bindWith "${MOD2} + S" (dsp ''workspace.toggle_special("scratchpad")'') {
-              release = true;
-            }) # Scratchpad
+            (bind "${MOD2} + F" (exec BROWSER)) # Browser
+            (bind "${MOD2} + Q" (dsp ''workspace.toggle_special("mainterm")'')) # Terminal
+            (bind "${MOD2} + S" (dsp ''workspace.toggle_special("scratchpad")'')) # Scratchpad
             # Toggle: `pkill rofi` closes an open launcher; only if none was
             # running does the right-hand side start one.
-            (bindWith "${MOD2} + space" (exec "pkill rofi || ${DRUN}") { release = true; })
-            (bindWith "${MOD2} + E" (exec FILE) { release = true; }) # File manager
+            (bind "${MOD2} + space" (exec "pkill rofi || ${DRUN}"))
+            (bind "${MOD2} + E" (exec FILE)) # File manager
 
             (bindWith "${MOD1} + mouse:272" (dsp "window.drag()") { mouse = true; })
             (bindWith "${MOD1} + mouse:273" (dsp "window.resize()") { mouse = true; })

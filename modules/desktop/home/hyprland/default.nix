@@ -255,13 +255,6 @@
               }
             ];
 
-          workspace_rule = [
-            {
-              workspace = "special:mainterm";
-              on_created_empty = TERM;
-            }
-          ];
-
           config = {
             input = {
               touchpad = {
@@ -321,8 +314,8 @@
               action = "fullscreen";
             }
           ];
-          # Open when hyprland starts
           on = [
+            # Open when hyprland starts
             {
               _args = [
                 "hyprland.start"
@@ -334,6 +327,17 @@
                     -- 1password
                     hl.exec_cmd("1password --silent")
                     hl.exec_cmd("blueman-applet")
+                  end'')
+              ];
+            }
+            {
+              _args = [
+                "workspace.created"
+                (mkLuaInline ''
+                  function(ws)
+                    if ws.name == "special:mainterm" and ws.is_empty then
+                      hl.exec_cmd(${toLua TERM}, { workspace = ws.addressable_name })
+                    end
                   end'')
               ];
             }

@@ -327,6 +327,8 @@ home.general.programlangs.packages = with pkgs; [
 - Python includes numpy by default via `python3.withPackages`
 - Can be extended with virtualenv managers (micromamba commented out)
 - Package managers included where applicable (cargo, npm via nodejs, uv)
+- `~/.local/bin` is prepended to `PATH` via `home.sessionPath`, so executables
+  from `uv tool install` resolve
 
 #### Fonts (`fonts/`)
 

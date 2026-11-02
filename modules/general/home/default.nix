@@ -35,6 +35,7 @@
     home.sessionVariables = {
       MAMBA_ROOT_PREFIX = "${config.home.homeDirectory}/.micromamba";
     };
+    home.sessionPath = [ "$HOME/.local/bin" ];
     programs.zsh.initContent = ''
       # nixpkgs wraps the micromamba binary as `.mamba-wrapped`. The upstream
       # shell hook derives its function name from /proc/self/exe's basename and

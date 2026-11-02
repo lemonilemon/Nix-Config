@@ -303,6 +303,7 @@ home.general.programlangs.packages = [
   gcc              # C/C++ compiler
   python3          # Python with numpy
   uv               # Python package manager
+  micromamba       # Python virtualenv manager
   nodejs           # Node.js runtime
   bun              # JavaScript runtime
   jre8             # Java Runtime Environment
@@ -325,7 +326,6 @@ home.general.programlangs.packages = with pkgs; [
 
 **Language-specific configuration**:
 - Python includes numpy by default via `python3.withPackages`
-- Can be extended with virtualenv managers (micromamba commented out)
 - Package managers included where applicable (cargo, npm via nodejs, uv)
 - `~/.local/bin` is prepended to `PATH` via `home.sessionPath`, so executables
   from `uv tool install` resolve

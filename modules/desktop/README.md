@@ -87,6 +87,7 @@ A dynamic tiling Wayland compositor with modern features.
 - XWayland support
 - Portal integration (file picker, screen sharing)
 - Graphics driver integration
+- No realtime scheduling (`HYPRLAND_NO_RT=1`)
 - Polkit agent: soteria (`security.soteria`), a GTK prompt that follows the
   GTK theme; it starts with `graphical-session.target`
 

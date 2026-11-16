@@ -14,7 +14,6 @@
       enable = true; # enable Hyprland
       xwayland.enable = true;
     };
-    environment.sessionVariables.HYPRLAND_NO_RT = "1";
     services.xserver.desktopManager.runXdgAutostartIfNone = true;
     xdg.portal = {
       enable = true;

@@ -29,7 +29,6 @@
       wl-clipboard # Clipboard manager
       brightnessctl # Brightness control
       playerctl # Player control
-      pw-volume # Volume control
       nwg-displays # Monitor layout GUI
       hyprshutdown # Graceful Hyprland shutdown
     ];

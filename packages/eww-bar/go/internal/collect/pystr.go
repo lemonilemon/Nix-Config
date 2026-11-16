@@ -1,11 +1,12 @@
 package collect
 
 import (
+	"sort"
 	"strings"
 	"unicode"
 )
 
-// PyLower is Python's str.lower(). strings.ToLower agrees on every code point but
+// PyLower is Python's str.lower(). pyToLower agrees on every code point but
 // U+0130, the capital I with dot above, which lowercases to TWO characters in
 // Python -- "i" followed by U+0307 -- where Go yields a bare "i". The AI
 // collectors lowercase agent keys that are then rendered, so a dropped combining
@@ -23,7 +24,7 @@ func PyLower(s string) string {
 	if strings.Contains(s, capitalIWithDot) {
 		s = strings.ReplaceAll(s, capitalIWithDot, dottedLowerI)
 	}
-	return strings.ToLower(s)
+	return strings.Map(pyToLower, s)
 }
 
 // PyTitle is Python's str.title(). The rule is a running flag: each character is
@@ -32,7 +33,7 @@ func PyLower(s string) string {
 // "don't" becomes "Don'T". Both are real outputs of the plan formatter.
 //
 // Both branches use Unicode's FULL case mappings, which are one-to-many and so
-// cannot come from unicode.ToTitle/ToLower alone.
+// cannot come from pyToTitle/pyToLower alone.
 func PyTitle(s string) string {
 	var out strings.Builder
 	out.Grow(len(s))
@@ -42,12 +43,12 @@ func PyTitle(s string) string {
 		case previousIsCased && r == capitalIWithDotRune:
 			out.WriteString(dottedLowerI)
 		case previousIsCased:
-			out.WriteRune(unicode.ToLower(r))
+			out.WriteRune(pyToLower(r))
 		default:
 			if full, isFull := fullTitleCase[r]; isFull {
 				out.WriteString(full)
 			} else {
-				out.WriteRune(unicode.ToTitle(r))
+				out.WriteRune(pyToTitle(r))
 			}
 		}
 		previousIsCased = isCased(r)
@@ -57,8 +58,24 @@ func PyTitle(s string) string {
 
 // isCased is Python's Py_UNICODE_ISCASED: upper, lower or title case.
 func isCased(r rune) bool {
-	return unicode.IsUpper(r) || unicode.IsLower(r) || unicode.IsTitle(r)
+	return unicode.Is(pyCased, r)
 }
+
+// caseRun moves every Stride-th code point from Lo through Hi by Delta.
+// gen_unicodetables.go keeps a copy of it and of mapCase.
+type caseRun struct{ Lo, Hi, Stride, Delta rune }
+
+func mapCase(runs []caseRun, r rune) rune {
+	i := sort.Search(len(runs), func(i int) bool { return runs[i].Hi >= r })
+	if i < len(runs) && r >= runs[i].Lo && (r-runs[i].Lo)%runs[i].Stride == 0 {
+		return r + runs[i].Delta
+	}
+	return r
+}
+
+func pyToLower(r rune) rune { return mapCase(pyLowerRuns, r) }
+
+func pyToTitle(r rune) rune { return mapCase(pyTitleRuns, r) }
 
 // SplitLines is Python's str.splitlines(). strings.Split(s, "\n") is not it:
 // Python also breaks on \r, \r\n, \v, \f, \x1c, \x1d, \x1e, \x85, U+2028 and

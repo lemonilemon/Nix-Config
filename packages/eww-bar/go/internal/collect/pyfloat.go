@@ -4,7 +4,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 // PyFloat is Python's float(str). strconv.ParseFloat is not it; four divergences:
@@ -95,20 +94,15 @@ func asciiFoldDigits(s string) string {
 	return b.String()
 }
 
-// unicodeDigitValue is unicodedata.decimal(r) for the Nd category.
-//
-// No stdlib lookup exists, so this leans on a UCD property: Nd characters come in
-// contiguous ascending runs of ten and Go's range table splits on those block
-// boundaries, so a range always begins at a zero digit. Verified over all 760 Nd
-// runes. If a future Unicode revision breaks the alignment nothing here will
-// notice -- re-run the sweep by hand against unicodedata.decimal if you touch this.
+// unicodeDigitValue is unicodedata.decimal(r) for the Nd category. Every range in
+// pyNd begins at a zero digit, so a digit's value is its offset from Lo, mod 10.
 func unicodeDigitValue(r rune) (int, bool) {
-	for _, rg := range unicode.Nd.R16 {
+	for _, rg := range pyNd.R16 {
 		if rg.Stride == 1 && r >= rune(rg.Lo) && r <= rune(rg.Hi) {
 			return int(r-rune(rg.Lo)) % 10, true
 		}
 	}
-	for _, rg := range unicode.Nd.R32 {
+	for _, rg := range pyNd.R32 {
 		if rg.Stride == 1 && r >= rune(rg.Lo) && r <= rune(rg.Hi) {
 			return int(r-rune(rg.Lo)) % 10, true
 		}

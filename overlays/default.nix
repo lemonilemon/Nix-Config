@@ -182,6 +182,8 @@
         ];
 
         buildInputs = [
+          final.aws-lc
+          final.sqlite
           final.openssl
           final.dbus
         ];

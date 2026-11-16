@@ -69,8 +69,10 @@ home.gui.development.web.enable    # Enable web dev tools (default: follows deve
 # Applications
 home.gui.apps.enable               # Enable general apps (default: follows gui.enable)
 home.gui.apps.aerion.enable        # Enable Aerion (default: follows apps.enable)
-home.gui.apps.libreoffice.enable   # Enable LibreOffice (default: follows apps.enable)
+home.gui.apps.deckcraft.enable     # Enable DeckCraft (default: follows apps.enable)
+home.gui.apps.gridcraft.enable     # Enable GridCraft (default: follows apps.enable)
 home.gui.apps.thunderbird.enable   # Enable Thunderbird (default: false)
+home.gui.apps.wordcraft.enable     # Enable WordCraft (default: follows apps.enable)
 
 # Terminal
 home.gui.kitty.enable              # Enable Kitty terminal (default: follows gui.enable)
@@ -229,9 +231,10 @@ General GUI applications and utilities.
   `home.gui.apps.thunderbird.enable` is set; aerc, in the CLI module, when
   `home.cli.programs.aerc.enable` is set
 - **Media**: Spotify (Wayland IME), VLC
-- **Productivity**: LibreOffice (gated on `home.gui.apps.libreoffice.enable`,
-  which also gates its MIME defaults; default handler for the Office and
-  OpenDocument formats, with CSV/TSV deliberately left to the text editor),
+- **Productivity**: WordCraft, DeckCraft and GridCraft (each gated on its own
+  `home.gui.apps.<name>.enable`, which also gates its MIME defaults; each is the
+  default handler for the Office and OpenDocument formats its desktop entry
+  claims, with CSV/TSV left to the text editor),
   Obsidian (notes; installed only when
   `home.general.obsidian.enable` is set, which also drives its Syncthing folder
   and nvim workspace), Trading View

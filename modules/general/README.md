@@ -343,8 +343,7 @@ System and user font configuration:
 - System fonts
 - Icon fonts (Nerd Fonts)
 - CJK fonts (if needed)
-- Metric-compatible substitutes for the Microsoft Office fonts, so LibreOffice
-  keeps `.docx`/`.pptx` layout instead of reflowing it
+- Metric-compatible substitutes for the Microsoft Office fonts
 
 **Usage**:
 ```nix

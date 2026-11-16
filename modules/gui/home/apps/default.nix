@@ -23,32 +23,46 @@
       # Gated on the vault flag rather than listed unconditionally, so one option
       # governs the app, nvim's workspace and the Syncthing folder together.
       ++ lib.optional config.home.general.obsidian.enable pkgs.obsidian
-      ++ lib.optional config.home.gui.apps.libreoffice.enable pkgs.libreoffice
+      ++ lib.optional config.home.gui.apps.deckcraft.enable pkgs.deckcraft
+      ++ lib.optional config.home.gui.apps.gridcraft.enable pkgs.gridcraft
+      ++ lib.optional config.home.gui.apps.wordcraft.enable pkgs.wordcraft
       ++ lib.optional config.home.gui.apps.aerion.enable (pkgs.aerion.override { withOAuth = true; });
 
-    xdg.mimeApps = lib.mkIf config.home.gui.apps.libreoffice.enable {
-      enable = true;
-      defaultApplications = {
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation" = [ "impress.desktop" ];
-        "application/vnd.openxmlformats-officedocument.presentationml.slideshow" = [ "impress.desktop" ];
-        "application/vnd.ms-powerpoint" = [ "impress.desktop" ];
-        "application/vnd.ms-powerpoint.presentation.macroEnabled.12" = [ "impress.desktop" ];
-        "application/vnd.oasis.opendocument.presentation" = [ "impress.desktop" ];
-
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = [ "writer.desktop" ];
-        "application/msword" = [ "writer.desktop" ];
-        "application/vnd.ms-word.document.macroEnabled.12" = [ "writer.desktop" ];
-        "application/vnd.oasis.opendocument.text" = [ "writer.desktop" ];
-        "application/rtf" = [ "writer.desktop" ];
-
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" = [ "calc.desktop" ];
-        "application/vnd.ms-excel" = [ "calc.desktop" ];
-        "application/vnd.ms-excel.sheet.macroEnabled.12" = [ "calc.desktop" ];
-        "application/vnd.oasis.opendocument.spreadsheet" = [ "calc.desktop" ];
-
-        "application/vnd.oasis.opendocument.graphics" = [ "draw.desktop" ];
-      };
-    };
+    xdg.mimeApps = lib.mkMerge [
+      (lib.mkIf config.home.gui.apps.deckcraft.enable {
+        enable = true;
+        defaultApplications = {
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation" = [
+            "ai.storyteller.deckcraft.desktop"
+          ];
+          "application/vnd.openxmlformats-officedocument.presentationml.slideshow" = [
+            "ai.storyteller.deckcraft.desktop"
+          ];
+        };
+      })
+      (lib.mkIf config.home.gui.apps.gridcraft.enable {
+        enable = true;
+        defaultApplications = {
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" = [
+            "ai.storyteller.gridcraft.desktop"
+          ];
+          "application/vnd.ms-excel.sheet.macroEnabled.12" = [ "ai.storyteller.gridcraft.desktop" ];
+          "application/vnd.oasis.opendocument.spreadsheet" = [ "ai.storyteller.gridcraft.desktop" ];
+        };
+      })
+      (lib.mkIf config.home.gui.apps.wordcraft.enable {
+        enable = true;
+        defaultApplications = {
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = [
+            "ai.storyteller.wordcraft.desktop"
+          ];
+          "application/msword" = [ "ai.storyteller.wordcraft.desktop" ];
+          "application/vnd.ms-word.document.macroEnabled.12" = [ "ai.storyteller.wordcraft.desktop" ];
+          "application/vnd.oasis.opendocument.text" = [ "ai.storyteller.wordcraft.desktop" ];
+          "application/rtf" = [ "ai.storyteller.wordcraft.desktop" ];
+        };
+      })
+    ];
 
     programs.ssh = {
       enable = true;

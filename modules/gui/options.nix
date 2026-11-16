@@ -70,11 +70,18 @@
             description = "Enable the Aerion mail client";
           };
         };
-        libreoffice = {
+        deckcraft = {
           enable = lib.mkOption {
             type = lib.types.bool;
             default = config.home.gui.apps.enable;
-            description = "Enable the LibreOffice office suite";
+            description = "Enable DeckCraft, the presentation app";
+          };
+        };
+        gridcraft = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = config.home.gui.apps.enable;
+            description = "Enable GridCraft, the spreadsheet app";
           };
         };
         thunderbird = {
@@ -82,6 +89,13 @@
             type = lib.types.bool;
             default = false;
             description = "Enable the Thunderbird mail client";
+          };
+        };
+        wordcraft = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = config.home.gui.apps.enable;
+            description = "Enable WordCraft, the word processor";
           };
         };
       };

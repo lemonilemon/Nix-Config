@@ -20,29 +20,24 @@ let
 
   programsOffPackageNames = map (p: p.pname or p.name or "") programsOff.home.packages;
 
-  # The package and its MIME defaults are two separate statements in
-  # modules/gui/home/apps/default.nix, and the flag has to take both. Gating
-  # one and not the other still evaluates and still builds, leaving every
-  # Office format in mimeapps.list pointed at an impress.desktop that is not
-  # installed -- which a desktop reports by doing nothing when you open a
-  # file. This also witnesses the NixOS -> Home Manager mirror: the flag is
-  # set here on the NixOS side, so a wrong `path` in the mkHomeOpt would
-  # leave the suite installed with nothing to say so.
-  libreofficeOff =
+  officeApps = [
+    "deckcraft"
+    "gridcraft"
+    "wordcraft"
+  ];
+
+  officeOff =
     (nixosConfigurations.desktop.extendModules {
-      modules = [ { home.gui.apps.libreoffice.enable = false; } ];
+      modules = [
+        {
+          home.gui.apps.deckcraft.enable = false;
+          home.gui.apps.gridcraft.enable = false;
+          home.gui.apps.wordcraft.enable = false;
+        }
+      ];
     }).config.home-manager.users.lemonilemon;
 
-  libreofficeOffHandlers = lib.flatten (
-    lib.attrValues libreofficeOff.xdg.mimeApps.defaultApplications
-  );
-
-  libreofficeEntries = [
-    "writer.desktop"
-    "calc.desktop"
-    "impress.desktop"
-    "draw.desktop"
-  ];
+  officeOffHandlers = lib.flatten (lib.attrValues officeOff.xdg.mimeApps.defaultApplications);
 
   # home.gui.browsers.default is set on the NixOS side and read in Home
   # Manager. A wrong `path` in its mkHomeOpt drops the value silently, leaving
@@ -238,17 +233,19 @@ let
       expected = false;
     }
 
-    # --- libreoffice: the flag has to take the MIME defaults with it ---
+    # --- office apps: each flag has to take its MIME defaults with it ---
     {
-      name = "libreoffice off/libreoffice in home.packages";
-      actual = builtins.any (n: lib.hasPrefix "libreoffice" n) (
-        map (p: p.pname or p.name or "") libreofficeOff.home.packages
+      name = "office apps off/a Craft office app in home.packages";
+      actual = builtins.any (n: builtins.elem n officeApps) (
+        map (p: p.pname or p.name or "") officeOff.home.packages
       );
       expected = false;
     }
     {
-      name = "libreoffice off/no MIME default points at a LibreOffice entry";
-      actual = builtins.any (h: builtins.elem h libreofficeEntries) libreofficeOffHandlers;
+      name = "office apps off/no MIME default points at a Craft office entry";
+      actual = builtins.any (
+        h: builtins.elem h (map (app: "ai.storyteller.${app}.desktop") officeApps)
+      ) officeOffHandlers;
       expected = false;
     }
 

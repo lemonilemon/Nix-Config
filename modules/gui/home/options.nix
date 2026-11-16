@@ -106,12 +106,20 @@
             description = "Enable the Aerion mail client";
           };
         };
-        libreoffice = {
+        deckcraft = {
           enable = helpers.mkHomeOpt {
             inherit osConfig;
-            path = "home.gui.apps.libreoffice.enable";
+            path = "home.gui.apps.deckcraft.enable";
             default = config.home.gui.apps.enable;
-            description = "Enable the LibreOffice office suite";
+            description = "Enable DeckCraft, the presentation app";
+          };
+        };
+        gridcraft = {
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.gui.apps.gridcraft.enable";
+            default = config.home.gui.apps.enable;
+            description = "Enable GridCraft, the spreadsheet app";
           };
         };
         thunderbird = {
@@ -120,6 +128,14 @@
             path = "home.gui.apps.thunderbird.enable";
             default = false;
             description = "Enable the Thunderbird mail client";
+          };
+        };
+        wordcraft = {
+          enable = helpers.mkHomeOpt {
+            inherit osConfig;
+            path = "home.gui.apps.wordcraft.enable";
+            default = config.home.gui.apps.enable;
+            description = "Enable WordCraft, the word processor";
           };
         };
       };

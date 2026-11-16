@@ -20,7 +20,6 @@
       gnumake
       curl
       wget
-      rqbit # a lightweight bittorrent client
       ffmpeg
       glow # markdown viewer
 

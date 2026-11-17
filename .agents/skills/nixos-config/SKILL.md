@@ -7,7 +7,8 @@ description: >
   test, or rebuild their system, where to put a new package or service, or how a specific option
   is named or typed. Trigger on phrases like "add X to my nix config", "enable X in NixOS",
   "configure X with home-manager", "add a flake input", "where do I put X", "how do I set option X",
-  "update my flake", or any mention of editing .nix files in their config.
+  "update my flake", or any mention of editing .nix files in their config. Also use when
+  promoting dev to main.
 ---
 
 # NixOS Config Skill
@@ -142,6 +143,21 @@ substitute `nix build --dry-run .#nixosConfigurations.<host>.config.system.build
 
 Do not run `just build` yourself — it uses sudo and switches the live system; leave that
 to the user.
+
+## Promoting `dev` to `main`
+
+Work lands on `dev`; `main` only moves by fast-forward:
+
+```bash
+git fetch origin
+git push --atomic origin dev dev:main
+```
+
+Git rejects the push if `main` has commits `dev` lacks; never force it. Never open a pull
+request from `dev` into `main`, not even to get CI to run: the push to `main` runs `ci.yml`
+and `build.yml` on its own. The repo deletes head branches on merge, so GitHub deletes `dev`
+as soon as `main` contains the PR's head, and the flake-update workflow and Dependabot both
+target `dev`.
 
 ## Keeping This Skill and READMEs Up to Date
 

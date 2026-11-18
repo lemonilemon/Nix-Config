@@ -45,6 +45,7 @@ home.cli.git.enable      # Enable git configuration (default: follows cli.enable
 
 # Neovim
 home.cli.nvim.enable     # Enable Neovim (default: follows cli.enable)
+home.cli.nvim.leetcode.enable # leetcode.nvim and the `leet` alias (default: false)
 
 # Programs
 home.cli.programs.enable # Enable CLI utilities (default: follows cli.enable)
@@ -98,6 +99,7 @@ plugins/
 │   ├── competitest.nix # Competitive programming
 │   ├── coderunner.nix  # Code execution
 │   ├── jupytext.nix    # Jupyter notebooks as plain text
+│   ├── leetcode.nix    # LeetCode in Neovim
 │   ├── markdown.nix    # Markdown support
 │   ├── template.nix    # File templates
 │   ├── typst.nix       # Typst document system
@@ -155,6 +157,7 @@ plugins/
 **Competitive Programming**:
 - CompetiTest for running test cases
 - Code Runner for quick execution
+- leetcode.nvim, started as its own Neovim with `leet`. Python 3 by default (`:Leet lang` switches). That session has no LSP, completion, Copilot or format-on-save. Sign in by pasting the browser's `Cookie` request header.
 
 **Document Editing**:
 - VimTeX for LaTeX

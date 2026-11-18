@@ -31,6 +31,13 @@
           default = config.home.cli.enable;
           description = "Enable nvim settings";
         };
+
+        leetcode.enable = helpers.mkHomeOpt {
+          inherit osConfig;
+          path = "home.cli.nvim.leetcode.enable";
+          default = false;
+          description = "Solve LeetCode problems in Neovim with leetcode.nvim, started with `leet`";
+        };
       };
 
       programs = {

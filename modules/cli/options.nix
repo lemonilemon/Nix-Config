@@ -26,6 +26,12 @@
           default = config.home.cli.enable;
           description = "Enable nvim settings";
         };
+
+        leetcode.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Solve LeetCode problems in Neovim with leetcode.nvim, started with `leet`";
+        };
       };
 
       programs = {

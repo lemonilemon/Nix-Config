@@ -6,6 +6,7 @@
   home.desktop.hyprland.awww.enable = true;
 
   home.cli.programs.atuin.threads.enable = true;
+  home.cli.nvim.leetcode.enable = true;
 
   nixos.desktop.gnome.enable = false;
 

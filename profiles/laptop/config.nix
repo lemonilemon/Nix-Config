@@ -7,6 +7,7 @@
   home.desktop.hyprland.wlogout.hibernate.enable = false;
 
   home.cli.programs.atuin.threads.enable = true;
+  home.cli.nvim.leetcode.enable = true;
 
   nixos.desktop.gnome.enable = false;
 

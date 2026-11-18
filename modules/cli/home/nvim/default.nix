@@ -28,6 +28,7 @@
     ./plugins/code/jupytext.nix
     ./plugins/code/vimtex.nix
     ./plugins/code/competitest.nix
+    ./plugins/code/leetcode.nix
     ./plugins/code/coderunner.nix
     ./plugins/code/template.nix
 

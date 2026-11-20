@@ -4,6 +4,36 @@
   pkgs,
   ...
 }:
+let
+  textTypes = [
+    "text/plain"
+    "text/markdown"
+    "text/csv"
+    "text/tab-separated-values"
+    "text/x-log"
+    "text/x-patch"
+    "application/json"
+    "application/toml"
+    "application/yaml"
+    "application/xml"
+    "text/x-tex"
+    "text/x-bibtex"
+    "text/vnd.typst"
+    "text/x-shellscript"
+    "text/x-makefile"
+    "text/x-python"
+    "text/x-python3"
+    "text/x-csrc"
+    "text/x-chdr"
+    "text/x-c++src"
+    "text/x-c++hdr"
+    "text/x-go"
+    "text/rust"
+    "text/x-lua"
+    "text/x-nix"
+    "text/javascript"
+  ];
+in
 {
   imports = [
     ./options/opts.nix
@@ -76,9 +106,7 @@
     home.packages = with pkgs; [ neovim-remote ];
     xdg.mimeApps = lib.mkIf config.desktop.enable {
       enable = true;
-      defaultApplications = {
-        "text/plain" = "nvim.desktop";
-      };
+      defaultApplications = lib.genAttrs textTypes (_: [ "nvim.desktop" ]);
     };
     xdg.desktopEntries = lib.mkIf config.desktop.enable {
       nvim = {
@@ -91,7 +119,7 @@
           "TextEditor"
         ];
         icon = "nvim";
-        mimeType = [ "text/plain" ];
+        mimeType = textTypes;
       };
     };
   };

@@ -142,6 +142,13 @@ plugins/
 
 #### Key Features
 
+**Default text handler**: on desktop hosts Neovim (in kitty) is the default
+application for plain text, Markdown, CSV/TSV, JSON/TOML/YAML/XML, logs,
+patches, TeX/BibTeX/Typst, shell scripts and Makefiles, and Python, C/C++, Go,
+Rust, Lua, Nix and JavaScript sources. The types are listed in
+`nvim/default.nix`; a text type missing there goes to whichever installed app
+claims it.
+
 **LSP Support**: Language Server Protocol integration for:
 - Code completion
 - Go-to-definition

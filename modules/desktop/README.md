@@ -73,6 +73,7 @@ home.desktop.hyprland.waybar.enable                 # Enable Waybar when Eww is 
 home.desktop.hyprland.playerctld.enable             # playerctld, so playerctl acts on the last active player (default: follows hyprland.enable)
 home.desktop.hyprland.tailscale.enable              # Tailscale tray icon (default: follows nixos.general.tailscale.enable)
 home.desktop.hyprland.wlogout.hibernate.enable      # Working Hibernate in wlogout; false dims it (laptop: false)
+home.desktop.hyprland.autoHdr.enable                # Switch the monitor to HDR for a fullscreen window that asks for it (desktop: false)
 ```
 
 ## Desktop Environments

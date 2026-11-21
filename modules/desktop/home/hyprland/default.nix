@@ -265,6 +265,9 @@
             cursor = {
               no_hardware_cursors = true;
             };
+            render = {
+              cm_auto_hdr = if config.home.desktop.hyprland.autoHdr.enable then 1 else 0;
+            };
             decoration = {
               rounding = 16;
               blur = {

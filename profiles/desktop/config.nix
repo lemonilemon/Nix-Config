@@ -4,6 +4,7 @@
 {
   home.desktop.hyprland.eww.enable = true;
   home.desktop.hyprland.awww.enable = true;
+  home.desktop.hyprland.autoHdr.enable = false;
 
   home.cli.programs.atuin.threads.enable = true;
   home.cli.nvim.leetcode.enable = true;

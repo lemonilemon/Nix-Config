@@ -102,6 +102,12 @@
         description = "Make wlogout's Hibernate button work; when false it stays in the grid, dimmed, and clicking it only closes the menu";
       };
 
+      hyprland.autoHdr.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = config.home.desktop.hyprland.enable;
+        description = "Let Hyprland switch the monitor into HDR when a fullscreen window asks for it (render:cm_auto_hdr)";
+      };
+
       hyprland.idle = {
         lockTimeout = lib.mkOption {
           type = lib.types.int;

@@ -134,6 +134,13 @@ let
       actual = hosts.desktop.networking.networkmanager.dns;
       expected = "none";
     }
+    {
+      # dns = "none" alone is not enough: [main] systemd-resolved defaults to
+      # true and pushes each connection's DNS to resolved regardless.
+      name = "desktop/networkmanager doesn't push DHCP's resolver to resolved";
+      actual = hosts.desktop.networking.networkmanager.settings.main.systemd-resolved;
+      expected = false;
+    }
 
     # --- syncthing: identity collisions are invisible ---
     {

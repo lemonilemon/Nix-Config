@@ -36,6 +36,7 @@ in
         ];
         wifi.powersave = lib.mkDefault cfg.wifi.enable;
         dns = lib.mkIf (cfg.dns.servers != [ ]) (lib.mkForce "none");
+        settings.main.systemd-resolved = lib.mkIf (cfg.dns.servers != [ ]) false;
       };
 
       services.resolved = lib.mkIf (cfg.dns.servers != [ ]) {

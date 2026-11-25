@@ -269,6 +269,16 @@ in
           default = config.nixos.general.network.enable;
           description = "Install redistributable firmware (wifi, GPU, microcode)";
         };
+
+        dns.servers = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [
+            "8.8.8.8#dns.google"
+            "8.8.4.4#dns.google"
+          ];
+          description = "DNS-over-TLS resolvers (address#hostname) replacing DHCP and VPN DNS; empty keeps NetworkManager's";
+        };
       };
 
       firewall = {

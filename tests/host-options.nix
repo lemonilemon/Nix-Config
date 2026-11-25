@@ -125,6 +125,16 @@ let
       expected = true;
     }
 
+    # --- dns: a leak still resolves ---
+    {
+      # The resolved module sets NetworkManager's dns to "systemd-resolved" at
+      # normal priority. If that ever won, DHCP's resolver would be queried in
+      # parallel with the DoT servers, and every lookup would still succeed.
+      name = "desktop/networkmanager.dns keeps DHCP's resolver out";
+      actual = hosts.desktop.networking.networkmanager.dns;
+      expected = "none";
+    }
+
     # --- syncthing: identity collisions are invisible ---
     {
       # Both physical hosts decrypt their identity out of one sops file, keyed

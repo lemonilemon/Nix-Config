@@ -34,7 +34,7 @@ general/
     ├── settings.nix     # Nix daemon and flake settings
     ├── nixld.nix        # nix-ld configuration
     ├── nh.nix           # nh, NH_FLAKE and the weekly cleanup timer
-    ├── network.nix      # NetworkManager, wireless and firmware
+    ├── network.nix      # NetworkManager, wireless, firmware and DNS
     ├── firewall.nix     # Firewall ports and trusted subnets
     ├── printing.nix     # CUPS and Avahi printer discovery
     ├── secrets.nix      # System-level sops-nix key source
@@ -75,6 +75,7 @@ nixos.general.nh.clean.keep     # Generations kept per profile regardless of age
 nixos.general.nh.clean.keepSince # Generations and gcroots newer than this are kept (default: "14d")
 nixos.general.printing.enable   # Enable CUPS printing (default: false; a profile opts in)
 nixos.general.tailscale.enable  # Join the tailnet (default: false; a profile opts in)
+nixos.general.network.dns.servers # DNS-over-TLS resolvers, address#hostname (default: [ ]; profiles/base.nix: Google)
 ```
 
 Form-factor-derived options. Each defaults from `formFactor` (see
@@ -189,6 +190,9 @@ Network-related system settings, driven by `nixos.general.network.*`:
 - Standalone `networking.wireless` explicitly off, since NetworkManager runs
   its own supplicant and the two conflict
 - Redistributable firmware
+- With `dns.servers` set, systemd-resolved sends every lookup to those servers
+  over DNS-over-TLS, falling back to plain DNS to the same servers when TLS is
+  blocked, and NetworkManager stops passing DHCP and VPN DNS servers on
 - A wpa_supplicant OpenSSL workaround that applies on every host
 
 #### `firewall.nix`

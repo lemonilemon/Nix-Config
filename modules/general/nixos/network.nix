@@ -35,6 +35,15 @@ in
           networkmanager-openconnect # OpenConnect support
         ];
         wifi.powersave = lib.mkDefault cfg.wifi.enable;
+        dns = lib.mkIf (cfg.dns.servers != [ ]) (lib.mkForce "none");
+      };
+
+      services.resolved = lib.mkIf (cfg.dns.servers != [ ]) {
+        enable = true;
+        settings.Resolve = {
+          DNS = cfg.dns.servers;
+          DNSOverTLS = "opportunistic";
+        };
       };
 
       hardware.enableRedistributableFirmware = lib.mkDefault cfg.firmware.enable;

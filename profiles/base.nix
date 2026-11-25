@@ -11,6 +11,11 @@
   services.dbus.implementation = lib.mkDefault "broker";
   networking.hostName = lib.mkDefault hostname;
 
+  nixos.general.network.dns.servers = [
+    "8.8.8.8#dns.google"
+    "8.8.4.4#dns.google"
+  ];
+
   nixpkgs.config = {
     allowUnfree = true;
   };
